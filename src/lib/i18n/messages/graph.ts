@@ -139,6 +139,13 @@ const messages = {
   'graph.queries.views.limit': (max: string) => `Up to ${max} saved views.`,
   /** Accessible name for a view's delete control. */
   'graph.queries.views.deleteAria': (name: string) => `Delete saved view ${name}`,
+
+  /** Notice shown while the canvas draws only part of a large graph (#1053). */
+  'graph.scale.partial': (shown: string, total: string) =>
+    `Showing ${shown} of ${total} nodes at this zoom. Zoom out or narrow the graph to see the rest.`,
+  /** Notice shown while a large graph is still being placed. */
+  'graph.scale.placing': (placed: string, total: string) =>
+    `Placing nodes: ${placed} of ${total}. The canvas stays interactive.`,
 } as const
 
 /** Typed `translate` helper bound to the graph message scope. */

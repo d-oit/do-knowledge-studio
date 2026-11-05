@@ -6,7 +6,7 @@
 **Historical note**: the SQL / Orama / TipTap / Sigma.js / MindElixir paths and
 actions described below describe the 2026-06 architecture. They are **historical
 records, not current implementation instructions** — the app is now Next.js +
-Zustand + localStorage with BM25, `React.lazy` views, and a canvas-based graph
+Zustand + IndexedDB (small localStorage metadata envelope) with BM25, `React.lazy` views, and an SVG graph (viewport culling + zoom LOD above 400 nodes; see ADR 052)
 and mind map. For what is actually true today, see
 [162-roadmap-progress-and-next-work-2026-10-05.md](162-roadmap-progress-and-next-work-2026-10-05.md).
 

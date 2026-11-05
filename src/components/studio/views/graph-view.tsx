@@ -3,7 +3,16 @@
 import { getHistoryAvailability } from '@/lib/studio/slices/history-slice'
 import { useStudioStore } from '@/lib/studio/store'
 import { seedGraph } from '@/lib/studio/seed-data'
-import { layoutNodes, placeGraphNodes } from '@/lib/studio/graph-layout'
+import { layoutNodes } from '@/lib/studio/graph-layout'
+import { useGraphPlacement } from '@/lib/studio/use-graph-placement'
+import {
+  cullEdges,
+  cullNodes,
+  isLargeGraph,
+  shouldShowNodeLabels,
+  shouldShowRelationLabels,
+  viewBoxRect,
+} from '@/lib/studio/graph-culling'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import { useElementSize } from '@/lib/studio/use-element-size'
 import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
@@ -68,7 +77,9 @@ export const GraphView = () => {
   const historyIndex = useStudioStore((s) => s.historyIndex)
   const { canUndo, canRedo } = getHistoryAvailability(historyIndex, entityHistory.length)
   const [layout, setLayout] = useState<GraphLayout>('force')
-  const [focusMode, setFocusMode] = useState(false)
+  // A library past the large-graph threshold opens in focus mode so the first
+  // paint is a neighborhood, not thousands of nodes (#1053).
+  const [focusMode, setFocusMode] = useState(() => isLargeGraph(entities.length))
   const [showMore, setShowMore] = useState(false)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -95,14 +106,17 @@ export const GraphView = () => {
     [entities, claims, filter],
   )
 
+  // Large corpora place across animation frames; small ones resolve in one pass.
+  const placedNodes = useGraphPlacement(filtered.entities, seedGraph.nodes, viewport)
+
   const { nodes, edges } = useMemo(() => {
-    const nodesList = placeGraphNodes(filtered.entities, seedGraph.nodes, viewport)
+    const nodesList = placedNodes
     const nodeIds = new Set(nodesList.map((n) => n.id))
     const edgesList = dedupeEdgesById(
       filtered.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)),
     )
     return { nodes: nodesList, edges: edgesList }
-  }, [filtered, viewport])
+  }, [filtered, placedNodes])
 
   // Apply the layout transform; `layoutNodes` is shared with the snapshot
   // restore clamp so both derive canvas geometry from the same math.
@@ -163,6 +177,30 @@ export const GraphView = () => {
     const ids = new Set(visibleNodes.map((n) => n.id))
     return edges.filter((e) => ids.has(e.source) && ids.has(e.target))
   }, [visibleNodes, edges])
+
+  // Rendering culling: the canvas is much larger than the viewport once zoomed
+  // in or panned, so only the nodes the viewBox can show are mounted. The
+  // counts above still describe the graph in scope.
+  const viewRect = useMemo(
+    () => viewBoxRect(canvas, zoom, panOffset),
+    [canvas, zoom, panOffset],
+  )
+  const renderedNodes = useMemo(
+    () => cullNodes(visibleNodes, viewRect),
+    [visibleNodes, viewRect],
+  )
+  const renderedNodeIds = useMemo(
+    () => new Set(renderedNodes.map((node) => node.id)),
+    [renderedNodes],
+  )
+  const renderedEdges = useMemo(
+    () => cullEdges(visibleEdges, renderedNodeIds),
+    [visibleEdges, renderedNodeIds],
+  )
+  const hiddenNodeCount = visibleNodes.length - renderedNodes.length
+  const showNodeLabels = shouldShowNodeLabels(visibleNodes.length, zoom)
+  const showRelationLabels = shouldShowRelationLabels(visibleNodes.length, zoom)
+  const placementPending = placedNodes.length < filtered.entities.length
 
   const visibleNodeMap = useMemo(
     () => new Map(visibleNodes.map((n) => [n.id, n])),
@@ -277,6 +315,25 @@ export const GraphView = () => {
         />
       )}
 
+      {(placementPending || hiddenNodeCount > 0) && (
+        <p
+          role="status"
+          className="border-b border-border bg-saffron-soft px-5 py-1.5 text-label text-saffron-deep"
+        >
+          {placementPending
+            ? graphT(
+                'graph.scale.placing',
+                String(placedNodes.length),
+                String(filtered.entities.length),
+              )
+            : graphT(
+                'graph.scale.partial',
+                String(renderedNodes.length),
+                String(visibleNodes.length),
+              )}
+        </p>
+      )}
+
       {/* Canvas */}
       <div
         className="relative flex-1 canvas-grid overflow-hidden"
@@ -301,7 +358,7 @@ export const GraphView = () => {
         >
           {/* Edges */}
           <g>
-            {visibleEdges.map((edge) => {
+            {renderedEdges.map((edge) => {
               const sourceNode = visibleNodeMap.get(edge.source)
               const targetNode = visibleNodeMap.get(edge.target)
               if (!sourceNode || !targetNode) return null
@@ -313,6 +370,7 @@ export const GraphView = () => {
                   targetNode={targetNode}
                   selectedEntityId={selectedEntityId}
                   pathHighlighted={pathEdgeKeySet.has(undirectedEdgeKey(edge.source, edge.target))}
+                  showRelationLabel={showRelationLabels}
                 />
               )
             })}
@@ -320,7 +378,7 @@ export const GraphView = () => {
 
           {/* Nodes */}
           <g>
-            {visibleNodes.map((n) => {
+            {renderedNodes.map((n) => {
               const meta = getEntityTypeMeta(n.type)
               const isSelected = n.id === selectedEntityId
               const r = isSelected ? 14 : 11
@@ -359,16 +417,18 @@ export const GraphView = () => {
                       strokeWidth={pathNodeIdSet.has(n.id) ? 3 : 2}
                     />
                     <circle r={r * 0.4} fill="var(--background)" opacity={0.3} />
-                    <text
-                      y={r + 14}
-                      textAnchor="middle"
-                      className={cn(
-                        'font-sans text-caption font-medium transition-colors',
-                        isSelected ? 'fill-ink' : 'fill-ink-soft',
-                      )}
-                    >
-                      {n.label.length > 24 ? `${n.label.slice(0, 22)}…` : n.label}
-                    </text>
+                    {showNodeLabels && (
+                      <text
+                        y={r + 14}
+                        textAnchor="middle"
+                        className={cn(
+                          'font-sans text-caption font-medium transition-colors',
+                          isSelected ? 'fill-ink' : 'fill-ink-soft',
+                        )}
+                      >
+                        {n.label.length > 24 ? `${n.label.slice(0, 22)}…` : n.label}
+                      </text>
+                    )}
                   </g>
                 </g>
               )

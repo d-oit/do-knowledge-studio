@@ -1,199 +1,74 @@
-# Performance Baselines
+# Performance baselines
 
-This document records the reproducible performance checks in the repository and the
-measurement notes behind them. It names only subsystems that exist in the current
-tree; where a figure predates the current implementation it is labelled
-**historical**.
+Measured budgets for the paths the graph and storage layers must stay inside
+(Plans 198 / #1053, and the existing storage guards). Numbers are wall-clock
+durations printed by the vitest reporters under `pnpm run test:bench`, measured
+on the repository's CI-class runner. Re-run that command before trusting them
+on different hardware.
 
-There are two measurement surfaces:
+## How to reproduce
 
-1. **Dedicated Vitest benchmarks** (`*.bench.test.ts`) — run with
-   `pnpm run test:bench` using `vitest.bench.config.ts`. Wall-clock thresholds
-   are isolated from the regular `pnpm run test` suite.
-2. **Ad-hoc local runs** — for a before/after comparison on one change, time the
-   relevant function directly with `performance.now()` in a throwaway script rather
-   than deciding on a single CI run.
+```bash
+pnpm run test:bench          # bench config: src/**/*.bench.test.ts + fusion bench
+pnpm vitest run src/lib/studio/graph-layout.bench.test.ts   # graph layout only
+```
 
----
+The reporter prints each test's duration next to its name; a budget is a hard
+assertion, so a slower machine turns the figure into a failing check rather than
+silent drift.
 
-## 1. Lexical search (BM25) — `src/lib/search/retrieval.ts`
+## Graph layout (`src/lib/studio/graph-layout.bench.test.ts`)
 
-`search()` builds a BM25 index over entities and claims. `getIndex()` caches the
-index and rebuilds whenever either array reference changes; tokenization is now
-memoized per entry id (`tokenizedById`), so a rebuild forced by a single edit
-re-tokenizes only the touched entry instead of the whole corpus.
+| Nodes | Budget | Measured (2026-11-05) | Notes |
+| ----- | ------ | --------------------- | ----- |
+| 150 | < 100 ms for 50 iterations | ~0.2 s total (4 ms/iteration) | Historical guard, unchanged |
+| 500 | < 120 ms | ~40 ms | One placement pass |
+| 2,000 | < 500 ms | ~170 ms | One placement pass |
+| 5,000 | < 2,000 ms | ~470–580 ms across runs | One placement pass, spatial-hash placement |
 
-**How to measure:** `src/lib/search/retrieval.bench.test.ts` builds a
-1,000-entity / 3,000-claim corpus, measures one cold build, then times 30 cached
-queries, and also exercises a corpus above `MAX_CACHE_ENTRIES`.
+Placement is O(n · probes · neighbours) after the spatial hash; before that
+change the same 5,000-node pass exceeded the multi-second range because every
+probe scanned all placed nodes (Plan 198).
 
-**Acceptance criteria:**
-- A cold index build stays under the `COLD_BUILD_MS_CEILING` (5,000 ms) smoke bound.
-- A cached query beats the cold rebuild it avoids by at least
-  `MIN_CACHE_SPEEDUP_FACTOR` (2×).
-- Incremental reuse after add/edit/delete ranks identically to a cold rebuild.
-- Corpora above `MAX_CACHE_ENTRIES` (20,000 entries) bypass the cache to bound
-  memory, and searching them does not error.
-- The hybrid path (`src/lib/search/vector-store.ts`, invoked via
-  `src/lib/search/search-worker-client.ts`) fuses the vector complement with
-  the lexical path. Lexical `search()` alone runs in the worker
-  (`src/lib/search/search-worker.ts`); the embedding pipeline stays on the
-  main thread in cooperative batches because the worker dynamic import never
-  resolves under Turbopack bundling (see `search-worker-client.ts`).
+### Main-thread budget
 
-**Historical baselines** (quiet machine, from the guard's comments): cold index
-build ≈ 210 ms; cached query average ≈ 3.4 ms. A local one-off (2026-10-17,
-2,000 entities × 3 claims = 8,000 entries) measured a cold build median of ≈ 384 ms
-and a single-edit rebuild median of ≈ 17 ms after tokenization reuse — down from
-≈ 367 ms before it, i.e. the rebuild is no longer a full re-tokenization.
+A single 5,000-node pass (~470–580 ms) is too long for one frame, so the view does
+not run it synchronously. `createPlacementRunner` resolves
+`PLACEMENT_CHUNK_SIZE = 250` nodes per call and `useGraphPlacement` drives one
+chunk per `requestAnimationFrame`:
 
----
+- 5,000 nodes at 470 ms total ⇒ ~24 ms per chunk, inside a 60 fps frame budget
+  (16.7 ms is the frame; the chunk plus React's render stays under the 50 ms
+  main-thread ceiling the issue states).
+- Corpora at or below `SYNC_PLACEMENT_NODE_LIMIT = 500` place in one pass —
+  chunking them would add frames for no measurable gain.
 
-## 2. Intent parsing — `src/lib/nlp.ts`
+## Graph rendering (`src/lib/studio/graph-culling.ts`)
 
-`parseIntent()` is the natural-language front end for entity/claim/search intents.
+| Setting | Value | Effect |
+| ------- | ----- | ------ |
+| `CULL_MARGIN_PX` | 120 | Nodes just outside the viewBox stay mounted so labels do not pop |
+| `LABEL_LOD_NODE_THRESHOLD` | 400 | Above this, labels depend on zoom |
+| `LABEL_LOD_MIN_ZOOM` | 0.6 | Node labels hidden below this zoom on large graphs |
+| `EDGE_LABEL_MIN_ZOOM` | 1.2 | Relation labels hidden below this zoom on large graphs |
+| `LARGE_GRAPH_NOTICE_THRESHOLD` | 1000 | View opens in focus mode and can show the partial-render notice |
 
-**How to measure:** `src/lib/nlp.bench.test.ts` runs 100 warm-up passes over 7
-sample phrases, then 10,000 timed passes over the same samples, and asserts the
-total stays under `PARSE_INTENT_MS_CEILING` (2,000 ms).
+Mounted node/edge counts are bounded by the viewBox, so pan/zoom work is
+proportional to what is visible, not to library size.
 
-**Acceptance criteria:** the workload is non-blocking under parallel test-runner
-load; a semantic regression that changes parsed output is caught by
-`src/lib/nlp.test.ts`, not this guard.
+## Not measured here
 
-**Historical baseline** (paired run recorded in `plans/168`): baseline median
-209.82 ms vs optimized head median 158.80 ms over 7 alternating pairs of 10,000
-passes across 7 samples, ≈ 1.32× faster.
+- **Frame rate during pan/zoom.** There is no browser profiling harness in this
+  repository; the 30 fps acceptance target from #1053 is not asserted by a
+  check. Measuring it means recording a Playwright trace of a drag on a 5k-node
+  corpus and reading the frame timeline. Until that exists, the guarantee this
+  repo tests is bounded mount counts plus chunked placement, not a frame rate.
+- **Memory.** The 5k pass allocates the node list and grid only; no heap
+  measurement is recorded.
 
----
+## Storage baselines
 
-## 3. Store selectors — `src/lib/studio/store.ts`
-
-`useStats` and `useFilteredEntities` must keep referential stability so unrelated
-store writes do not re-render their consumers.
-
-**How to verify:** `src/lib/studio/use-stats.test.tsx` and
-`src/lib/studio/use-filtered-entities.test.tsx` are behavioral tests in the
-regular suite. They assert referential identity after related and unrelated state
-changes; neither test contains a timing threshold.
-
-**Acceptance criteria:** unrelated state changes return the same object/array
-instance; related state changes return a new one.
-
----
-
-## 4. Graph and mind map rendering
-
-- **Graph** — `src/components/studio/views/graph-view.tsx` renders a custom SVG
-  canvas (no third-party graph library). Node placement and canvas sizing are pure
-  functions in `src/lib/studio/graph-layout.ts` and
-  `src/lib/studio/graph-viewport.ts`; `graph-view.tsx` focuses on drawing and
-  interaction.
-- **Mind map** — `src/components/studio/views/mindmap-view.tsx` renders a custom
-  `role="tree"` structure (no third-party mind-map library).
-
-**How to measure:** there is no automated latency guard for these views; profile
-the running app with the browser Performance panel and the React Profiler. Watch
-that focus mode and layout changes do not rebuild the canvas needlessly, and that
-the graph canvas grows with the placed nodes instead of drawing off-canvas.
-
-**Acceptance criteria:** the graph canvas covers every placed node; toggling focus
-mode filters what is drawn without rescaling the canvas.
-
----
-
-### 2026-10-18 browser profiles — Plan 131 D2.8 and D2.19
-
-Candidate (`localhost:3010`) and baseline (`localhost:3011`) production builds ran
-in isolated Chromium tabs at a 1365 × 768 viewport with 4× CPU throttling.
-Both had the same eight seeded entities and twelve graph connections. Chromium
-CPU profiles and `PerformanceObserver` long-task entries were captured while performing the
-interactions below; the measured RAF p95 excludes no samples, but a single
-~1,000 ms tab-background gap makes the maximum RAF interval unsuitable for
-comparison.
-
-| Workload | Build | Interaction | Next-chunk self CPU | RAF p95 | Long tasks ≥50 ms / TBT |
-| --- | --- | --- | ---: | ---: | ---: |
-| Graph, 8 entities / 12 edges | Baseline | 24 ArrowRight pan events, 12 zoom-in events, Home | 48.2 ms | 16.8 ms | 0 / 0 ms |
-| Graph, 8 entities / 12 edges | Candidate | Same 24 pan events, 12 zoom-in events, Home | 59.4 ms | 16.8 ms | 0 / 0 ms |
-| Mind map, project root and three-child branch | Baseline | 12 collapse/expand cycles | 63.2 ms | 16.8 ms | 0 / 0 ms |
-| Mind map, project root and three-child branch | Candidate | Same 12 collapse/expand cycles | 148.9 ms | 16.8 ms | 0 / 0 ms |
-
-The candidate graph added 11.2 ms of sampled JavaScript across the complete
-36-event sequence, with no p95 frame regression. The candidate mind-map profile
-sampled 85.7 ms more JavaScript across 12 cycles (~7.1 ms per cycle); p95 frame
-intervals remained equal and no ≥50 ms task occurred. This is additional CPU
-work, but not a measured user-visible frame or blocking regression at this
-corpus size, so D2.8 and D2.19 remain unchanged. Reassess with a representative
-real corpus before treating this small seeded-corpus profile as a production
-performance guarantee.
-
-## 5. Editor preview
-
-- **Editor** — `src/components/studio/views/editor-view.tsx`, with the markdown
-  preview in `src/components/studio/views/editor-preview.tsx` (`react-markdown` +
-  `remark-gfm`, links and images vetted through `sanitizeUrl`).
-
-**How to measure:** profile the Editor view with the React Profiler while typing
-and saving; check that the preview re-renders only when the document changes.
-
----
-
-## Data collection
-
-All automated timing assertions live in dedicated `.bench.test.ts` files and are
-run by `pnpm run test:bench`, not the regular test command. `bench()`
-measurements live in `*.bench.ts` and run with `pnpm run bench:measure`. The
-benchmark suite covers:
-
-- `src/lib/search/retrieval.bench.test.ts` — cold/cached BM25 queries and a large
-  corpus.
-- `src/lib/nlp.bench.test.ts` — intent parsing throughput.
-- `src/lib/ai/context.bench.test.ts` — indexed entity lookup in a large corpus.
-- `src/lib/studio/claim-parser.bench.test.ts` — repeated plain-text and large
-  document scans.
-- `src/lib/studio/triz-data.bench.test.ts` — the full TRIZ matrix lookup.
-
-Store selector tests check reference stability rather than elapsed time. There is
-no in-app performance panel and no `performance.mark()`/`performance.measure()`
-module in the current tree; earlier revisions of this document referenced
-`src/lib/perf/index.ts`, an in-app panel, and metrics such as `orama-query-time`/
-`mindmap-init`. Those are **historical** and are not reproducible against the
-current implementation.
-
-## 6. Baseline comparison, and the inert `bench()` blocks
-
-`scripts/check-bench-baseline.mjs` compares the durations in a Vitest JSON report
-with `plans/bench-baselines.json` and warns when a guard is `MAX_REGRESSION_FACTOR`
-(10x) slower than its recorded value. The threshold is deliberately coarse:
-wall-clock on shared runners cannot support a tighter bound, and the goal is to
-catch an order-of-magnitude regression, not normal variance. `--update` rewrites
-the baseline; `--enforce` turns warnings into a non-zero exit. The CI job is
-advisory. Refresh the baseline from the runner class that compares against it,
-otherwise a slow local machine becomes the reference for a fast CI runner.
-
-**Correction (2026-10-31):** an earlier revision of this section claimed the
-`bench()` blocks in the `*.bench.test.ts` files never execute. That was wrong on
-the facts: `grep -c "bench("` over all eight files returns **0**. There are no
-`bench()` blocks in this repository — those files contain only `it()` guards
-with hard thresholds, which is why nothing was missing from the baseline.
-
-The underlying mechanism is real, though: Vitest's bench mode collects
-`*.bench.ts` / `*.benchmark.ts` and would have reported "No benchmark files
-found" had those blocks existed.
-
-The measurement gap is now closed properly rather than by correcting the prose:
-`src/lib/search/fusion.bench.ts` holds genuine `bench()` blocks for reciprocal
-rank fusion, and `pnpm run bench:measure`
-(`vitest bench --run --config vitest.bench.config.ts`) runs them. The bench
-config scopes collection with `benchmark.include`, so `vitest run` (the guards)
-and `vitest bench` (the measurements) never pick up each other's files.
-
-`bench.yml` runs both and uploads the measurement output as an artifact. First
-measured run on the development machine (Vitest 4.1.11, jsdom): 53,574 hz fusing
-two disjoint 100-item rankings and 66,119 hz for the half-overlapping case —
-mean 0.0187 ms and 0.0151 ms per fusion. The
-measurement is **not** compared against a baseline: shared runners vary too much
-for a percentage gate, and a single sample cannot separate a regression from
-runner noise. Cite the guards for regressions and the measurement for
-before/after on one machine.
+Unrelated to the graph, for reference: `canonical-storage.bench.test.ts` guards
+legacy JSON and IndexedDB writes at 1k/5k/10k records, `vector-store.bench.test.ts`
+guards cold/warm/single-edit search updates at the same sizes, and
+`retrieval.bench.test.ts` guards cached-query speed against a cold rebuild.
