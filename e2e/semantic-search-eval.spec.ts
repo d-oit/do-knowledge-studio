@@ -90,7 +90,7 @@ test.describe('in-browser retrieval measurement', () => {
 
     // Grid view keeps one card per entity, in rank order.
     await page.getByRole('button', { name: /grid view/i }).click();
-    await page.getByRole('switch', { name: /semantic search/i }).click();
+    await page.getByRole('switch', { name: /hybrid search/i }).click();
 
     const searchInput = page.getByRole('searchbox', { name: /search library/i });
     const rankings = new Map<string, string[]>();
