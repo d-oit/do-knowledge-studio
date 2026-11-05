@@ -1,6 +1,6 @@
 # Plan 194 — Ordered implementation of open issues #1050–#1065 (2026-11-03)
 
-**Status**: Active — #1050 merged via PR #1084; #1062 implementation in progress on `test/1062-property-mutation`.
+**Status**: Active — #1050 (#1084), #1062 (#1086, follow-up #1087), #1065 (#1088), #1055 (#1089), and #1054 (#1090) merged; #1056 ADR + offline MCP server on `feat/1056-mcp-bridge`.
 **Goal**: Complete every currently open issue #1050–#1065 in a dependency-safe sequence, with one focused PR per implementation unit and squash merges only after local gates, all CI, and code review pass.
 **Constraints**: Preserve local-first operation, fail-closed persistence/import, strict TypeScript, current PWA/offline behavior, and no required backend. Do not close an issue on historical plan text alone; verify current code and attach the merge/verification evidence.
 
@@ -15,9 +15,9 @@ The sequence now starts from post-merge `main` at `c4af33b`; 15 open issues rema
 | #1051 | Partial, security constraints unresolved | Narrow `connect-src`, remove script `unsafe-inline`, add all-view/offline CSP E2E and update ADR 045. Current ONNX runtime demonstrably executes JavaScript `eval`, so dropping `unsafe-eval` without replacing that runtime would break semantic search. Preserve that behavior while evaluating safe alternatives; do not weaken offline support. |
 | #1052 | Partial | ICE/TURN settings and encrypted credentials, connection/candidate diagnostics, Sync-integrated file fallback, TURN validation, docs and tests. Existing signaling URL configuration is not ICE configuration. |
 | #1053 | Partial | 500/2k/5k/10k measurements and documented budgets; large-corpus renderer/culling and accessible fallback with evidence for the 5k target. |
-| #1054 | Partial | Multi-file/folder/Obsidian Markdown import, frontmatter and two-pass link resolution, limits/fail-closed preview, round-trip and restore E2E. |
-| #1055 | Partial | `[[...]]` editor tokens/export/import, alias resolution, unlinked-mention indexing, rename behavior, keyboard/SR tests. Existing ID-based `@` mentions are retained as the canonical storage link. |
-| #1056 | Open | Required architecture ADR, offline read-only MCP CLI over exported bundles, provenance-preserving tools, SDK contract test and setup docs. |
+| #1054 | Done (PR #1090) | Multi-file/folder/Obsidian Markdown import, frontmatter and two-pass wikilink/relative-`.md` resolution, streamed zip guards, stub/conflict preview rows, export round-trip parser, restore E2E. |
+| #1055 | Done (PR #1089) | `[[...]]` editor tokens/export/import, name+tag alias resolution (no schema migration), unlinked-mention indexing, rename behavior, keyboard/SR tests. ID-based `@` mentions remain the canonical storage link. |
+| #1056 | Done (ADR 050 + Plan 196) | ADR compares bundle CLI / local bridge / browser registration and selects the offline CLI; `packages/dks-mcp` serves read-only tools over stdio, Zod-validates arguments, mirrors OKF trust derivation, and ships an SDK contract test plus client docs. `find_path` is deferred to #1058. |
 | #1057 | Open | Provider-backed extraction into an isolated proposal inbox, bounded Zod validation, provenance/privacy disclosure, explicit accept/edit/reject, evaluation and undo. |
 | #1058 | Open | Pure shortest-path/filter API, accessible results, named views persisted through reload/backup/sync, and AI `find_path` integration. |
 | #1059 | Open | Incremental duplicate/contradiction candidate detection, dismissals persisted and synced, user-confirmed actions, labeled fixtures and metrics. |
@@ -305,4 +305,19 @@ global score floor, and retains shard and aggregate artifacts for 14 days.
   now consumes report JSON on stdin and statically imports the configured
   scope instead of opening caller-selected paths. Checker tests and the
   68.22% local composite pass; PR Codacy reanalysis remains pending.
+- [x] #1054 implementation and review fixes: vault + export-shape parsers,
+  streamed zip reader, staging extracted to `import-staging.ts` (hook 475→381
+  LOC), same-name dedupe, synchronous JSON routing restored. Lint/typecheck/
+  test (243 files, 3,361 tests)/build green; vault E2E 2/2. PR #1090 merged as
+  `8212a49`.
+- [x] #1056 ADR 050 accepts the offline bundle server (A) and rejects the
+  localhost bridge (new required daemon, live socket to defend) and browser
+  registration (API availability). `packages/dks-mcp` ships reader guards
+  (zip-slip paths, entry/size caps, versioned index), claim/trust mirroring,
+  BM25-lite search, five read-only tools, and an InMemoryTransport contract
+  test. Review fixed character-vs-token length normalization (the regression
+  test failed with the defect injected), a duplicated default limit, and a
+  swallowed handler error; root vitest now excludes `packages/**` so the
+  package suite runs once. Gates: lint, both typechecks, 3,361 root + 17
+  package tests, build, CLI smoke over a real bundle directory.
 - [ ] Create, review, and merge each remaining issue PR in the recorded dependency order.
