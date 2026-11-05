@@ -34,8 +34,12 @@ queries, and also exercises a corpus above `MAX_CACHE_ENTRIES`.
 - Incremental reuse after add/edit/delete ranks identically to a cold rebuild.
 - Corpora above `MAX_CACHE_ENTRIES` (20,000 entries) bypass the cache to bound
   memory, and searching them does not error.
-- The semantic path (`src/lib/search/vector-store.ts`, run through the worker in
-  `src/lib/search/search-worker.ts`) is the vector complement of the lexical path.
+- The hybrid path (`src/lib/search/vector-store.ts`, invoked via
+  `src/lib/search/search-worker-client.ts`) fuses the vector complement with
+  the lexical path. Lexical `search()` alone runs in the worker
+  (`src/lib/search/search-worker.ts`); the embedding pipeline stays on the
+  main thread in cooperative batches because the worker dynamic import never
+  resolves under Turbopack bundling (see `search-worker-client.ts`).
 
 **Historical baselines** (quiet machine, from the guard's comments): cold index
 build ≈ 210 ms; cached query average ≈ 3.4 ms. A local one-off (2026-10-17,

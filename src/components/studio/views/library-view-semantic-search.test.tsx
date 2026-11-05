@@ -15,7 +15,7 @@ describe('LibraryView semantic search', () => {
 
   it('semantic toggle drives the store action', () => {
     render(<LibraryView />)
-    fireEvent.click(screen.getByRole('switch', { name: 'Semantic search' }))
+    fireEvent.click(screen.getByRole('switch', { name: 'Hybrid search' }))
     expect(mockSetSemanticSearchEnabled).toHaveBeenCalledWith(true)
   })
 
