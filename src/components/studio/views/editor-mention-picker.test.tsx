@@ -8,6 +8,7 @@ vi.mock('lucide-react', () => {
   )
   return {
     AtSign: Icon,
+    Plus: Icon,
     FileText: Icon,
     FolderKanban: Icon,
     Lightbulb: Icon,
@@ -50,6 +51,12 @@ const renderPicker = (overrides: Partial<Parameters<typeof EditorMentionPicker>[
       textarea={{ current: null }}
       onHighlight={vi.fn()}
       onSelect={vi.fn()}
+      showCreate={false}
+      createLabel='Create "Ali"'
+      createAriaLabel='Create new entity "Ali"'
+      createHighlighted={false}
+      onCreate={vi.fn()}
+      onHighlightCreate={vi.fn()}
       {...overrides}
     />,
   )
@@ -92,6 +99,34 @@ describe('EditorMentionPicker', () => {
     renderPicker({ candidates: [] })
     expect(screen.getByText('No matching entities')).toBeDefined()
     expect(screen.queryAllByRole('option')).toHaveLength(0)
+  })
+
+  it('renders the create row after candidates when offered', () => {
+    renderPicker({ showCreate: true })
+    const options = screen.getAllByRole('option')
+    expect(options).toHaveLength(3)
+    expect(screen.getByRole('option', { name: 'Create new entity "Ali"' })).toBeDefined()
+  })
+
+  it('highlights the create row independently of candidates', () => {
+    renderPicker({ showCreate: true, createHighlighted: true, highlightedIndex: 2 })
+    const options = screen.getAllByRole('option')
+    expect(options[2]).toHaveAttribute('aria-selected', 'true')
+    expect(options[0]).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('calls onCreate when the create row is clicked', () => {
+    const onCreate = vi.fn()
+    renderPicker({ showCreate: true, onCreate })
+    fireEvent.click(screen.getByRole('option', { name: 'Create new entity "Ali"' }))
+    expect(onCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onHighlightCreate when hovering the create row', () => {
+    const onHighlightCreate = vi.fn()
+    renderPicker({ showCreate: true, onHighlightCreate })
+    fireEvent.mouseEnter(screen.getByRole('option', { name: 'Create new entity "Ali"' }))
+    expect(onHighlightCreate).toHaveBeenCalledTimes(1)
   })
 
   it('shows the picker hint in the popover header', () => {

@@ -1,4 +1,5 @@
 import { pruneDanglingCanvasRefs } from '@/lib/studio/canvas-refs'
+import { renderTokensAsWikilinks } from '@/lib/editor/wikilinks'
 import type { Entity, Claim } from '@/lib/studio/types'
 import { validateImportPayload } from '@/lib/studio/schema'
 import { escapeHtml, sanitizeUrl } from '@/lib/security'
@@ -70,7 +71,10 @@ export const buildMarkdownExport = (entities: Entity[], claims: Claim[]): string
     parts.push(`**Created:** ${created}  `)
     parts.push(`**Updated:** ${updated}\n`)
     if (e.description) parts.push(`> ${e.description}\n`)
-    parts.push(`\n${e.content || '_(no body content)_'}\n`)
+    // Mention tokens export as [[Name]] wikilinks (#1055): portable across
+    // Obsidian/Logseq/Roam, and re-importable via the wikilink resolver.
+    const exportableContent = e.content ? renderTokensAsWikilinks(e.content, entities) : '_(no body content)_'
+    parts.push(`\n${exportableContent}\n`)
     parts.push(`\n**Links:**\n${links}\n`)
 
     const entityClaims = claimsByEntity.get(e.id) ?? []

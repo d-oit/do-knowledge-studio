@@ -377,6 +377,61 @@ describe('EditorView @mention linking', () => {
     expect(mockNavigateToView).not.toHaveBeenCalled()
   })
 
+  it('opens the picker on [[ and inserts the token on option click', async () => {
+    const textarea = await openPicker('Hello [[Ali', 11)
+    expect(textarea).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(screen.getByRole('option', { name: 'Alice Entity (Person)' }))
+    expect(textarea).toHaveValue(`Hello ${buildMentionToken('ent-2', 'Alice Entity')}`)
+  })
+
+  it('offers a create row for an unmatched [[ query and mints a stub on Enter', async () => {
+    const textarea = await openPicker('Hello [[Zed', 11)
+    const createOption = screen.getByRole('option', { name: 'Create new entity "Zed"' })
+    expect(createOption).toBeDefined()
+    fireEvent.click(createOption)
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    const stub = mockCommitEntities.mock.calls[0][0][0]
+    expect(stub.name).toBe('Zed')
+    // Stub inherits the editor's current entity type (ent-1 is a concept).
+    expect(stub.type).toBe('concept')
+    expect(textarea).toHaveValue(`Hello ${buildMentionToken(stub.id, 'Zed')}`)
+  })
+
+  it('converts a typed [[Name]] to a token and links it on save', () => {
+    render(<EditorView />)
+    const textarea = screen.getByLabelText('Editor content')
+    const value = 'See [[Alice Entity]] today'
+    fireEvent.change(textarea, { target: { value, selectionStart: value.length, selectionEnd: value.length } })
+    fireEvent.click(screen.getByText('Commit changes'))
+
+    const batch = mockCommitEntities.mock.calls[0][0]
+    const saved = batch[0]
+    expect(saved.links).toContainEqual({ targetId: 'ent-2', relation: 'mentions' })
+    expect(saved.content).toContain(buildMentionToken('ent-2', 'Alice Entity'))
+  })
+
+  it('offers to refresh visible link text on rename and links keep working either way', () => {
+    currentEntities = mockEntities.map((e) =>
+      e.id === 'ent-2'
+        ? { ...e, content: `See ${buildMentionToken('ent-1', 'Test Entity')}` }
+        : e,
+    )
+    render(<EditorView />)
+    fireEvent.change(screen.getByPlaceholderText('Entity name…'), { target: { value: 'Renamed Entity' } })
+    fireEvent.click(screen.getByText('Commit changes'))
+
+    // Offer appears; nothing committed yet.
+    expect(screen.getByText('Update link text?')).toBeDefined()
+    expect(mockCommitEntities).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByText('Update link text'))
+    const batch = mockCommitEntities.mock.calls[0][0]
+    const updated = batch.find((e: Entity) => e.id === 'ent-2')
+    expect(updated.content).toContain(buildMentionToken('ent-1', 'Renamed Entity'))
+    // Id-based links survive the rename.
+    expect(updated.content).toContain('dks://entity/ent-1')
+  })
+
   it('revokes stale backlinks when a previously mentioned entity is no longer mentioned', () => {
     currentEntities = mockEntities.map((e) =>
       e.id === 'ent-2'

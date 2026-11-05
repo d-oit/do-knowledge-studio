@@ -7,11 +7,12 @@ import {
   type AnyEntityType,
   type Entity,
 } from '@/lib/studio/types'
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as confirmT } from '@/lib/i18n/messages/confirm'
+import { translate as mentionsT } from '@/lib/i18n/messages/mentions'
 import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { EditorToolbar } from './editor-toolbar'
 const CursorTracker = lazy(() => import('../remote-cursors').then((module) => ({ default: module.CursorTracker })))
@@ -21,18 +22,19 @@ import { removeDraft } from '@/lib/editor'
 import {
   applyMentionBacklinks,
   extractMentionLinks,
-  getMentionTrigger,
-  insertMentionToken,
+  findMentionTokens,
   mergeMentionLinks,
-  type MentionTrigger,
 } from '@/lib/editor/mention'
+import {
+  convertWikilinksToTokens,
+  updateMentionDisplayNames,
+} from '@/lib/editor/wikilinks'
 
 import {
   EditorMentionPicker,
   MENTION_LISTBOX_ID,
-  MENTION_MAX_RESULTS,
-  mentionOptionId,
 } from './editor-mention-picker'
+import { useMentionAutocomplete } from './use-mention-autocomplete'
 import {
   useEditorDraft,
   useEditorKeyboardShortcuts,
@@ -117,24 +119,14 @@ export const EditorView = () => {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showTypeMenu, setShowTypeMenu] = useState(false)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
-  const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
-  // Caret position driving the @mention trigger (updated on change/click/keys).
-  const [caret, setCaret] = useState(0)
-  const [mentionHighlight, setMentionHighlight] = useState(0)
-  // Trigger dismissed by Escape/blur. Bound to the content prefix at that
-  // offset so deleting the `@` and typing a fresh one at the same index
-  // reopens the picker (a NEW trigger), while continued query typing keeps
-  // the dismissal intact.
-  const [dismissedMention, setDismissedMention] = useState<{
-    start: number
-    prefix: string
+  const [renameOffer, setRenameOffer] = useState<{
+    oldName: string
+    newName: string
+    affectedCount: string
   } | null>(null)
-  const dismissMention = useCallback(
-    (start: number): void => {
-      setDismissedMention({ start, prefix: content.slice(0, start) })
-    },
-    [content],
-  )
+  const [editMode, setEditMode] = useState<'edit' | 'preview' | 'split'>('edit')
+  // Caret position driving the mention trigger (updated on change/click/keys).
+  const [caret, setCaret] = useState(0)
 
   const { draftStatus, draftIdRef } = useEditorDraft({
     editing,
@@ -193,71 +185,40 @@ export const EditorView = () => {
     : name.trim() !== '' || content.trim() !== ''
 
   /**
-   * @mention entity linking (N3): the trigger derives from the live content
-   * and caret — typing '@' opens the picker, moving the caret into/out of a
-   * mention context opens/closes it, and the inserted token is a plain
-   * markdown link `[@Name](dks://entity/<id>)` (see src/lib/editor/mention.ts
-   * for the token convention and save-time link derivation).
+   * Mention autocomplete (`@` and `[[` openers, N3 + #1055): the trigger
+   * derives from the live content and caret, and the inserted token is a
+   * plain markdown link `[@Name](dks://entity/<id>)` (see
+   * src/lib/editor/mention.ts for the token convention and save-time link
+   * derivation). The picker can also mint a stub entity for the query.
    */
-  const mentionTrigger = useMemo<MentionTrigger>(
-    () => getMentionTrigger(content, caret),
-    [content, caret],
-  )
-  // A dismissal applies only while the content prefix at the trigger offset is
-  // unchanged — a deleted/re-typed `@` at the same index is a new trigger.
-  const mentionOpen =
-    mentionTrigger.active &&
-    (dismissedMention === null ||
-      dismissedMention.start !== mentionTrigger.start ||
-      dismissedMention.prefix !== content.slice(0, mentionTrigger.start))
-
-  const mentionCandidates = useMemo(() => {
-    if (!mentionTrigger.active) return []
-    const query = mentionTrigger.query.toLowerCase()
-    return entities
-      .filter((e) => e.id !== editingEntityId && e.name.toLowerCase().includes(query))
-      .slice(0, MENTION_MAX_RESULTS)
-  }, [entities, editingEntityId, mentionTrigger])
-
-  // Re-anchor the highlighted option whenever the query/context changes.
-  useEffect(() => {
-    setMentionHighlight(0)
-  }, [mentionTrigger.start, mentionTrigger.query, mentionOpen])
-
-  const selectMention = useCallback((entity: Entity) => {
-    const result = insertMentionToken(content, mentionTrigger, entity)
-    setContent(result.text)
-    setCaret(result.selection)
-    setMentionHighlight(0)
-    dismissMention(mentionTrigger.start)
-    requestAnimationFrame(() => {
-      const el = textareaRef.current
-      if (el) restoreEditorSelection(el, result.selection, result.selection)
-    })
-  }, [content, mentionTrigger, dismissMention])
-
-  const handleMentionKeyDown = useCallback((e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-    if (!mentionOpen) return
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      dismissMention(mentionTrigger.start)
-      return
-    }
-    if (mentionCandidates.length === 0) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setMentionHighlight((i) => (i + 1) % mentionCandidates.length)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setMentionHighlight((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length)
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      // `.at()` returns undefined out of range; presence-check before use
-      // (Codacy-safe — mirrors TRIZ_PARAMETERS.at() in triz-results-view).
-      const candidate = mentionCandidates.at(mentionHighlight)
-      if (candidate !== undefined) selectMention(candidate)
-    }
-  }, [mentionOpen, mentionCandidates, mentionHighlight, mentionTrigger.start, selectMention, dismissMention])
+  const {
+    mentionTrigger,
+    mentionOpen,
+    candidates: mentionCandidates,
+    highlight: mentionHighlight,
+    createHighlighted,
+    showCreate: mentionShowCreate,
+    createLabel: mentionCreateLabel,
+    createAriaLabel: mentionCreateAriaLabel,
+    activeDescendantId: mentionActiveDescendantId,
+    onHighlight: handleMentionHighlight,
+    onHighlightCreate: handleMentionHighlightCreate,
+    onSelect: selectMention,
+    onCreate: createMentionEntity,
+    onBlur: blurMention,
+    handleKeyDown: handleMentionKeyDown,
+  } = useMentionAutocomplete({
+    content,
+    caret,
+    setContent,
+    setCaret,
+    textareaRef,
+    entities,
+    editingEntityId,
+    entityType: type,
+    commitEntities,
+    announce,
+  })
 
   const handleFormat = useCallback((command: string) => {
     const textarea = textareaRef.current
@@ -282,17 +243,25 @@ export const EditorView = () => {
    * only when the entity mentions someone (matches the "Save to library"
    * label); entities without mentions keep today's stay-in-editor behavior.
    */
-  const handleSave = useCallback(() => {
-    if (!name.trim()) {
-      toast.error('Entity name cannot be empty')
-      return
-    }
+  /**
+   * Commits the editor form. Typed `[[Name]]` wikilinks resolve to canonical
+   * mention tokens first, so links derive from the final content at save
+   * time exactly like picked `@` mentions. When `refreshLinkText` is set,
+   * tokens across the corpus that still show the pre-rename name are
+   * rewritten to the new name (links stay id-based either way).
+   */
+  const commitSave = useCallback((refreshLinkText: boolean, rename?: { oldName: string }) => {
     const entityId = editing?.id ?? crypto.randomUUID()
-    const { mentionLinks, mentions } = extractMentionLinks(content, entities, entityId)
+    const converted = convertWikilinksToTokens(content, entities, entityId).text
+    const finalContent =
+      refreshLinkText && rename && editing
+        ? updateMentionDisplayNames(converted, editing.id, rename.oldName, name.trim())
+        : converted
+    const { mentionLinks, mentions } = extractMentionLinks(finalContent, entities, entityId)
     const entity = buildEditorEntity(
       entityId,
       editing,
-      { name, type, description, content, sourceUrl, tags },
+      { name, type, description, content: finalContent, sourceUrl, tags },
       mentionLinks,
     )
     // Reciprocal backlinks + stale-backlink revocation, only touching
@@ -302,7 +271,24 @@ export const EditorView = () => {
     // reciprocal-link invariant).
     const mentionedIds = new Set(mentions.map((m) => m.entityId))
     const backlinkUpdates = applyMentionBacklinks(entities, entityId, mentionedIds)
-    commitEntities([entity, ...backlinkUpdates])
+    const displayUpdates =
+      refreshLinkText && rename && editing
+        ? entities
+            .filter(
+              (e) =>
+                e.id !== entityId &&
+                findMentionTokens(e.content).some(
+                  (t) => t.entityId === editing.id && t.name === rename.oldName,
+                ),
+            )
+            .map((e) => ({
+              ...e,
+              content: updateMentionDisplayNames(e.content, editing.id, rename.oldName, name.trim()),
+              updatedAt: new Date().toISOString(),
+            }))
+        : []
+    if (finalContent !== content) setContent(finalContent)
+    commitEntities([entity, ...backlinkUpdates, ...displayUpdates])
     // A save either navigates away (mentions present) or stays put, so the
     // only reliable signal for a screen reader is the write itself.
     announce(announceT(editing ? 'announce.entitySaved' : 'announce.entityCreated', entity.name))
@@ -316,6 +302,43 @@ export const EditorView = () => {
       navigateToView('library')
     }
   }, [name, type, description, content, sourceUrl, tags, editing, entities, commitEntities, finishEditing, navigateToView, draftIdRef, announce])
+
+  const handleSave = useCallback(() => {
+    if (!name.trim()) {
+      toast.error('Entity name cannot be empty')
+      return
+    }
+    // Renaming offers to refresh visible link text across the corpus: tokens
+    // stay id-based, so links survive either way and only display text changes.
+    if (editing && name.trim() !== editing.name) {
+      const affected = entities.filter(
+        (e) =>
+          findMentionTokens(e.content).some(
+            (t) => t.entityId === editing.id && t.name === editing.name,
+          ),
+      )
+      if (affected.length > 0) {
+        setRenameOffer({
+          oldName: editing.name,
+          newName: name.trim(),
+          affectedCount: String(affected.length),
+        })
+        return
+      }
+    }
+    commitSave(false)
+  }, [name, editing, entities, commitSave])
+
+  const confirmRenameOffer = useCallback(() => {
+    const offer = renameOffer
+    setRenameOffer(null)
+    if (offer) commitSave(true, { oldName: offer.oldName })
+  }, [renameOffer, commitSave])
+
+  const declineRenameOffer = useCallback(() => {
+    setRenameOffer(null)
+    commitSave(false)
+  }, [commitSave])
 
   const discardDraft = () => {
     if (draftIdRef.current) removeDraft(draftIdRef.current)
@@ -387,9 +410,7 @@ export const EditorView = () => {
               onClick={(e) => { setCaret(e.currentTarget.selectionStart) }}
               onKeyUp={(e) => { setCaret(e.currentTarget.selectionStart) }}
               onKeyDown={handleMentionKeyDown}
-              onBlur={() => {
-                if (mentionTrigger.active) dismissMention(mentionTrigger.start)
-              }}
+              onBlur={blurMention}
               placeholder="Start writing. Use markdown for headings, lists, and emphasis…"
               className={`min-h-[420px] w-full resize-none bg-transparent font-serif text-base leading-[1.75] text-ink placeholder:text-ink-faint/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron/40 focus-visible:ring-inset ${editMode === 'split' ? 'rounded-lg border border-border p-4' : ''}`}
               style={SERIF_FONT_STYLE}
@@ -397,9 +418,7 @@ export const EditorView = () => {
               role="combobox"
               aria-expanded={mentionOpen}
               aria-controls={mentionOpen ? MENTION_LISTBOX_ID : undefined}
-              aria-activedescendant={
-                mentionOpen && mentionCandidates.length > 0 ? mentionOptionId(mentionHighlight) : undefined
-              }
+              aria-activedescendant={mentionOpen ? mentionActiveDescendantId : undefined}
               aria-autocomplete="list"
             />
             <EditorMentionPicker
@@ -410,8 +429,14 @@ export const EditorView = () => {
               triggerStart={mentionTrigger.start}
               content={content}
               textarea={textareaRef}
-              onHighlight={setMentionHighlight}
+              onHighlight={handleMentionHighlight}
               onSelect={selectMention}
+              showCreate={mentionShowCreate}
+              createLabel={mentionCreateLabel}
+              createAriaLabel={mentionCreateAriaLabel}
+              createHighlighted={createHighlighted}
+              onCreate={createMentionEntity}
+              onHighlightCreate={handleMentionHighlightCreate}
             />
           </div>
         )}
@@ -451,6 +476,15 @@ export const EditorView = () => {
         body={confirmT('confirm.discardDraft.body')}
         confirmLabel={confirmT('confirm.discardDraft.confirm')}
         destructive
+      />
+
+      <ConfirmDialog
+        open={renameOffer !== null}
+        onConfirm={confirmRenameOffer}
+        onCancel={declineRenameOffer}
+        title={mentionsT('mentions.rename.title')}
+        body={renameOffer ? mentionsT('mentions.rename.body', renameOffer.affectedCount, renameOffer.oldName, renameOffer.newName) : ''}
+        confirmLabel={mentionsT('mentions.rename.confirm')}
       />
     </div>
   )

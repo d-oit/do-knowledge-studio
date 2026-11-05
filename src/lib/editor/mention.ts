@@ -116,6 +116,15 @@ const findCodeRanges = (content: string): CodeRange[] => {
   return ranges
 }
 
+/** Source range the preview renders as code. Shared with the wikilink helpers. */
+export interface MentionCodeRange {
+  start: number
+  end: number
+}
+
+/** Ranges of `content` the preview renders as code (cached per content). */
+export const getMentionCodeRanges = (content: string): MentionCodeRange[] => findCodeRanges(content)
+
 /** True when `position` falls inside a code range. */
 const isInCodeRange = (position: number, ranges: CodeRange[]): boolean =>
   ranges.some((range) => position >= range.start && position < range.end)
@@ -153,14 +162,19 @@ export interface MentionToken {
   raw: string
 }
 
+/** Which opener started the mention context: `@query` or `[[query`. */
+export type MentionTriggerKind = 'at' | 'bracket'
+
 /** Result of checking whether the caret is in an active mention-typing context. */
 export interface MentionTrigger {
   /** Whether a mention picker should be open at the caret. */
   active: boolean
-  /** Index of the `@` that started the current query (or -1 when inactive). */
+  /** Index of the `@` (or the first `[` of `[[`) that started the query (-1 when inactive). */
   start: number
-  /** Text between the `@` and the caret ('' right after typing '@'). */
+  /** Text between the opener and the caret ('' right after typing '@' or '[['). */
   query: string
+  /** Which opener started this trigger (`at` when inactive). */
+  kind: MentionTriggerKind
 }
 
 /** A single entry in an entity's `links` array. */
@@ -184,7 +198,7 @@ export interface ExtractedMentions {
 }
 
 /** The canonical inert trigger (caret not in a mention context). */
-export const NO_MENTION_TRIGGER: MentionTrigger = { active: false, start: -1, query: '' }
+export const NO_MENTION_TRIGGER: MentionTrigger = { active: false, start: -1, query: '', kind: 'at' }
 
 /** Decode a mention-link destination back to an entity id; legacy tokens may
  * hold raw ids with invalid escape sequences, so falls back to the raw form. */
@@ -255,33 +269,64 @@ const isValidMentionQuery = (query: string): boolean =>
   !/\s/.test(query) && !query.includes(']')
 
 /**
+ * Index of the nearest `[[` opener at or before `caret` (or -1 when none).
+ * A single `[` is not an opener: only a directly doubled bracket starts a
+ * wikilink context, and an opener inside an existing token is skipped.
+ */
+const findBracketAt = (content: string, caret: number, tokens: MentionToken[]): number => {
+  for (let i = caret - 2; i >= 0; i -= 1) {
+    if (content[i] !== '[' || content[i + 1] !== '[') continue
+    if (isInsideToken(i, tokens) || isInsideToken(i + 1, tokens)) continue
+    return i
+  }
+  return -1
+}
+
+/** A `[[`-query is active when it holds no whitespace, `]` or `[`. */
+const isValidBracketQuery = (query: string): boolean =>
+  !/[\s[\]]/.test(query)
+
+/**
  * Detects an active mention-typing context at the caret.
  *
  * Active when the caret is preceded by an `@` (not inside an existing token)
- * with no whitespace or `]` between it and the caret. Whitespace ends the
+ * with no whitespace or `]` between it and the caret, or by a `[[` opener
+ * with no whitespace or bracket between it and the caret. Whitespace ends the
  * trigger so prose after a stray `@` doesn't keep the picker open, and `]`
  * terminates a manually-typed markdown link.
+ *
+ * The `[[` opener shares the canonical `dks://entity/<id>` storage token:
+ * picking a suggestion replaces the whole `[[query` span with the token, so
+ * storage and sync are unchanged.
  */
 export const getMentionTrigger = (content: string, caret: number): MentionTrigger => {
   if (caret <= 0) return NO_MENTION_TRIGGER
-  // Cheap path first: without a valid `@` query before the caret there is no
-  // trigger, and that test needs no Markdown parsing — the expensive step is
-  // reserved for the moment a mention is actually being typed. Raw token spans
-  // (escaped and in-code ones included) are the boundaries here: an `@` inside
-  // token-shaped text is syntax being edited, never a trigger.
+  // Cheap path first: without a valid `@` or `[[` query before the caret
+  // there is no trigger, and that test needs no Markdown parsing — the
+  // expensive step is reserved for the moment a mention is actually being
+  // typed. Raw token spans (escaped and in-code ones included) are the
+  // boundaries here: an opener inside token-shaped text is syntax being
+  // edited, never a trigger.
   const tokens = collectMentionTokens(content, [], true)
   const at = findMentionAt(content, caret, tokens)
-  if (at === -1) return NO_MENTION_TRIGGER
+  const bracket = caret >= 2 ? findBracketAt(content, caret, tokens) : -1
+  // The nearer opener wins: typing `@` after `[[` (or vice versa) continues
+  // the later context, never the earlier one.
+  const kind: MentionTriggerKind = bracket > at ? 'bracket' : 'at'
+  const openerStart = kind === 'bracket' ? bracket : at
+  if (openerStart === -1) return NO_MENTION_TRIGGER
 
-  const query = content.slice(at + 1, caret)
-  if (!isValidMentionQuery(query)) return NO_MENTION_TRIGGER
+  const openerLength = kind === 'bracket' ? 2 : 1
+  const query = content.slice(openerStart + openerLength, caret)
+  const valid = kind === 'bracket' ? isValidBracketQuery(query) : isValidMentionQuery(query)
+  if (!valid) return NO_MENTION_TRIGGER
 
-  // The trigger must live entirely in prose: the `@` may not sit inside
+  // The trigger must live entirely in prose: the opener may not sit inside
   // token-shaped text, and no code range may overlap the query span — picking a
   // mention replaces that span, which would delete code the user typed.
-  if (isInsideToken(at, tokens)) return NO_MENTION_TRIGGER
-  if (overlapsCodeRange(at, caret, findCodeRanges(content))) return NO_MENTION_TRIGGER
-  return { active: true, start: at, query }
+  if (isInsideToken(openerStart, tokens)) return NO_MENTION_TRIGGER
+  if (overlapsCodeRange(openerStart, caret, findCodeRanges(content))) return NO_MENTION_TRIGGER
+  return { active: true, start: openerStart, query, kind }
 }
 
 /** Encode an entity id for a mention link destination: parens and other URI
@@ -295,7 +340,7 @@ export const buildMentionToken = (entityId: string, name: string): string =>
   `[@${escapeMarkdownBackslashes(name).replace(MENTION_NAME_INVALID, '')}](${MENTION_SCHEME}${encodeMentionId(entityId)})`
 
 /**
- * Replaces the active trigger span (`@query`) with the mention token.
+ * Replaces the active trigger span (`@query` or `[[query`) with the mention token.
  * Returns the new content and the caret position just past the token.
  */
 export const insertMentionToken = (
@@ -305,7 +350,8 @@ export const insertMentionToken = (
 ): { text: string; selection: number } => {
   if (!trigger.active) return { text: content, selection: trigger.start }
   const token = buildMentionToken(entity.id, entity.name)
-  const caret = trigger.start + 1 + trigger.query.length
+  const openerLength = trigger.kind === 'bracket' ? 2 : 1
+  const caret = trigger.start + openerLength + trigger.query.length
   const text = content.slice(0, trigger.start) + token + content.slice(caret)
   return { text, selection: trigger.start + token.length }
 }

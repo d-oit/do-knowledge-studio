@@ -8,6 +8,7 @@ import {
 } from './export-helpers'
 import { todayStamp } from './export-types'
 import { buildPdfExport, buildDocxExport } from './export-documents'
+import { buildMentionToken } from '@/lib/editor/mention'
 import { escapeHtml } from '@/lib/security'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
@@ -199,6 +200,16 @@ describe('buildMarkdownExport', () => {
   it('handles empty entities', () => {
     const md = buildMarkdownExport([], [])
     expect(md).toContain('0 entities')
+  })
+
+  it('renders mention tokens as [[Name]] wikilinks', () => {
+    const entities: Entity[] = [
+      { ...SAMPLE_ENTITIES[0], id: 'e1', name: 'Source Note', content: `See ${buildMentionToken('e2', 'Old Label')} today` },
+      { ...SAMPLE_ENTITIES[0], id: 'e2', name: 'Target Note', content: '' },
+    ]
+    const md = buildMarkdownExport(entities, [])
+    expect(md).toContain('See [[Target Note]] today')
+    expect(md).not.toContain('dks://entity')
   })
 })
 

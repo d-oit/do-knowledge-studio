@@ -29,6 +29,7 @@ const mockDeleteEntity = vi.fn()
 const mockSelectEntity = vi.fn()
 const mockSetSearchQuery = vi.fn()
 const mockSetRightPanelOpen = vi.fn()
+const mockCommitEntities = vi.fn()
 
 let currentView = 'home'
 let rightPanelOpen = false
@@ -78,6 +79,7 @@ vi.mock('@/lib/studio/store', () => ({
         startEdit: mockStartEdit,
         deleteEntity: mockDeleteEntity,
         selectEntity: mockSelectEntity,
+        commitEntities: mockCommitEntities,
         searchQuery,
         setSearchQuery: mockSetSearchQuery,
         setRightPanelOpen: mockSetRightPanelOpen,
@@ -291,6 +293,35 @@ describe('RightPanel', () => {
     render(<RightPanel />)
     expect(screen.queryByText(/Referenced by/)).toBeNull()
     expect(screen.getByText('Connections (1)')).toBeDefined()
+  })
+
+  it('lists unlinked mentions with a one-click Link action', () => {
+    // inspecting ent-2 ('Related Entity'): ent-1 names it in prose without a token.
+    currentEntities = [
+      { ...mockEntities[0], content: 'This discusses the Related Entity at length' },
+      { ...mockEntities[1], content: '' },
+    ]
+    rightPanelOpen = true
+    currentView = 'graph'
+    selectedEntityId = 'ent-2'
+    render(<RightPanel />)
+
+    expect(screen.getByText('Mentioned without a link')).toBeDefined()
+    const linkButton = screen.getByRole('button', { name: 'Link mention in Test Entity' })
+    fireEvent.click(linkButton)
+    expect(mockCommitEntities).toHaveBeenCalledTimes(1)
+    const batch = mockCommitEntities.mock.calls[0][0]
+    expect(batch[0].id).toBe('ent-1')
+    expect(batch[0].content).toContain('dks://entity/ent-2')
+    expect(batch[0].links).toContainEqual({ targetId: 'ent-2', relation: 'mentions' })
+  })
+
+  it('omits the unlinked-mentions section when everything is linked', () => {
+    rightPanelOpen = true
+    currentView = 'graph'
+    selectedEntityId = 'ent-1'
+    render(<RightPanel />)
+    expect(screen.queryByText('Mentioned without a link')).toBeNull()
   })
 
   it('shows Edit and Delete buttons in inspector', () => {

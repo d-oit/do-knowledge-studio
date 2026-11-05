@@ -6,6 +6,13 @@ import { buildEntityIndex } from '@/lib/studio/graph-index'
 import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as graphT } from '@/lib/i18n/messages/graph'
+import { translate as mentionsT } from '@/lib/i18n/messages/mentions'
+import {
+  applyMentionBacklinks,
+  extractMentionLinks,
+  mergeMentionLinks,
+} from '@/lib/editor/mention'
+import { findUnlinkedMentions, linkFirstUnlinkedOccurrence } from '@/lib/editor/wikilinks'
 import type { Entity } from '@/lib/studio/types'
 import { ArrowLeft, ArrowRight, type LucideIcon } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
@@ -169,6 +176,7 @@ const BacklinkList = ({
 /** Inspector panel showing details, connections, backlinks, and actions for the selected node. */
 const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const entities = useStudioStore((s) => s.entities)
+  const commitEntities = useStudioStore((s) => s.commitEntities)
   const selectedEntityId = useStudioStore((s) => s.selectedEntityId)
   const startEdit = useStudioStore((s) => s.startEdit)
   const deleteEntity = useStudioStore((s) => s.deleteEntity)
@@ -178,6 +186,36 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
   const entityIndex = useMemo(() => buildEntityIndex(entities), [entities])
   const backlinkIndex = useMemo(() => buildBacklinkIndex(entities), [entities])
   const entity = (selectedEntityId ? entityIndex.get(selectedEntityId) : undefined) || entities[0]
+  const unlinked = useMemo(
+    () => (entity ? findUnlinkedMentions(entities, entity.id) : []),
+    [entities, entity],
+  )
+
+  const linkUnlinked = useCallback(
+    (sourceId: string): void => {
+      if (!entity) return
+      const target = entity
+      const source = entities.find((e) => e.id === sourceId)
+      if (!source) return
+      const linked = linkFirstUnlinkedOccurrence(source.content, target)
+      if (linked === null) return
+      const { mentionLinks, mentions } = extractMentionLinks(linked, entities, source.id)
+      const updated: Entity = {
+        ...source,
+        content: linked,
+        links: mergeMentionLinks(source.links, mentionLinks),
+        updatedAt: new Date().toISOString(),
+      }
+      const backlinkUpdates = applyMentionBacklinks(
+        entities,
+        source.id,
+        new Set(mentions.map((m) => m.entityId)),
+      )
+      commitEntities([updated, ...backlinkUpdates])
+      announce(mentionsT('mentions.announce.inserted', target.name))
+    },
+    [entities, entity, commitEntities, announce],
+  )
 
   if (!entity) {
     return (
@@ -274,6 +312,37 @@ const InspectorPanel = ({ onClose }: { onClose: () => void }) => {
                 }}
               />
             </div>
+          </div>
+        )}
+
+        {unlinked.length > 0 && (
+          <div className="mt-5">
+            <h4 className="mb-2 text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              {mentionsT('mentions.unlinked.heading')}
+            </h4>
+            <ul className="space-y-2">
+              {unlinked.map((u) => (
+                <li key={u.sourceId} className="rounded-md border border-border p-2">
+                  <button
+                    onClick={() => {
+                      selectEntity(u.sourceId)
+                      announce(announceT('announce.entitySelected', u.sourceName))
+                    }}
+                    className="block w-full truncate text-left text-body-sm font-medium text-ink hover:underline focus-ring rounded min-h-touch"
+                  >
+                    {u.sourceName}
+                  </button>
+                  <p className="mt-0.5 line-clamp-2 text-caption text-ink-mute">{u.snippet}</p>
+                  <button
+                    onClick={() => { linkUnlinked(u.sourceId) }}
+                    aria-label={mentionsT('mentions.unlinked.linkAria', u.sourceName)}
+                    className="mt-1.5 rounded-md border border-border px-2.5 py-1 text-label-lg font-medium text-ink-soft transition-colors hover:border-saffron/40 hover:text-ink focus-ring min-h-touch"
+                  >
+                    {mentionsT('mentions.unlinked.link')}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

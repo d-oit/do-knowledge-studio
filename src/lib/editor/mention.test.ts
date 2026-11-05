@@ -199,6 +199,42 @@ describe('getMentionTrigger', () => {
   })
 })
 
+describe('getMentionTrigger brackets', () => {
+  it('activates on a bare [[ with an empty query', () => {
+    const trigger = getMentionTrigger('Hello [[', 8)
+    expect(trigger).toMatchObject({ active: true, start: 6, query: '', kind: 'bracket' })
+  })
+
+  it('grows the query as the user types the name', () => {
+    const trigger = getMentionTrigger('Hello [[Al', 10)
+    expect(trigger).toMatchObject({ active: true, start: 6, query: 'Al', kind: 'bracket' })
+  })
+
+  it('marks @ triggers with the at kind', () => {
+    const trigger = getMentionTrigger('Hello @Al', 9)
+    expect(trigger).toMatchObject({ active: true, kind: 'at' })
+  })
+
+  it('stays inactive on a single [', () => {
+    expect(getMentionTrigger('Hello [Al', 9).active).toBe(false)
+  })
+
+  it('deactivates when whitespace follows the [[', () => {
+    expect(getMentionTrigger('Hello [[foo bar', 15).active).toBe(false)
+  })
+
+  it('prefers the nearer opener when both precede the caret', () => {
+    const atFirst = getMentionTrigger('[[a @b', 6)
+    expect(atFirst).toMatchObject({ active: true, kind: 'at', query: 'b' })
+    const bracketFirst = getMentionTrigger('@a [[b', 6)
+    expect(bracketFirst).toMatchObject({ active: true, kind: 'bracket', query: 'b' })
+  })
+
+  it('stays inactive inside an inline code span', () => {
+    expect(getMentionTrigger('`[[Al`', 5).active).toBe(false)
+  })
+})
+
 describe('buildMentionToken', () => {
   it('builds the canonical markdown link', () => {
     expect(buildMentionToken('e1', 'Alice')).toBe('[@Alice](dks://entity/e1)')
@@ -242,6 +278,15 @@ describe('insertMentionToken', () => {
     const content = 'plain'
     const result = insertMentionToken(content, getMentionTrigger(content, 5), { id: 'e1', name: 'A' })
     expect(result).toEqual({ text: content, selection: -1 })
+  })
+
+  it('replaces the whole [[query span for bracket triggers', () => {
+    const content = 'Hello [[Al'
+    const trigger = getMentionTrigger(content, content.length)
+    expect(trigger.kind).toBe('bracket')
+    const result = insertMentionToken(content, trigger, { id: 'e1', name: 'Alice' })
+    expect(result.text).toBe(`Hello ${token('e1', 'Alice')}`)
+    expect(result.selection).toBe(`Hello ${token('e1', 'Alice')}`.length)
   })
 })
 
