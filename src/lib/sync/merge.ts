@@ -285,7 +285,11 @@ const mergeEditHistory = (local: Claim, remote: Claim): { statement: string; edi
   return merged.sort((a, b) => {
     const timestampOrder = compareRecordTimestamps(a.editedAt, b.editedAt)
     if (timestampOrder !== 0) return timestampOrder
-    return a.statement < b.statement ? -1 : a.statement > b.statement ? 1 : 0
+    const statementOrder = a.statement < b.statement ? -1 : a.statement > b.statement ? 1 : 0
+    if (statementOrder !== 0) return statementOrder
+    // Equivalent ISO strings can describe the same instant; raw ordering prevents peers
+    // from preserving different input orders for distinct history entries.
+    return a.editedAt < b.editedAt ? -1 : a.editedAt > b.editedAt ? 1 : 0
   })
 }
 

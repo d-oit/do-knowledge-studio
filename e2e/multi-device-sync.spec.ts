@@ -39,6 +39,22 @@ const PROPAGATION_TIMEOUT_MS = 60_000
 
 const YJS_UPDATE_QUIET_PERIOD_MS = 2_000
 
+const CLAIM_HISTORY_PROPAGATION_TIMEOUT_MS = 10_000
+const HISTORY_TIMESTAMP_OFFSET = '2025-12-31T19:00:00.000-05:00'
+const HISTORY_TIMESTAMP_UTC = '2026-01-01T00:00:00.000Z'
+
+const makeClaimWithHistory = (editedAt: string) => ({
+  id: 'sync-history-claim',
+  entityId: 'sync-shared',
+  statement: 'Stable claim statement',
+  confidence: 0.9,
+  verification: 'verified' as const,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-02T00:00:00.000Z',
+  version: 1,
+  editHistory: [{ statement: 'Historical wording', editedAt }],
+})
+
 interface Device {
   context: BrowserContext
   page: Page
@@ -89,6 +105,11 @@ const canonicalCollections = async (device: Device, entityId: string) => {
       return targetOrder || left.relation.localeCompare(right.relation)
     }),
   }
+}
+
+const canonicalClaimHistory = async (device: Device, claimId: string) => {
+  const envelope = await readCanonicalEnvelope(device.page)
+  return envelope?.state?.claims?.find((claim) => claim.id === claimId)?.editHistory ?? null
 }
 
 test.describe.configure({ mode: 'serial' })
@@ -182,7 +203,7 @@ test.describe('independent-peer multi-device sync', () => {
       expect(afterReload).not.toContain(nameB)
   })
 
-  test('concurrent edits converge without phantom records or Yjs update loops', async ({ browser }) => {
+  test('concurrent entity edits and claim histories converge without Yjs update loops', async ({ browser }) => {
     const shared = `Concurrent ${randomUUID().slice(0, 8)}`
     const room = roomId()
     const deviceA = await openDevice(browser, SYNC_ORIGIN_A, {
@@ -191,7 +212,7 @@ test.describe('independent-peer multi-device sync', () => {
         tags: ['sync-e2e', 'from-a'],
         links: [{ targetId: 'target-a', relation: 'references' }],
       }],
-      claims: [],
+      claims: [makeClaimWithHistory(HISTORY_TIMESTAMP_UTC)],
     })
     const deviceB = await openDevice(browser, SYNC_ORIGIN_B, {
       entities: [{
@@ -199,7 +220,7 @@ test.describe('independent-peer multi-device sync', () => {
         tags: ['sync-e2e', 'from-b'],
         links: [{ targetId: 'target-b', relation: 'references' }],
       }],
-      claims: [],
+      claims: [makeClaimWithHistory(HISTORY_TIMESTAMP_OFFSET)],
     })
 
       await joinSyncRoom(deviceA.page, room, 'concurrency password')
@@ -244,6 +265,21 @@ test.describe('independent-peer multi-device sync', () => {
         },
         { timeout: PROPAGATION_TIMEOUT_MS },
       ).toEqual({ a: expectedCollections, b: expectedCollections })
+
+      const expectedHistory = [
+        { statement: 'Historical wording', editedAt: HISTORY_TIMESTAMP_OFFSET },
+        { statement: 'Historical wording', editedAt: HISTORY_TIMESTAMP_UTC },
+      ]
+      await expect.poll(
+        async () => {
+          const [a, b] = await Promise.all([
+            canonicalClaimHistory(deviceA, 'sync-history-claim'),
+            canonicalClaimHistory(deviceB, 'sync-history-claim'),
+          ])
+          return { a, b }
+        },
+        { timeout: CLAIM_HISTORY_PROPAGATION_TIMEOUT_MS },
+      ).toEqual({ a: expectedHistory, b: expectedHistory })
 
       // The Yjs update store uses monotonic auto-increment keys. A stable
       // sequence across this quiet period rules out a reconciliation echo loop.
