@@ -16,6 +16,7 @@ export default defineConfig({
       'src/lib/studio/triz-data.bench.test.ts',
       'src/lib/studio/graph-layout.bench.test.ts',
       'src/lib/studio/canonical-storage.bench.test.ts',
+      'src/lib/studio/revisions.bench.test.ts',
       'src/lib/search/vector-store.bench.test.ts',
     ],
     // `bench()` blocks live in `*.bench.ts` (Vitest's bench include pattern);

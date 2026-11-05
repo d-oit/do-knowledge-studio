@@ -3,10 +3,7 @@
 import { readBreakpointPx } from '@/lib/studio/breakpoints'
 import { applyEditorFormat, restoreEditorSelection } from './editor-formatting'
 import { useStudioStore } from '@/lib/studio/store'
-import {
-  type AnyEntityType,
-  type Entity,
-} from '@/lib/studio/types'
+import { type AnyEntityType } from '@/lib/studio/types'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useAnnouncer } from '@/lib/a11y/announcer'
@@ -17,14 +14,12 @@ import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { EditorToolbar } from './editor-toolbar'
 const CursorTracker = lazy(() => import('../remote-cursors').then((module) => ({ default: module.CursorTracker })))
 import { ClaimsPanel } from './editor-claims-panel'
+import { EntityRevisionsPanel } from './editor-revisions-panel'
+import { useRestoreEntityRevision } from './use-restore-entity-revision'
 import { EditorHeader, EditorTags } from './editor-helpers'
 import { removeDraft } from '@/lib/editor'
-import {
-  applyMentionBacklinks,
-  extractMentionLinks,
-  findMentionTokens,
-  mergeMentionLinks,
-} from '@/lib/editor/mention'
+import { applyMentionBacklinks, extractMentionLinks, findMentionTokens } from '@/lib/editor/mention'
+import { buildEditorEntity } from './editor-entity-builder'
 import {
   convertWikilinksToTokens,
   updateMentionDisplayNames,
@@ -48,39 +43,6 @@ const EditorPreview = lazy(() => import('./editor-preview').then((module) => ({ 
 const SERIF_FONT_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-newsreader), Georgia, serif',
 } as const
-
-
-/** Builds the draft's Entity record from the current form state.
- * `entityId` is passed in (not generated here) so the saved id always matches
- * the id used to derive mention links and reciprocal backlinks — a locally
- * generated id would orphan every backlink written for a new entity. */
-const buildEditorEntity = (
-  entityId: string,
-  editing: Entity | null,
-  input: {
-    name: string
-    type: AnyEntityType
-    description: string
-    content: string
-    sourceUrl: string
-    tags: string[]
-  },
-  mentionLinks: { targetId: string; relation: string }[],
-): Entity => {
-  const fallbackDescription = input.content.slice(0, 200).replace(/[#*]/g, '').trim()
-  return {
-    id: entityId,
-    name: input.name.trim(),
-    type: input.type,
-    description: input.description.trim() || fallbackDescription,
-    content: input.content,
-    sourceUrl: input.sourceUrl.trim() || undefined,
-    tags: input.tags,
-    createdAt: editing?.createdAt ?? new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    links: mergeMentionLinks(editing?.links ?? [], mentionLinks),
-  }
-}
 
 
 /** Rich-text entity editor with markdown preview, claims panel, and draft persistence. */
@@ -118,6 +80,16 @@ export const EditorView = () => {
   const [tags, setTags] = useState<string[]>(editing?.tags || [])
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showTypeMenu, setShowTypeMenu] = useState(false)
+
+  const handleRestoreRevision = useRestoreEntityRevision({
+    editing,
+    setName,
+    setType,
+    setContent,
+    setDescription,
+    setSourceUrl,
+    setTags,
+  })
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [renameOffer, setRenameOffer] = useState<{
     oldName: string
@@ -455,6 +427,10 @@ export const EditorView = () => {
           updateClaim={updateClaim}
           deleteClaim={deleteClaim}
         />
+      )}
+
+      {editing && (
+        <EntityRevisionsPanel entity={editing} onRestore={handleRestoreRevision} />
       )}
 
       <EditorStatusBar

@@ -10,10 +10,21 @@ import { logger } from '@/lib/logging/logger'
 
 /** IndexedDB database holding the canonical corpus envelope. */
 export const CANONICAL_DB_NAME = 'dks-canonical'
+/** Schema version: 2 adds the per-entity revision store (#1060). */
+export const CANONICAL_DB_VERSION = 2
 /** Object store holding exactly one canonical envelope record. */
 export const CANONICAL_OBJECT_STORE = 'state'
 /** Key of the canonical envelope record. */
 export const CANONICAL_RECORD_KEY = 'studio-corpus'
+/**
+ * Object store holding per-entity revisions. Kept OUT of the canonical envelope
+ * so a corpus write never has to serialize history (#1060, ADR 053).
+ */
+export const REVISIONS_OBJECT_STORE = 'revisions'
+/** Index from an entity id to its revisions. */
+export const REVISION_ENTITY_INDEX = 'by-entity'
+/** Index from a capture timestamp to revisions, oldest first. */
+export const REVISION_CREATED_INDEX = 'by-created'
 
 const log = logger.child({ area: 'store' })
 
@@ -28,11 +39,16 @@ export const openCanonicalDatabase = (): Promise<IDBDatabase> => {
     dbPromise = promise
     return promise
   }
-  const request = indexedDB.open(CANONICAL_DB_NAME, 1)
+  const request = indexedDB.open(CANONICAL_DB_NAME, CANONICAL_DB_VERSION)
   request.onupgradeneeded = () => {
     const db = request.result
     if (!db.objectStoreNames.contains(CANONICAL_OBJECT_STORE)) {
       db.createObjectStore(CANONICAL_OBJECT_STORE)
+    }
+    if (!db.objectStoreNames.contains(REVISIONS_OBJECT_STORE)) {
+      const revisions = db.createObjectStore(REVISIONS_OBJECT_STORE, { keyPath: 'id' })
+      revisions.createIndex(REVISION_ENTITY_INDEX, 'entityId', { unique: false })
+      revisions.createIndex(REVISION_CREATED_INDEX, 'createdAt', { unique: false })
     }
   }
   request.onsuccess = () => {
