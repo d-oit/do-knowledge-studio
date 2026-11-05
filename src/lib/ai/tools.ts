@@ -6,6 +6,7 @@
 import type { Entity, Claim } from '@/lib/studio/types'
 import { search } from '@/lib/search/retrieval'
 import { buildEntityIndex, buildAdjacencyIndex } from '@/lib/studio/graph-index'
+import { findShortestPath, pathNodeNames } from '@/lib/studio/graph-query'
 
 /** JSON schema description for an LLM tool parameter property. */
 export interface ToolPropertySchema {
@@ -85,6 +86,28 @@ export const STUDIO_AI_TOOLS: AiToolDefinition[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'find_path',
+      description:
+        'Find the shortest connection path between two entities in the knowledge graph, returning each hop and its relation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fromId: {
+            type: 'string',
+            description: 'The unique ID of the entity to start from.',
+          },
+          toId: {
+            type: 'string',
+            description: 'The unique ID of the entity to reach.',
+          },
+        },
+        required: ['fromId', 'toId'],
+      },
+    },
+  },
 ]
 
 const handleSearchLibrary = (
@@ -119,6 +142,15 @@ const handleGetGraphNeighborhood = (
     .map((e) => ({ id: e.id, name: e.name, type: e.type, tags: e.tags }))
 }
 
+/** Shortest-path lookup with hop relations and resolved display names. */
+const handleFindPath = (args: Record<string, unknown>, entities: Entity[]) => {
+  const fromId = typeof args.fromId === 'string' ? args.fromId : ''
+  const toId = typeof args.toId === 'string' ? args.toId : ''
+  const result = findShortestPath(entities, fromId, toId)
+  if (!result.found) return result
+  return { ...result, names: pathNodeNames(entities, result.nodeIds) }
+}
+
 const dispatchTool = (
   name: string,
   args: Record<string, unknown>,
@@ -132,6 +164,8 @@ const dispatchTool = (
       return { success: true, data: handleGetEntityClaims(args, claims) }
     case 'get_graph_neighborhood':
       return { success: true, data: handleGetGraphNeighborhood(args, entities) }
+    case 'find_path':
+      return { success: true, data: handleFindPath(args, entities) }
     default:
       return { success: false, error: `Unknown tool: ${name}` }
   }

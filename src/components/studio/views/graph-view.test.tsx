@@ -33,6 +33,10 @@ vi.mock('lucide-react', () => {
     FileCode: I,
     FileArchive: I,
     FileLock: I,
+    Filter: I,
+    Route: I,
+    BookmarkPlus: I,
+    Play: I,
   }
 })
 
@@ -67,6 +71,8 @@ const mocks = vi.hoisted(() => ({
   redo: vi.fn(),
   deleteEntity: vi.fn(),
   startNew: vi.fn(),
+  saveGraphView: vi.fn(),
+  deleteGraphView: vi.fn(),
 }))
 
 const mockEntities = [
@@ -113,6 +119,10 @@ vi.mock('@/lib/studio/store', () => ({
     (selector: (s: Record<string, unknown>) => unknown) =>
       selector({
         entities: currentEntities,
+        claims: [],
+        graphViews: [],
+        saveGraphView: mocks.saveGraphView,
+        deleteGraphView: mocks.deleteGraphView,
         selectedEntityId: currentSelectedEntityId,
         selectEntity: mocks.selectEntity,
         startNew: mocks.startNew,

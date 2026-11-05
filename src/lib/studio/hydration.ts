@@ -20,6 +20,7 @@ import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } fr
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './migrations'
 import { pruneDanglingCanvasRefs } from './canvas-refs'
 import { snapshotCorpus, type HistorySnapshot } from './history-snapshot'
+import type { SavedGraphView } from './graph-views'
 
 /** localStorage key holding the studio persistence envelope. */
 export const STUDIO_STORAGE_KEY = 'do-knowledge-studio-store'
@@ -42,6 +43,7 @@ export const PERSISTED_KEYS = [
   'mindMap',
   'links',
   'tags',
+  'graphViews',
 ] as const
 
 /** Structural subset of StudioState that is persisted across sessions. */
@@ -62,6 +64,7 @@ interface PersistedSlice {
   mindMap?: ValidatedMindMap | null
   links?: ValidatedLink[] | null
   tags?: ValidatedTag[] | null
+  graphViews: SavedGraphView[]
 }
 
 /** Fields the hydration merger must understand to keep undo coherent. */
@@ -178,6 +181,7 @@ export const partializePersistedState = (state: PersistedSlice): Partial<Persist
   mindMap: state.mindMap ?? null,
   links: state.links ?? null,
   tags: state.tags ?? null,
+  graphViews: state.graphViews,
 })
 
 /**

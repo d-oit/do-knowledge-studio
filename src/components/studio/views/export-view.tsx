@@ -30,6 +30,7 @@ export const ExportView = () => {
   const mindMap = useStudioStore((s) => s.mindMap)
   const links = useStudioStore((s) => s.links)
   const tags = useStudioStore((s) => s.tags)
+  const graphViews = useStudioStore((s) => s.graphViews)
   const importWithRollback = useStudioStore((s) => s.importWithRollback)
   const resetStore = useStudioStore((s) => s.resetStore)
   const setView = useStudioStore((s) => s.setView)
@@ -108,6 +109,7 @@ export const ExportView = () => {
         mindMap={mindMap}
         links={links}
         tags={tags}
+        graphViews={graphViews}
         importWithRollback={importWithRollback}
       />
 

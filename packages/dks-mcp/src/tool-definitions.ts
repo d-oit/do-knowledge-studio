@@ -64,6 +64,12 @@ const RefArgsSchema = z.object({
   ref: z.string().min(1).max(500),
 })
 
+/** Zod schema for the `find_path` tool. */
+const PathArgsSchema = z.object({
+  from: z.string().min(1).max(500),
+  to: z.string().min(1).max(500),
+})
+
 /** Zod schema for the `get_claims` tool. */
 const ClaimsArgsSchema = z.object({
   ref: z.string().min(1).max(500),
@@ -148,6 +154,27 @@ const neighborhoodTool: ToolHandler = (args, index) =>
     })
   })
 
+/** `find_path`: shortest related-concept path between two references. */
+const findPathTool: ToolHandler = (args, index) =>
+  validated(PathArgsSchema, args, index, (parsed, idx) => {
+    const from = idx.resolve(parsed.from)
+    if ('error' in from) return fail(from.error)
+    const to = idx.resolve(parsed.to)
+    if ('error' in to) return fail(to.error)
+    const path = idx.shortestPath(from.concept.id, to.concept.id)
+    const summary = { from: from.concept.id, to: to.concept.id }
+    if (!path.found) return ok({ ...summary, found: false, reason: path.reason })
+    return ok({
+      ...summary,
+      found: true,
+      hops: path.ids.length - 1,
+      path: path.ids.flatMap((id) => {
+        const concept = idx.getById(id)
+        return concept ? [{ id, name: concept.name }] : []
+      }),
+    })
+  })
+
 /** `list_tags`: tag census by usage count. */
 const listTagsTool: ToolHandler = (args, index) =>
   validated(z.object({}), args, index, (_parsed, idx) => ok({ tags: idx.tags() }))
@@ -169,6 +196,8 @@ export const callTool = (name: string, args: unknown, index: LibraryIndex): Tool
       return getClaimsTool(args, index)
     case 'neighborhood':
       return neighborhoodTool(args, index)
+    case 'find_path':
+      return findPathTool(args, index)
     case 'list_tags':
       return listTagsTool(args, index)
     default:
@@ -224,6 +253,19 @@ export const toolDefinitions = [
         ref: { type: 'string', description: 'Concept id or unique name.' },
       },
       required: ['ref'],
+    },
+  },
+  {
+    name: 'find_path',
+    description:
+      'Shortest path of `# Related` connections between two concepts (ids or unique names), returning the ordered route and hop count.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        from: { type: 'string', description: 'Start concept id or unique name.' },
+        to: { type: 'string', description: 'Target concept id or unique name.' },
+      },
+      required: ['from', 'to'],
     },
   },
   {

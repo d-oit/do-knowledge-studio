@@ -71,6 +71,28 @@ describe('LibraryIndex', () => {
     ])
   })
 
+  it('finds the shortest related path and reports disconnected pairs', () => {
+    const chain = [
+      concept({ id: 'p', name: 'P', relatedIds: ['q'] }),
+      concept({ id: 'q', name: 'Q', relatedIds: ['r'] }),
+      concept({ id: 'r', name: 'R' }),
+      concept({ id: 'lonely', name: 'Lonely' }),
+    ]
+    const index = new LibraryIndex(chain)
+    expect(index.shortestPath('p', 'r')).toEqual({ found: true, ids: ['p', 'q', 'r'] })
+    expect(index.shortestPath('p', 'lonely')).toEqual({ found: false, reason: 'no-path' })
+    expect(index.shortestPath('p', 'p')).toEqual({ found: true, ids: ['p'] })
+  })
+
+  it('terminates on a related-link cycle', () => {
+    const cycle = [
+      concept({ id: 'a', name: 'A', relatedIds: ['b'] }),
+      concept({ id: 'b', name: 'B', relatedIds: ['a'] }),
+    ]
+    const index = new LibraryIndex(cycle)
+    expect(index.shortestPath('a', 'b')).toEqual({ found: true, ids: ['a', 'b'] })
+  })
+
   it('builds one-hop neighborhoods and drops dangling targets', () => {
     const linked = [
       concept({ id: 'x', name: 'X', relatedIds: ['y', 'ghost'] }),

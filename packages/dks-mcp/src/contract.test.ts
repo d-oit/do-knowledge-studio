@@ -45,12 +45,12 @@ const payloadOf = (result: unknown): Record<string, unknown> => {
 }
 
 describe('MCP contract', () => {
-  it('lists the five read-only tools', async () => {
+  it('lists the six read-only tools', async () => {
     const client = await connect()
     try {
       const { tools } = await client.listTools()
       expect(tools.map((t) => t.name).sort()).toEqual(
-        ['get_claims', 'get_entity', 'list_tags', 'neighborhood', 'search'],
+        ['find_path', 'get_claims', 'get_entity', 'list_tags', 'neighborhood', 'search'],
       )
     } finally {
       await client.close()
@@ -83,6 +83,15 @@ describe('MCP contract', () => {
 
       const tags = payloadOf(await client.callTool({ name: 'list_tags', arguments: {} }))
       expect(tags).toEqual({ tags: [{ tag: 'research', count: 1 }] })
+
+      const path = payloadOf(
+        await client.callTool({ name: 'find_path', arguments: { from: 'alpha', to: 'beta' } }),
+      )
+      expect(path).toMatchObject({
+        found: true,
+        hops: 1,
+        path: [{ id: 'alpha' }, { id: 'beta' }],
+      })
     } finally {
       await client.close()
     }

@@ -71,6 +71,74 @@ const messages = {
   'graph.comparison.closeAria': 'Close comparison dialog',
   /** Inbound-link group heading in the right-panel inspector. */
   'graph.inspector.referencedBy': (count: string) => `Referenced by (${count})`,
+
+  /** Toolbar label for the query and saved-view controls (#1058). */
+  'graph.queries.toggle': 'Queries',
+  /** Toolbar help for the query controls. */
+  'graph.queries.toggleHelp':
+    'Filter the canvas, trace a path between two entities, and save named views',
+  /** Query panel heading. */
+  'graph.queries.heading': 'Graph queries',
+  /** Filter group legend. */
+  'graph.queries.filters.legend': 'Filters',
+  /** Entity-type checkbox group legend. */
+  'graph.queries.filters.types': 'Entity types',
+  /** Tag filter field label. */
+  'graph.queries.filters.tags': 'Tags (comma separated)',
+  /** Relation filter field label. */
+  'graph.queries.filters.relations': 'Relations (comma separated)',
+  /** Verified-claims-only checkbox label. */
+  'graph.queries.filters.verifiedOnly': 'Verified claims only',
+  /** Minimum claim confidence slider label, with the current percentage. */
+  'graph.queries.filters.minConfidence': (percent: string) =>
+    `Minimum claim confidence: ${percent}%`,
+  /** Lower date bound label. */
+  'graph.queries.filters.updatedAfter': 'Updated on or after',
+  /** Upper date bound label. */
+  'graph.queries.filters.updatedBefore': 'Updated on or before',
+  /** Clears every filter facet. */
+  'graph.queries.filters.clear': 'Clear filters',
+  /** Count of active filter facets. */
+  'graph.queries.filters.active': (count: string) => `${count} active filter(s)`,
+  /** Shown when no facet narrows the canvas. */
+  'graph.queries.filters.none': 'No filters applied',
+  /** Corpus size summary under the filter controls. */
+  'graph.queries.filters.counts': (entities: string, claims: string) =>
+    `${entities} entities, ${claims} claims in scope.`,
+  /** Path group legend. */
+  'graph.queries.path.legend': 'Shortest path',
+  /** Path start selector label. */
+  'graph.queries.path.from': 'From',
+  /** Path target selector label. */
+  'graph.queries.path.to': 'To',
+  /** Runs the path query. */
+  'graph.queries.path.find': 'Find path',
+  /** Clears the current path result. */
+  'graph.queries.path.clear': 'Clear path',
+  /** Prompt shown before a path is queried. */
+  'graph.queries.path.missing': 'Choose two entities to trace a path.',
+  /** Result when the entities are not connected. */
+  'graph.queries.path.noPath': 'No path connects those entities.',
+  /** Result when a selected entity no longer exists. */
+  'graph.queries.path.unknown': 'One of those entities no longer exists.',
+  /** Summary line with the hop count. */
+  'graph.queries.path.summary': (hops: string) => `${hops} hop(s) in the shortest path`,
+  /** One hop line, e.g. `1. cites`. */
+  'graph.queries.path.hop': (index: string, relation: string) => `${index}. ${relation}`,
+  /** Saved-views group legend. */
+  'graph.queries.views.legend': 'Saved views',
+  /** View name field label. */
+  'graph.queries.views.name': 'View name',
+  /** Saves the current filter, layout, and viewport. */
+  'graph.queries.views.save': 'Save view',
+  /** Applies a saved view. */
+  'graph.queries.views.apply': 'Apply',
+  /** Empty saved-view list message. */
+  'graph.queries.views.empty': 'No saved views yet.',
+  /** Stored-view cap hint. */
+  'graph.queries.views.limit': (max: string) => `Up to ${max} saved views.`,
+  /** Accessible name for a view's delete control. */
+  'graph.queries.views.deleteAria': (name: string) => `Delete saved view ${name}`,
 } as const
 
 /** Typed `translate` helper bound to the graph message scope. */

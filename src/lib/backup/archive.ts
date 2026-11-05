@@ -14,6 +14,7 @@ import {
   validateImportPayload,
   type ValidationError,
 } from '@/lib/studio/schema'
+import { SavedGraphViewsSchema } from '@/lib/studio/graph-views'
 import {
   BACKUP_FILE_PATHS,
   BACKUP_FORMAT,
@@ -72,6 +73,7 @@ const buildPayloadFiles = (source: BackupSource): Record<string, string> => ({
     mindMap: source.mindMap ?? null,
     links: source.links ?? null,
     tags: source.tags ?? null,
+    graphViews: source.graphViews ?? null,
   }),
 })
 
@@ -170,6 +172,16 @@ const validatePayload = (
   if (entitiesFile === undefined || claimsFile === undefined || canvasFile === undefined) {
     return failure('payload', ['payload file is not valid JSON'])
   }
+  // Saved views are canvas state, not corpus records, so they are validated
+  // here rather than through the export payload schema. An archive written
+  // before views existed has no field and restores as an empty list.
+  const graphViews = SavedGraphViewsSchema.safeParse(canvasFile.graphViews ?? [])
+  if (!graphViews.success) {
+    return failure(
+      'payload',
+      graphViews.error.issues.map((issue) => `graphViews.${issue.path.join('.')}: ${issue.message}`),
+    )
+  }
   const validated = ExportPayloadSchema.safeParse({
     version: manifest.schemaVersion,
     exportedAt: manifest.exportedAt,
@@ -245,6 +257,7 @@ const validatePayload = (
       mindMap: validated.data.mindMap,
       links: validated.data.links,
       tags: validated.data.tags,
+      graphViews: graphViews.data,
     },
   }
 }
@@ -372,6 +385,7 @@ export const verifyBackupArchive = async (
       mindMap: payload.canvas.mindMap,
       links: payload.canvas.links,
       tags: payload.canvas.tags,
+      graphViews: payload.canvas.graphViews ?? [],
     },
   }
 }

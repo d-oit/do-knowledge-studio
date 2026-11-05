@@ -30,6 +30,11 @@ vi.mock('lucide-react', () => {
     FileCode: I,
     FileArchive: I,
     FileLock: I,
+    Filter: I,
+    Route: I,
+    BookmarkPlus: I,
+    Play: I,
+    Sliders: I,
   }
 })
 
@@ -107,6 +112,10 @@ vi.mock('@/lib/studio/store', () => ({
   useStudioStore: (selector: (s: Record<string, unknown>) => unknown) =>
     selector({
       entities: currentEntities,
+      claims: [],
+      graphViews: [],
+      saveGraphView: vi.fn(),
+      deleteGraphView: vi.fn(),
       selectedEntityId: currentSelectedEntityId,
       selectEntity: mockSelectEntity,
       startNew: mockStartNew,

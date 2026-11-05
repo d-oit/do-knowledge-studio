@@ -40,6 +40,9 @@ const corpusPatch = (entities: Entity[], claims: Claim[], options?: ImportOption
     mindMap: canvas.mindMap,
     links: canvas.links,
     tags: options?.tags,
+    // A plain JSON import carries no views, so it must not discard the ones
+    // already saved; only a backup restore replaces the list.
+    ...(options?.graphViews ? { graphViews: options.graphViews } : {}),
   }
 }
 

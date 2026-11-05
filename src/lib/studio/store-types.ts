@@ -7,6 +7,7 @@
  * temporal dead zone whenever the slice is the entry module.
  */
 import type { Claim, Entity, ViewId, ChatMessage, AnyEntityType } from './types'
+import type { SavedGraphView } from './graph-views'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import type { HistorySnapshot } from './history-snapshot'
 import type { RecoveryPersistFailure } from './recovery-helpers'
@@ -17,6 +18,8 @@ export interface ImportOptions {
   mindMap?: ValidatedMindMap
   links?: ValidatedLink[]
   tags?: ValidatedTag[]
+  /** Saved graph views restored from a backup; omitted imports keep the current list. */
+  graphViews?: SavedGraphView[]
 }
 
 /** Full shape of the Zustand store state and actions. */
@@ -119,6 +122,11 @@ export interface StudioState {
   mindMap: ValidatedMindMap | undefined
   links: ValidatedLink[] | undefined
   tags: ValidatedTag[] | undefined
+
+  // Saved graph views (#1058)
+  graphViews: SavedGraphView[]
+  saveGraphView: (view: SavedGraphView) => void
+  deleteGraphView: (id: string) => void
 
   // Theme handled by next-themes — store tracks UI side effects only
 }
