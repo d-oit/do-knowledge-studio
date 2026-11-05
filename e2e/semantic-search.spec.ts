@@ -35,28 +35,28 @@ test.describe('Semantic search toggle', () => {
     await expect(viewHeading(page, /library/i)).toBeVisible();
   });
 
-  test('renders an accessible semantic search toggle', async ({ page }) => {
-    const toggle = page.getByRole('switch', { name: /semantic search/i });
+  test('renders an accessible hybrid search toggle', async ({ page }) => {
+    const toggle = page.getByRole('switch', { name: /hybrid search/i });
     await expect(toggle).toBeVisible();
     await toggle.focus();
     await expect(toggle).toBeFocused();
     expect(await toggle.getAttribute('aria-checked')).toBe('false');
   });
 
-  test('toggles semantic mode on and off', async ({ page }) => {
-    const toggle = page.getByRole('switch', { name: /semantic search/i });
+  test('toggles hybrid mode on and off', async ({ page }) => {
+    const toggle = page.getByRole('switch', { name: /hybrid search/i });
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-checked', 'false');
   });
 
-  test('surfaces a lexical fallback hint when the semantic model is unavailable', async ({
+  test('surfaces a lexical fallback hint when the meaning model is unavailable', async ({
     page,
   }) => {
     test.setTimeout(SEMANTIC_FALLBACK_TEST_TIMEOUT_MS);
 
-    await page.getByRole('switch', { name: /semantic search/i }).click();
+    await page.getByRole('switch', { name: /hybrid search/i }).click();
     const searchInput = page.getByRole('searchbox', { name: /search library/i });
     await searchInput.fill('triz');
 

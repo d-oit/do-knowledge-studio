@@ -12,8 +12,9 @@ interface SemanticSearchToggleProps {
 }
 
 /**
- * Toggle that switches the library search between lexical (BM25) and
- * semantic (multilingual embedding) ranking. The Radix switch renders a
+ * Toggle that switches the library search between lexical-only (BM25) and
+ * hybrid ranking (BM25 fused with multilingual embeddings when the model is
+ * ready, lexical fallback otherwise). The Radix switch renders a
  * native `role="switch"`; wrapping it in a label exposes the i18n label as
  * its accessible name, and the 44px hit target meets the touch-target rule.
  */

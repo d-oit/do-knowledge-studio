@@ -9,11 +9,11 @@
 import { makeT } from '@/lib/i18n/t'
 
 const messages = {
-  /** Label for the semantic search toggle in the library view. */
-  'search.semanticToggleLabel': 'Semantic search',
-  /** Helper text explaining what semantic search does. */
+  /** Label for the hybrid search toggle in the library view. */
+  'search.semanticToggleLabel': 'Hybrid search',
+  /** Helper text explaining what hybrid search does. */
   'search.semanticToggleHint':
-    'Match by meaning across languages instead of exact words.',
+    'Fuse keyword and meaning ranking; falls back to keywords when the meaning model is unavailable.',
   /** Status shown while the multilingual embedding model is loading. */
   'search.semanticLoading': 'Loading semantic model…',
   /** Status shown while changed documents are being embedded. */
@@ -21,13 +21,13 @@ const messages = {
     `Indexing ${completed}/${total} documents…`,
   /** Status shown when the semantic model could not be loaded. */
   'search.semanticUnavailable':
-    'Semantic search unavailable — showing keyword results instead.',
-  /** Accessible text describing the semantic toggle when it is turned on. */
+    'Semantic model unavailable — showing keyword results instead.',
+  /** Accessible text describing the hybrid toggle when it is turned on. */
   'search.semanticOnDescription':
-    'Search by meaning is enabled. Results are ranked by semantic relevance.',
-  /** Accessible text describing the semantic toggle when it is turned off. */
+    'Hybrid search is enabled. Results fuse keyword and meaning ranking, falling back to keywords when the model is unavailable.',
+  /** Accessible text describing the hybrid toggle when it is turned off. */
   'search.semanticOffDescription':
-    'Search by meaning is disabled. Results use exact keyword matching.',
+    'Hybrid search is disabled. Results use exact keyword matching.',
   /** Per-hit badge: the result was ranked by the lexical (BM25) engine. */
   'search.matchKeyword': 'Keyword',
   /** Per-hit badge: the result was ranked by the semantic engine. */
