@@ -21,7 +21,7 @@ The sequence now starts from post-merge `main` at `c4af33b`; 15 open issues rema
 | #1057 | Open | Provider-backed extraction into an isolated proposal inbox, bounded Zod validation, provenance/privacy disclosure, explicit accept/edit/reject, evaluation and undo. |
 | #1058 | Done (Plan 197 + ADR 051) | Pure BFS path/filter API with accessible list results, Zod-validated named views in the store envelope and backup `data/canvas.json`, AI `find_path` tool, and the MCP `find_path` deferral from #1056 closed. |
 | #1059 | Open | Incremental duplicate/contradiction candidate detection, dismissals persisted and synced, user-confirmed actions, labeled fixtures and metrics. |
-| #1060 | Open | Separate durable per-entity revision store, quota/retention, restore UI, merge/import revision tags, optional backup inclusion, latency evidence. |
+| #1060 | Done (PR #1094) | Separate durable per-entity revision store, quota/retention, restore UI, merge/import revision tags, optional backup inclusion, latency evidence. |
 | #1061 | Open | PWA share-target intake and offline queue, safe transient capture/confirmation, URL clipper/bookmarklet and support documentation. |
 | #1062 | In progress | Add bounded `fast-check` properties, scheduled/on-demand Stryker with reproducible seeds and reports, survivor triage, and contributor guidance. |
 | #1063 | Partial | Current dynamic PDF/DOCX imports are already lazy. Still need current before/after route/chunk evidence, `sharp` production-dependency decision, unused-code advisory CI and final precache verification. |
