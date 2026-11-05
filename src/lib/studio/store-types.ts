@@ -48,6 +48,8 @@ export interface StudioState {
   clearPendingEntityName: () => void
   saveEntity: (e: Entity) => void
   commitEntity: (e: Entity) => void
+  /** Writes a stored revision back as the current entity (undoable, #1060). */
+  restoreEntityRevision: (snapshot: Entity) => void
   /** Atomically commit several entities under a single history snapshot.
    * Use for reciprocal writes (a save plus its backlinks) so one Undo
    * restores the whole operation, not just the last write. */

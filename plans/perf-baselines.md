@@ -57,6 +57,18 @@ chunk per `requestAnimationFrame`:
 Mounted node/edge counts are bounded by the viewBox, so pan/zoom work is
 proportional to what is visible, not to library size.
 
+## Entity revision capture (`src/lib/studio/revisions.bench.test.ts`)
+
+| Operation | Budget | Notes |
+| --------- | ------ | ----- |
+| Capture decision, 200 saves of a 50k-character note | < 200 ms total | The save path runs it twice per commit (previous + next) |
+| Snapshot signature, 50k-character note | < 1 ms per call | Content compare used by every capture decision |
+| Eviction plan for 1,000 revisions | < 50 ms | Runs after a capture, never on the typing path |
+
+Capture is fire-and-forget: the store action records it and returns, so a slow
+IndexedDB write cannot add latency to a save. The bench bounds the synchronous
+decision (`shouldCaptureRevision`) and the signature it computes.
+
 ## Not measured here
 
 - **Frame rate during pan/zoom.** There is no browser profiling harness in this

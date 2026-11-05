@@ -1,6 +1,8 @@
 import { getSyncDoc, getDoc } from './doc'
 import { entityToYMap, claimToYMap, sameEntityPayload, sameClaimPayload } from './types'
 import { getConflictResolutionKey, mergeEntities, mergeClaims, type FieldConflict, type MergeResult } from './merge'
+import { recordEntityRevision } from '@/lib/studio/revision-capture'
+import { hasEntityChanged } from '@/lib/studio/revision-model'
 import { isTombstoned, addTombstone, getTombstone } from './tombstones'
 import { clockFromRecord, compareClocks, readRecordClock, setVersionedRecord } from './causality'
 import { validateInboundEntity, validateInboundClaim } from './inbound'
@@ -181,8 +183,21 @@ export function applyRemoteUpdate(
     claimMap.set(remote.id, local ? resolveClaimConflict(local, remote) : remote)
   }
 
+  const nextEntities = Array.from(entityMap.values())
+  // A merge overwrites local text with no other trace: keep the pre-merge
+  // version first (ADR 053, #1060), so "before the merge" is a version the user
+  // can find after a reload. Capture never rejects and is a no-op without
+  // IndexedDB, so it cannot fail the inbound path.
+  const nextById = new Map(nextEntities.map((entity) => [entity.id, entity]))
+  for (const local of localEntities) {
+    const merged = nextById.get(local.id)
+    if (merged !== undefined && hasEntityChanged(local, merged)) {
+      recordEntityRevision({ entity: local, reason: 'merge' })
+    }
+  }
+
   return {
-    entities: Array.from(entityMap.values()),
+    entities: nextEntities,
     claims: Array.from(claimMap.values()),
   }
 }

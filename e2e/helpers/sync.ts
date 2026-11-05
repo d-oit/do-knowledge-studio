@@ -37,25 +37,30 @@ export interface CanonicalEnvelope {
 export const readCanonicalEnvelope = async (page: Page): Promise<CanonicalEnvelope | null> =>
   page.evaluate(async () => {
     if (typeof indexedDB === 'undefined') return null
+    // No explicit version: the app owns the schema version (currently 2, after
+    // #1060 added the revisions store), and asking for a lower one throws.
     const db = await new Promise<IDBDatabase | null>((resolve) => {
-      const request = indexedDB.open('dks-canonical', 1)
-      request.onupgradeneeded = () => {
-        const database = request.result
-        if (!database.objectStoreNames.contains('state')) database.createObjectStore('state')
-      }
+      const request = indexedDB.open('dks-canonical')
       request.onsuccess = () => { resolve(request.result) }
       request.onerror = () => { resolve(null) }
       request.onblocked = () => { resolve(null) }
     })
     if (db === null) return null
-    const value = await new Promise<unknown>((resolve) => {
-      const transaction = db.transaction('state', 'readonly')
-      const request = transaction.objectStore('state').get('studio-corpus')
-      request.onsuccess = () => { resolve(request.result) }
-      request.onerror = () => { resolve(null) }
-    })
-    db.close()
-    return value as CanonicalEnvelope | null
+    try {
+      const value = await new Promise<unknown>((resolve) => {
+        const transaction = db.transaction('state', 'readonly')
+        const request = transaction.objectStore('state').get('studio-corpus')
+        request.onsuccess = () => { resolve(request.result) }
+        request.onerror = () => { resolve(null) }
+      })
+      return value as CanonicalEnvelope | null
+    } catch (error) {
+      // The database exists but has no envelope store yet (nothing written).
+      console.warn('readCanonicalEnvelope: canonical store is not readable yet', error)
+      return null
+    } finally {
+      db.close()
+    }
   })
 
 /** Read the highest Yjs update key so tests can detect continuing update loops. */

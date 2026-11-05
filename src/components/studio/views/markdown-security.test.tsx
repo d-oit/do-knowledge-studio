@@ -16,6 +16,9 @@ vi.mock('framer-motion', () => ({
 vi.mock('lucide-react', () => {
   const Icon = (props: Record<string, unknown>) => React.createElement('span', { 'data-testid': 'icon', ...props })
   return {
+    AlertTriangle: Icon,
+    RotateCcw: Icon,
+    History: Icon,
     __esModule: true,
     Send: Icon,
     Sparkles: Icon,
