@@ -84,7 +84,7 @@ test.describe('markdown and vault import', () => {
 
     const zip = await writeVaultZip();
     await navClick(page, /^export/i);
-    await page.locator('input[type="file"]').first().setInputFiles({
+    await page.locator('input[type="file"][accept=".json,application/json,.md,.markdown,text/markdown,.zip,application/zip"]').setInputFiles({
       name: 'vault.zip',
       mimeType: 'application/zip',
       buffer: await readFile(zip),
@@ -120,7 +120,7 @@ test.describe('markdown and vault import', () => {
 
     const big = await writeOversizedNote();
     await navClick(page, /^export/i);
-    await page.locator('input[type="file"]').first().setInputFiles({
+    await page.locator('input[type="file"][accept=".json,application/json,.md,.markdown,text/markdown,.zip,application/zip"]').setInputFiles({
       name: 'big.md',
       mimeType: 'text/markdown',
       buffer: await readFile(big),

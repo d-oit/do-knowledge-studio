@@ -290,9 +290,9 @@ export const useExportHandlers = ({
     }
 
     {
+      // Non-empty: `selected.length === 0` returns above.
       /** The file. */
       const file = selected[0]
-      if (!file) return
       /** The reader. */
       const reader = new FileReader()
       reader.onload = () => {

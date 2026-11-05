@@ -12,7 +12,7 @@ interface ImportDropzoneProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>
 }
 
-/** Picker accept list: JSON exports, Markdown, and zip vaults. */
+/** Picker accept list: JSON exports, Markdown, and zip vaults. The folder picker carries no accept filter (directory picks ignore it) so selectors stay unambiguous. */
 const PICKER_ACCEPT = '.json,application/json,.md,.markdown,text/markdown,.zip,application/zip'
 
 /** Dropzone for importing a JSON/Markdown export or a vault to replace the current library. */
@@ -81,7 +81,6 @@ export const ImportDropzone = memo(function ImportDropzone({
         <input
           ref={attachFolderInput}
           type="file"
-          accept={PICKER_ACCEPT}
           multiple
           onChange={handleFileChange}
           className="hidden"

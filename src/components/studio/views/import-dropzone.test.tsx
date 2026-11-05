@@ -76,9 +76,8 @@ describe('ImportDropzone', () => {
     const { container } = render(<ImportDropzone {...defaultProps} />)
     const inputs = container.querySelectorAll('input[type="file"]')
     expect(inputs).toHaveLength(2)
-    for (const input of inputs) {
-      expect(input).toHaveAttribute('accept', '.json,application/json,.md,.markdown,text/markdown,.zip,application/zip')
-    }
+    expect(inputs[0]).toHaveAttribute('accept', '.json,application/json,.md,.markdown,text/markdown,.zip,application/zip')
+    expect(inputs[1]).not.toHaveAttribute('accept')
     expect(inputs[1]).toHaveAttribute('webkitdirectory', '')
   })
 
