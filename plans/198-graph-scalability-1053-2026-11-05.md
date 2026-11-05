@@ -25,6 +25,8 @@ into the seconds range, blocking the main thread before the canvas painted.
    already holds the main thread inside the 50 ms ceiling once chunked.
 3. **Cull to the viewBox.** `graph-culling.ts` mirrors `canvasViewBox` maths and
    returns only the nodes (plus a 120-unit margin) and edges an SVG can show.
+   `visibleRect` also adds the letterboxing `preserveAspectRatio="xMidYMid meet"`
+   introduces on the wider axis, so a node drawn in the letterbox is kept.
    The toolbar counts still describe the graph in scope; culling changes what
    is mounted, not what exists.
 4. **Level of detail by zoom.** Past 400 nodes, node labels hide below zoom 0.6

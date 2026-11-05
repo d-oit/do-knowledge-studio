@@ -11,6 +11,7 @@ import {
   shouldShowNodeLabels,
   shouldShowRelationLabels,
   viewBoxRect,
+  visibleRect,
 } from './graph-culling'
 
 /** Positioned node fixture. */
@@ -47,6 +48,49 @@ describe('viewBoxRect', () => {
       width: 400,
       height: 280,
     })
+  })
+})
+
+describe('visibleRect', () => {
+  const canvas = { width: 800, height: 560 }
+
+  it('falls back to the viewBox rect without a measurement', () => {
+    expect(visibleRect(canvas, 1, { x: 0, y: 0 }, null)).toEqual({
+      x: -0,
+      y: -0,
+      width: 800,
+      height: 560,
+    })
+    expect(visibleRect(canvas, 1, { x: 0, y: 0 }, { width: 0, height: 0 })).toEqual({
+      x: -0,
+      y: -0,
+      width: 800,
+      height: 560,
+    })
+  })
+
+  it('widens the rect when the container is wider than the canvas', () => {
+    // `xMidYMid meet` fits the height and letterboxes the width: 2:1 container
+    // against a 1.43:1 canvas.
+    const rect = visibleRect(canvas, 1, { x: 0, y: 0 }, { width: 1120, height: 560 })
+    expect(rect.width).toBeCloseTo(1120)
+    expect(rect.x).toBeCloseTo(-160)
+    expect(rect.height).toBe(560)
+  })
+
+  it('heightens the rect when the container is taller than the canvas', () => {
+    const rect = visibleRect(canvas, 1, { x: 0, y: 0 }, { width: 800, height: 1120 })
+    expect(rect.height).toBeCloseTo(1120)
+    expect(rect.y).toBeCloseTo(-280)
+    expect(rect.width).toBe(800)
+  })
+
+  it('keeps a node that only the letterboxed region shows', () => {
+    const nodes = [makeNode('letterboxed', 1000, 280)]
+    const narrow = viewBoxRect(canvas, 1, { x: 0, y: 0 })
+    expect(cullNodes(nodes, narrow)).toEqual([])
+    const wide = visibleRect(canvas, 1, { x: 0, y: 0 }, { width: 1800, height: 560 })
+    expect(cullNodes(nodes, wide)).toHaveLength(1)
   })
 })
 

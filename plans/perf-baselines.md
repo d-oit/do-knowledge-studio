@@ -48,6 +48,7 @@ chunk per `requestAnimationFrame`:
 | Setting | Value | Effect |
 | ------- | ----- | ------ |
 | `CULL_MARGIN_PX` | 120 | Nodes just outside the viewBox stay mounted so labels do not pop |
+| letterbox expansion | container aspect | `visibleRect` widens or heightens the rect to the `xMidYMid meet` box, so a node visible in the letterbox is never culled |
 | `LABEL_LOD_NODE_THRESHOLD` | 400 | Above this, labels depend on zoom |
 | `LABEL_LOD_MIN_ZOOM` | 0.6 | Node labels hidden below this zoom on large graphs |
 | `EDGE_LABEL_MIN_ZOOM` | 1.2 | Relation labels hidden below this zoom on large graphs |

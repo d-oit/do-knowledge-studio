@@ -54,6 +54,39 @@ export const viewBoxRect = (
   height: size.height / zoom,
 })
 
+/**
+ * The graph-space rectangle the canvas actually shows.
+ *
+ * The SVG uses `preserveAspectRatio="xMidYMid meet"`, so it fits the whole
+ * viewBox into the container and letterboxes the overflow: when the container
+ * is wider than the canvas, the visible region is wider than the viewBox on
+ * BOTH sides, by the same amount. Culling on the raw viewBox would hide nodes
+ * that are on screen. Without a measurement (SSR, jsdom) the viewBox is used
+ * as-is, matching the pre-measurement render.
+ * @param size - Canvas size in graph units.
+ * @param zoom - Current zoom factor.
+ * @param panOffset - Pan in viewport pixels.
+ * @param viewport - Rendered container size in CSS pixels, or null.
+ * @returns The visible rectangle, including any letterboxed margin.
+ */
+export const visibleRect = (
+  size: CanvasSize,
+  zoom: number,
+  panOffset: NodePosition,
+  viewport: { width: number; height: number } | null,
+): GraphRect => {
+  const rect = viewBoxRect(size, zoom, panOffset)
+  if (!viewport || viewport.width <= 0 || viewport.height <= 0) return rect
+  const containerAspect = viewport.width / viewport.height
+  const rectAspect = rect.width / rect.height
+  if (containerAspect > rectAspect) {
+    const width = rect.height * containerAspect
+    return { ...rect, x: rect.x - (width - rect.width) / 2, width }
+  }
+  const height = rect.width / containerAspect
+  return { ...rect, y: rect.y - (height - rect.height) / 2, height }
+}
+
 /** Whether a point lies inside `rect` grown by `margin` on every side. */
 const contains = (rect: GraphRect, x: number, y: number, margin: number): boolean =>
   x >= rect.x - margin &&

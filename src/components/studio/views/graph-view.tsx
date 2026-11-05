@@ -11,7 +11,7 @@ import {
   isLargeGraph,
   shouldShowNodeLabels,
   shouldShowRelationLabels,
-  viewBoxRect,
+  visibleRect,
 } from '@/lib/studio/graph-culling'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import { useElementSize } from '@/lib/studio/use-element-size'
@@ -179,11 +179,13 @@ export const GraphView = () => {
   }, [visibleNodes, edges])
 
   // Rendering culling: the canvas is much larger than the viewport once zoomed
-  // in or panned, so only the nodes the viewBox can show are mounted. The
-  // counts above still describe the graph in scope.
+  // in or panned, so only the nodes the viewBox can show are mounted. The rect
+  // includes the letterboxing `preserveAspectRatio="xMidYMid meet"` adds on the
+  // wider axis, so a node visible at the edge is never culled. The counts above
+  // still describe the graph in scope.
   const viewRect = useMemo(
-    () => viewBoxRect(canvas, zoom, panOffset),
-    [canvas, zoom, panOffset],
+    () => visibleRect(canvas, zoom, panOffset, viewport),
+    [canvas, zoom, panOffset, viewport],
   )
   const renderedNodes = useMemo(
     () => cullNodes(visibleNodes, viewRect),
