@@ -65,7 +65,7 @@ const writeFixture = async (name: string): Promise<string> => {
 
 const importJson = async (page: Page, fixture: string): Promise<void> => {
   await navClick(page, /^export/i)
-  await page.locator('input[type=file][accept=".json,application/json"]').setInputFiles(fixture)
+  await page.locator('input[type=file][accept=".json,application/json,.md,.markdown,text/markdown,.zip,application/zip"]').setInputFiles(fixture)
   await page.getByRole('button', { name: 'Confirm import', exact: true }).click()
 }
 
