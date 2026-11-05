@@ -36,6 +36,8 @@ describe('readVaultZip', () => {
     expect(result.success).toBe(false)
   })
 
+  // Deflating a >50 MB payload is legitimately expensive and exceeds the 5 s
+  // default once coverage instrumentation is on, so it gets an explicit budget.
   it('fails closed on a zip bomb instead of materializing it', async () => {
     const bomb = makeZip({ 'bomb.md': '0'.repeat(MAX_VAULT_UNCOMPRESSED_BYTES + 1_048_576) })
     expect(bomb.byteLength).toBeLessThan(MAX_VAULT_ZIP_BYTES)
@@ -43,7 +45,7 @@ describe('readVaultZip', () => {
     expect(result.success).toBe(false)
     if (result.success) throw new Error('zip bomb was accepted')
     expect(result.error).toContain('safety limit')
-  })
+  }, 30_000)
 
   it('rejects archives with too many entries', async () => {
     const entries: Record<string, string> = {}
