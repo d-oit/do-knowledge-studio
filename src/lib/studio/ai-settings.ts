@@ -3,6 +3,7 @@ import { DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL } from '@/lib/ai/types'
 import { AppError, ErrorCode } from '@/lib/errors'
 import { StoredSettingsSchema, type ValidatedStoredSettings } from '@/lib/studio/schema'
 import { logger } from '@/lib/logging/logger'
+import { decryptSessionValue, encryptSessionValue } from '@/lib/studio/session-crypto'
 
 /** Subsystem tag for AI-settings storage logs. */
 const log = logger.child({ area: 'ai' })
@@ -184,44 +185,24 @@ function migrateModel(provider: AIProvider, storedModel: string): string {
  *      same-origin IndexedDB ciphertext until every such tab is closed.
  */
 
-async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
-  const stored = sessionStorage.getItem(CRYPTO_KEY_STORAGE)
-  if (stored) {
-    const raw = Uint8Array.from(atob(stored), (c) => c.charCodeAt(0))
-    return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
-  }
-  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'])
-  const exported = await crypto.subtle.exportKey('raw', key)
-  const b64 = btoa(String.fromCharCode(...new Uint8Array(exported)))
-  sessionStorage.setItem(CRYPTO_KEY_STORAGE, b64)
-  return crypto.subtle.importKey('raw', exported, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
-}
-
+/**
+ * Encrypts the API key with the tab-scoped session key. The codec itself lives
+ * in `session-crypto.ts`, shared with the sync ICE settings store, so the two
+ * credential stores cannot drift apart.
+ */
 async function encryptApiKey(apiKey: string): Promise<string> {
   if (!apiKey) return ''
-  const key = await getOrCreateEncryptionKey()
-  const iv = crypto.getRandomValues(new Uint8Array(12))
-  const encoded = new TextEncoder().encode(apiKey)
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded)
-  const combined = new Uint8Array(iv.length + encrypted.byteLength)
-  combined.set(iv)
-  combined.set(new Uint8Array(encrypted), iv.length)
-  return btoa(String.fromCharCode(...combined))
+  return encryptSessionValue(apiKey, CRYPTO_KEY_STORAGE)
 }
 
 async function decryptApiKey(encrypted: string): Promise<string> {
   if (!encrypted) return ''
-  try {
-    const key = await getOrCreateEncryptionKey()
-    const combined = Uint8Array.from(atob(encrypted), (c) => c.charCodeAt(0))
-    const iv = combined.slice(0, 12)
-    const data = combined.slice(12)
-    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data)
-    return new TextDecoder().decode(decrypted)
-  } catch (error) {
-    log.error('Failed to decrypt API key', { error })
+  const decrypted = await decryptSessionValue(encrypted, CRYPTO_KEY_STORAGE)
+  if (decrypted === null) {
+    log.error('Failed to decrypt API key')
     return ''
   }
+  return decrypted
 }
 
 // ── localStorage → IndexedDB migration ────────────────────────────────
