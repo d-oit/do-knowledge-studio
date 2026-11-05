@@ -69,6 +69,7 @@ export const GraphEdgeElement = ({
   targetNode,
   selectedEntityId,
   pathHighlighted = false,
+  showRelationLabel = true,
 }: {
   edge: GraphEdge
   sourceNode: GraphNode
@@ -76,6 +77,8 @@ export const GraphEdgeElement = ({
   selectedEntityId: string | null
   /** Whether this edge lies on the recovered shortest path (#1058). */
   pathHighlighted?: boolean
+  /** Level-of-detail switch: relation labels are hidden on large, zoomed-out graphs. */
+  showRelationLabel?: boolean
 }) => {
   const isHighlighted = isEdgeHighlighted(edge, selectedEntityId) || pathHighlighted
   const stroke = EDGE_STROKE[isHighlighted ? 'highlighted' : 'default']
@@ -90,7 +93,7 @@ export const GraphEdgeElement = ({
         className={cn('transition-all', stroke.className)}
         strokeWidth={stroke.width}
       />
-      {isHighlighted && (
+      {isHighlighted && showRelationLabel && (
         <EdgeRelationLabel
           sourceNode={sourceNode}
           targetNode={targetNode}

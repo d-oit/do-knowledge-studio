@@ -198,12 +198,60 @@ export const baseNodePosition = (
   y: band.yMin + seededRandom(`${id}:y`) * (band.yMax - band.yMin),
 })
 
-/** Smallest squared distance from (x, y) to any placed node; Infinity when none are placed. */
-const minClearanceSq = (x: number, y: number, placed: readonly NodePosition[]): number => {
+/**
+ * Uniform spatial hash over placed nodes.
+ *
+ * Placement used to scan every placed node for every probe, which is O(n²) in
+ * the library size and made a 5k-node place take seconds (#1053). Clearance is
+ * only ever tested against a fixed radius, so a grid with one preferred-spacing
+ * cell answers the same question from a handful of buckets.
+ */
+interface NodeGrid {
+  cells: Map<string, NodePosition[]>
+}
+
+/** Grid cell edge, in graph units: one preferred node spacing. */
+const CLEARANCE_CELL_SIZE = PREFERRED_NODE_DISTANCE_PX
+
+/** Cell key for a coordinate pair. */
+const cellKey = (x: number, y: number): string =>
+  `${Math.floor(x / CLEARANCE_CELL_SIZE)}:${Math.floor(y / CLEARANCE_CELL_SIZE)}`
+
+/** Empty grid. */
+const createGrid = (): NodeGrid => ({ cells: new Map() })
+
+/** Inserts a placed position into its cell. */
+const addToGrid = (grid: NodeGrid, position: NodePosition): void => {
+  const key = cellKey(position.x, position.y)
+  const bucket = grid.cells.get(key)
+  if (bucket) bucket.push(position)
+  else grid.cells.set(key, [position])
+}
+
+/**
+ * Nodes that can be within `radius` of (x, y): every bucket the radius touches.
+ * Cells outside that window cannot hold a closer node, so skipping them cannot
+ * change a clearance decision.
+ */
+const nodesNear = (grid: NodeGrid, x: number, y: number, radius: number): NodePosition[] => {
+  const minCellX = Math.floor((x - radius) / CLEARANCE_CELL_SIZE)
+  const maxCellX = Math.floor((x + radius) / CLEARANCE_CELL_SIZE)
+  const minCellY = Math.floor((y - radius) / CLEARANCE_CELL_SIZE)
+  const maxCellY = Math.floor((y + radius) / CLEARANCE_CELL_SIZE)
+  const near: NodePosition[] = []
+  for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+    for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+      const bucket = grid.cells.get(`${cellX}:${cellY}`)
+      if (bucket) near.push(...bucket)
+    }
+  }
+  return near
+}
+
+/** Smallest squared distance from (x, y) to any neighbour; Infinity when none. */
+const minClearanceSq = (x: number, y: number, near: readonly NodePosition[]): number => {
   let minSq = Number.POSITIVE_INFINITY
-  for (let i = 0; i < placed.length; i++) {
-    const node = placed[i]
-    if (!node) continue
+  for (const node of near) {
     const dx = node.x - x
     const dy = node.y - y
     const distSq = dx * dx + dy * dy
@@ -215,18 +263,16 @@ const minClearanceSq = (x: number, y: number, placed: readonly NodePosition[]): 
 }
 
 /**
- * Returns true if (x, y) is at least `minDistanceSq` away from every node in `placed`.
+ * Returns true if (x, y) is at least `minDistanceSq` away from every neighbour.
  * Early-exits on the first node closer than `minDistanceSq`.
  */
 const hasMinClearanceSq = (
   x: number,
   y: number,
-  placed: readonly NodePosition[],
+  near: readonly NodePosition[],
   minDistanceSq: number,
 ): boolean => {
-  for (let i = 0; i < placed.length; i++) {
-    const node = placed[i]
-    if (!node) continue
+  for (const node of near) {
     const dx = node.x - x
     const dy = node.y - y
     if (dx * dx + dy * dy < minDistanceSq) return false
@@ -252,41 +298,48 @@ const PREFERRED_NODE_DISTANCE_SQ = PREFERRED_NODE_DISTANCE_PX * PREFERRED_NODE_D
  */
 const probeForClearance = (
   base: NodePosition,
-  placed: readonly NodePosition[],
+  grid: NodeGrid,
   minDistance: number,
   band: PlacementBand,
 ): NodePosition | null => {
   const minDistanceSq = minDistance * minDistance
   for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
     const candidate = probePosition(base, attempt, band)
-    if (hasMinClearanceSq(candidate.x, candidate.y, placed, minDistanceSq)) return candidate
+    const near = nodesNear(grid, candidate.x, candidate.y, minDistance)
+    if (hasMinClearanceSq(candidate.x, candidate.y, near, minDistanceSq)) return candidate
   }
   return null
 }
 
 /**
- * Place a node from its id. The hash-derived base is accepted when it already
- * clears every placed node at the preferred spacing; otherwise a deterministic
- * golden-angle probe looks for a slot, first at the preferred spacing and then at
- * the click-safe one. Only a canvas too crowded for both falls back to the
- * candidate with the most clearance, so density degrades legibility before it
- * degrades click accuracy.
+ * Place a node from its id against the placement grid. The hash-derived base is
+ * accepted when it already clears every placed node at the preferred spacing;
+ * otherwise a deterministic golden-angle probe looks for a slot, first at the
+ * preferred spacing and then at the click-safe one. Only a canvas too crowded
+ * for both falls back to the candidate with the most clearance, so density
+ * degrades legibility before it degrades click accuracy.
  */
-export const resolveNodePosition = (
+const resolveWithGrid = (
   id: string,
-  placed: readonly NodePosition[],
-  band: PlacementBand = BASE_PLACEMENT_BAND,
+  grid: NodeGrid,
+  band: PlacementBand,
 ): NodePosition => {
   const base = baseNodePosition(id, band)
-  if (placed.length === 0) return base
-
   let best = base
-  let bestClearanceSq = minClearanceSq(base.x, base.y, placed)
+  let bestClearanceSq = minClearanceSq(
+    base.x,
+    base.y,
+    nodesNear(grid, base.x, base.y, PREFERRED_NODE_DISTANCE_PX),
+  )
   if (bestClearanceSq >= PREFERRED_NODE_DISTANCE_SQ) return best
 
   for (let attempt = 1; attempt <= PLACEMENT_ATTEMPTS; attempt += 1) {
     const candidate = probePosition(base, attempt, band)
-    const candidateClearanceSq = minClearanceSq(candidate.x, candidate.y, placed)
+    const candidateClearanceSq = minClearanceSq(
+      candidate.x,
+      candidate.y,
+      nodesNear(grid, candidate.x, candidate.y, PREFERRED_NODE_DISTANCE_PX),
+    )
     if (candidateClearanceSq >= PREFERRED_NODE_DISTANCE_SQ) return candidate
     if (candidateClearanceSq > bestClearanceSq) {
       best = candidate
@@ -294,7 +347,23 @@ export const resolveNodePosition = (
     }
   }
 
-  return probeForClearance(base, placed, CLICK_SAFE_NODE_DISTANCE_PX, band) ?? best
+  return probeForClearance(base, grid, CLICK_SAFE_NODE_DISTANCE_PX, band) ?? best
+}
+
+/**
+ * Place a node from its id against an explicit list of placed nodes.
+ *
+ * Builds a temporary grid, so callers that place many nodes should use
+ * `placeGraphNodes` (which keeps one grid) instead of calling this per node.
+ */
+export const resolveNodePosition = (
+  id: string,
+  placed: readonly NodePosition[],
+  band: PlacementBand = BASE_PLACEMENT_BAND,
+): NodePosition => {
+  const grid = createGrid()
+  for (const position of placed) addToGrid(grid, position)
+  return resolveWithGrid(id, grid, band)
 }
 
 const byEntityId = (a: Entity, b: Entity): number => a.id.localeCompare(b.id)
@@ -308,36 +377,91 @@ const byEntityId = (a: Entity, b: Entity): number => a.id.localeCompare(b.id)
  * reshapes that band to the rendered canvas — the seed nodes never move, so the
  * authored layout keeps its positions at every viewport size.
  */
-export const placeGraphNodes = (
+/**
+ * Nodes placed per chunk. At the measured 5k rate (~455 ms total) a 250-node
+ * chunk costs roughly 25 ms, which keeps one animation frame inside the
+ * main-thread budget (#1053).
+ */
+export const PLACEMENT_CHUNK_SIZE = 250
+
+/** Incremental placement state shared by the synchronous and chunked paths. */
+export interface PlacementRunner {
+  /** Positions resolved so far, in corpus order. */
+  nodes: GraphNode[]
+  /** Whether every entity has a position. */
+  done: boolean
+  /** Resolves the next chunk, or everything remaining when `all` is true. */
+  placeChunk: (all?: boolean) => GraphNode[]
+}
+
+/**
+ * Creates the incremental placer behind `placeGraphNodes`.
+ *
+ * Seed nodes are placed up front (they are authored coordinates, not work), and
+ * unseeded nodes are resolved in deterministic id order — the same order the
+ * synchronous path used, so chunk boundaries cannot change any final position.
+ */
+export const createPlacementRunner = (
   entities: readonly Entity[],
   seedNodes: readonly GraphNode[],
   viewport: ViewportSize | null = null,
-): GraphNode[] => {
+  chunkSize: number = PLACEMENT_CHUNK_SIZE,
+): PlacementRunner => {
   const seedMap = new Map(seedNodes.map((node) => [node.id, node]))
   const positions = new Map<string, NodePosition>()
-  const placed: NodePosition[] = []
+  const grid = createGrid()
 
   for (const entity of entities) {
     const seed = seedMap.get(entity.id)
     if (!seed) continue
-    positions.set(entity.id, { x: seed.x, y: seed.y })
-    placed.push({ x: seed.x, y: seed.y })
+    const position = { x: seed.x, y: seed.y }
+    positions.set(entity.id, position)
+    addToGrid(grid, position)
   }
 
   const unseeded = entities.filter((entity) => !positions.has(entity.id)).sort(byEntityId)
   const band = placementBand(unseeded.length, viewport)
-  for (const entity of unseeded) {
-    const position = resolveNodePosition(entity.id, placed, band)
-    positions.set(entity.id, position)
-    placed.push(position)
-  }
+  const step = Math.max(1, Math.floor(chunkSize))
+  let placedCount = 0
 
-  return entities.flatMap((entity) => {
-    const position = positions.get(entity.id)
-    if (!position) return []
-    return [{ id: entity.id, label: entity.name, type: entity.type, x: position.x, y: position.y }]
-  })
+  const toNodes = (): GraphNode[] =>
+    entities.flatMap((entity) => {
+      const position = positions.get(entity.id)
+      if (!position) return []
+      return [{ id: entity.id, label: entity.name, type: entity.type, x: position.x, y: position.y }]
+    })
+
+  return {
+    get nodes(): GraphNode[] {
+      return toNodes()
+    },
+    get done(): boolean {
+      return placedCount >= unseeded.length
+    },
+    placeChunk: (all = false): GraphNode[] => {
+      const limit = all ? unseeded.length : Math.min(unseeded.length, placedCount + step)
+      while (placedCount < limit) {
+        const entity = unseeded[placedCount]
+        if (entity === undefined) break
+        const position = resolveWithGrid(entity.id, grid, band)
+        positions.set(entity.id, position)
+        addToGrid(grid, position)
+        placedCount += 1
+      }
+      return toNodes()
+    },
+  }
 }
+
+/**
+ * Resolve every entity to a graph node in one pass. See
+ * `createPlacementRunner` for the incremental path a large corpus uses.
+ */
+export const placeGraphNodes = (
+  entities: readonly Entity[],
+  seedNodes: readonly GraphNode[],
+  viewport: ViewportSize | null = null,
+): GraphNode[] => createPlacementRunner(entities, seedNodes, viewport).placeChunk(true)
 
 /** Centre and radius of the circular layout's ring, in canvas units. */
 const CIRCULAR_CENTER: NodePosition = { x: 400, y: 280 }
