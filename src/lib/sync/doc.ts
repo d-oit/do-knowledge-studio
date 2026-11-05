@@ -4,10 +4,19 @@ import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebrtcProvider } from 'y-webrtc'
 import type { SyncDoc } from './types'
 import { getSignalingServers, SIGNALING_SERVERS } from './discovery'
+import { sameIceServers, toRtcIceServers, type IceServerConfig } from './ice-config'
 import { bindCursorAwareness, unbindCursorAwareness } from './cursors'
 import { bindPresenceAwareness, unbindPresenceAwareness } from './presence'
 /** WebRTC provider for an active collaboration room. */
 export type RoomProvider = WebrtcProvider
+
+/** Everything a room join needs; credentials and ICE secrets stay in memory. */
+export interface RoomJoinOptions {
+  signaling?: string[]
+  password?: string
+  /** STUN/TURN servers for this room; empty keeps y-webrtc's own defaults. */
+  iceServers?: IceServerConfig[]
+}
 /** Awareness protocol instance for the current provider. */
 export type SyncAwareness = WebrtcProvider['awareness']
 
@@ -26,7 +35,7 @@ let currentPersistence: IndexeddbPersistence | null = null
 let currentProvider: WebrtcProvider | null = null
 let currentRoomId: string | null = null
 let lastRoomId: string | null = null
-let currentOpts: { signaling?: string[]; password?: string } | undefined
+let currentOpts: RoomJoinOptions | undefined
 let connectivityListenersAttached = false
 
 /**
@@ -112,16 +121,13 @@ export const initPersistence = async (): Promise<void> => {
 }
 
 /** Join a WebRTC signaling room for peer-to-peer sync. */
-const areRoomOptsEqual = (
-  a?: { signaling?: string[]; password?: string },
-  b?: { signaling?: string[]; password?: string },
-): boolean => {
+const areRoomOptsEqual = (a?: RoomJoinOptions, b?: RoomJoinOptions): boolean => {
   if (a === b) return true
   const aSig = a?.signaling?.join(',') ?? ''
   const bSig = b?.signaling?.join(',') ?? ''
   const aPass = a?.password ?? ''
   const bPass = b?.password ?? ''
-  return aSig === bSig && aPass === bPass
+  return aSig === bSig && aPass === bPass && sameIceServers(a?.iceServers, b?.iceServers)
 }
 
 /** Check if IndexedDB persistence is initialized and synchronized. */
@@ -139,10 +145,7 @@ export const ensurePersistenceReady = async (): Promise<IndexeddbPersistence> =>
 }
 
 /** Join a WebRTC signaling room for peer-to-peer sync. */
-export const joinRoom = (
-  roomId: string,
-  opts?: { signaling?: string[]; password?: string },
-): RoomProvider => {
+export const joinRoom = (roomId: string, opts?: RoomJoinOptions): RoomProvider => {
   if (currentProvider && currentRoomId === roomId && areRoomOptsEqual(currentOpts, opts)) {
     return currentProvider
   }
@@ -151,7 +154,13 @@ export const joinRoom = (
 
   currentRoomId = roomId
   lastRoomId = roomId
-  currentOpts = opts ? { ...opts, signaling: opts.signaling ? [...opts.signaling] : undefined } : undefined
+  currentOpts = opts
+    ? {
+        ...opts,
+        signaling: opts.signaling ? [...opts.signaling] : undefined,
+        iceServers: opts.iceServers ? opts.iceServers.map((server) => ({ ...server, urls: [...server.urls] })) : undefined,
+      }
+    : undefined
 
   if (currentPersistence) {
     void currentPersistence.set(LAST_ROOM_ID_KEY, roomId).catch((error: unknown) => {
@@ -165,11 +174,18 @@ export const joinRoom = (
   }
 
   const doc = getDoc()
+  const iceServers = opts?.iceServers ?? []
   currentProvider = new WebrtcProvider(`${ROOM_PREFIX}-${roomId}`, doc, {
     signaling: opts?.signaling
       ? getSignalingServers(opts.signaling.join(','))
       : SIGNALING_SERVERS,
     password: opts?.password,
+    // Passing `peerOpts` replaces simple-peer's own ICE configuration, so it is
+    // attached only when the user configured servers; the default path stays
+    // exactly y-webrtc's (ADR 045, #1052).
+    ...(iceServers.length > 0
+      ? { peerOpts: { config: { iceServers: toRtcIceServers(iceServers) } } }
+      : {}),
   })
   bindCursorAwareness()
   bindPresenceAwareness()

@@ -42,6 +42,11 @@ vi.mock('lucide-react', () => {
     Camera: Icon,
     Radio: Icon,
     Users: Icon,
+    AlertTriangle: Icon,
+    ArrowRightLeft: Icon,
+    ExternalLink: Icon,
+    Plus: Icon,
+    ShieldCheck: Icon,
   }
 })
 
