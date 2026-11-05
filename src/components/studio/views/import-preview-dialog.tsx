@@ -16,6 +16,9 @@ interface ImportPreviewDialogProps {
   }
 }
 
+/** Maximum stub/conflict names listed before collapsing into an “…and N more”. */
+const MAX_LISTED_NAMES = 8
+
 /** Dialog showing entity and claim counts before confirming a destructive import. */
 export const ImportPreviewDialog = memo(function ImportPreviewDialog({
   state,
@@ -59,6 +62,34 @@ export const ImportPreviewDialog = memo(function ImportPreviewDialog({
             <span className="text-ink-mute">{translate('import.claims')}</span>
             <span className="font-semibold text-ink">{importPreview.claimCount}</span>
           </div>
+          {(importPreview.stubNames?.length ?? 0) > 0 && (
+            <div className="flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50 p-2 dark:border-sky-900 dark:bg-sky-950/40">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600 dark:text-sky-400" />
+              <div className="text-label text-sky-700 dark:text-sky-300">
+                <p>{translate('import.stubs', String(importPreview.stubNames?.length ?? 0))}</p>
+                <p className="mt-0.5 font-medium">
+                  {(importPreview.stubNames ?? []).slice(0, MAX_LISTED_NAMES).join(', ')}
+                  {(importPreview.stubNames?.length ?? 0) > MAX_LISTED_NAMES
+                    ? ` ${translate('import.moreNames', String((importPreview.stubNames?.length ?? 0) - MAX_LISTED_NAMES))}`
+                    : ''}
+                </p>
+              </div>
+            </div>
+          )}
+          {(importPreview.conflicts?.length ?? 0) > 0 && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/40">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="text-label text-amber-700 dark:text-amber-300">
+                <p>{translate('import.conflicts', String(importPreview.conflicts?.length ?? 0))}</p>
+                <p className="mt-0.5 font-medium">
+                  {(importPreview.conflicts ?? []).slice(0, MAX_LISTED_NAMES).join(', ')}
+                  {(importPreview.conflicts?.length ?? 0) > MAX_LISTED_NAMES
+                    ? ` ${translate('import.moreNames', String((importPreview.conflicts?.length ?? 0) - MAX_LISTED_NAMES))}`
+                    : ''}
+                </p>
+              </div>
+            </div>
+          )}
           {importPreview.duplicateIds.length > 0 && (
             <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/40">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />

@@ -13,6 +13,7 @@ import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as exportT } from '@/lib/i18n/messages/export'
 import type { RecoveryPersistFailure } from '@/lib/studio/recovery-helpers'
+import { isNonJsonPick, stagePickedNonJsonFiles } from './import-staging'
 
 /** Refused-backup copy per reason, read from the export message scope. */
 const NO_BACKUP_COPY: Record<RecoveryPersistFailure, string> = {
@@ -23,49 +24,11 @@ const NO_BACKUP_COPY: Record<RecoveryPersistFailure, string> = {
 
 
 /**
- * Sanitizes a zip entry path to prevent Zip Slip / path traversal vulnerabilities.
- * Normalizes separators, strips optional root prefix, and rejects path traversal (`..` or `.`).
- * @param path - Raw entry path from zip archive.
- * @returns Clean relative path, or null if the path contains traversal sequences or is invalid.
+ * Re-exported from the vault-zip module so existing import sites (and the
+ * sanitize unit tests) keep working; the implementation moved next to the
+ * streaming zip reader that also depends on it.
  */
-export const sanitizeZipPath = (path: string): string | null => {
-  if (!path || typeof path !== 'string') return null
-  const normalized = path.replace(/\\/g, '/').replace(/^\/+/, '')
-  const stripped = normalized.replace(/^okf-bundle\//, '')
-  const segments = stripped.split('/')
-  const safeSegments: string[] = []
-  for (const seg of segments) {
-    if (seg === '..' || seg === '.') return null
-    // Leading-slash roots ('//etc/passwd' → 'etc/passwd') and doubled
-    // separators ('concepts//x.md') collapse to empty segments; an entry that
-    // is *entirely* separators has no usable filename, so treat it as invalid
-    // rather than resurrecting a hidden path.
-    if (seg !== '') safeSegments.push(seg)
-  }
-  if (safeSegments.length === 0) return null
-  return safeSegments.join('/')
-}
-
-/** Maximum characters shown for joined import errors in toasts. */
-const MAX_ERROR_CHARS = 240
-
-/**
- * Joins non-fatal import errors into a toast-safe string, truncating long
- * lists at the last complete error that fits the budget so messages are not
- * silently cut mid-word.
- * @param errors - The collected import errors.
- * @returns A `; `-joined message capped at MAX_ERROR_CHARS characters.
- */
-const joinErrorMessages = (errors: string[]): string => {
-  /** The fully joined message. */
-  const joined = errors.join('; ')
-  if (joined.length <= MAX_ERROR_CHARS) return joined
-  /** The budgeted prefix. */
-  const prefix = joined.slice(0, MAX_ERROR_CHARS)
-  /** The cut position at the last complete error boundary. */
-  const cut = prefix.lastIndexOf('; ')
-  return `${cut > 0 ? prefix.slice(0, cut) : prefix}…`
-}
+export { sanitizeZipPath } from '@/lib/import/vault-zip'
 
 /** Inputs consumed by the export/import handlers hook. */
 interface UseExportHandlersParams extends LibraryPayload {
@@ -111,69 +74,6 @@ export interface UseExportHandlersReturn {
   showPass: boolean
   /** State setter for password visibility. */
   setShowPass: React.Dispatch<React.SetStateAction<boolean>>
-}
-
-/**
- * Reads an OKF v0.2 .zip bundle and stages it for import preview.
- * Non-OKF zips and unreadable files surface a toast instead of throwing.
- * @param file - The selected .zip file.
- * @param entities - Current library entities (for duplicate detection).
- * @param setImportPreview - Callback that stages the parsed preview.
- */
-const handleOkfZipImport = (
-  file: File,
-  entities: Entity[],
-  setImportPreview: (preview: ImportPreview | null) => void,
-) => {
-  /** The reader. */
-  const reader = new FileReader()
-  reader.onload = async () => {
-    try {
-      /** The unzip helpers. */
-      const { unzipSync, strFromU8 } = await import('fflate')
-      /** The buffer. */
-      const buffer = reader.result as ArrayBuffer
-      /** The entries. */
-      const entries = unzipSync(new Uint8Array(buffer))
-      /** The files map. */
-      const filesMap = new Map<string, string>()
-      for (const [p, data] of Object.entries(entries)) {
-        const safePath = sanitizeZipPath(p)
-        if (safePath && safePath.endsWith('.md')) {
-          filesMap.set(safePath, strFromU8(data))
-        }
-      }
-      /** The root index. */
-      const rootIndex = filesMap.get('index.md') ?? ''
-      if (!rootIndex.includes('okf_version')) {
-        toast.error('Import failed', { description: 'zip does not contain an OKF bundle (no okf_version in index.md)' })
-        return
-      }
-      /** The OKF parser. */
-      const { parseOkfBundle } = await import('@/lib/okf/import')
-      const { entities: ents, claims: cls, errors } = parseOkfBundle(filesMap)
-      if (errors.length > 0 && ents.length === 0) {
-        toast.error('Import failed', { description: joinErrorMessages(errors) })
-        return
-      }
-      if (errors.length > 0) {
-        // Partial success: stage the valid files but surface the skipped ones.
-        toast.warning('Partial import', { description: `${errors.length} file(s) skipped — ${joinErrorMessages(errors)}` })
-      }
-      /** The existing ids. */
-      const existingIds = new Set(entities.map((ent) => ent.id))
-      setImportPreview({
-        entities: ents, claims: cls,
-        entityCount: ents.length,
-        claimCount: cls.length, version: 1,
-        duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
-      })
-    } catch (err) {
-      toast.error('Import failed', { description: err instanceof Error ? err.message : 'Could not unzip OKF bundle.' })
-    }
-  }
-  reader.onerror = () => { toast.error('Import failed', { description: 'Could not read the file.' }) }
-  reader.readAsArrayBuffer(file)
 }
 
 /**
@@ -372,16 +272,27 @@ export const useExportHandlers = ({
   /** Opens the hidden file picker for import. */
   const handleImportClick = () => { fileInputRef.current?.click() }
 
-  /** Stages a selected JSON or OKF zip file for the import preview. */
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    /** The file. */
-    const file = e.target.files?.[0]
+  /**
+   * Stages selected files for the import preview: `.zip` (OKF bundle or
+   * vault) and `.md`/`.markdown` batches stage in `import-staging.ts`;
+   * anything else falls through to the JSON backup path below.
+   */
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    /** The selected files. */
+    const selected = Array.from(e.target.files ?? [])
     e.target.value = ''
-    if (!file) return
+    if (selected.length === 0) return
+    // Zip and Markdown picks stage asynchronously; the JSON backup path
+    // below must stay synchronous (FileReader stub flows assert in-task).
+    if (isNonJsonPick(selected)) {
+      await stagePickedNonJsonFiles(selected, entities, setImportPreview)
+      return
+    }
 
-    if (file.name.endsWith('.zip')) {
-      handleOkfZipImport(file, entities, setImportPreview)
-    } else {
+    {
+      // Non-empty: `selected.length === 0` returns above.
+      /** The file. */
+      const file = selected[0]
       /** The reader. */
       const reader = new FileReader()
       reader.onload = () => {

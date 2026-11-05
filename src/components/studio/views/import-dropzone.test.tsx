@@ -49,33 +49,36 @@ describe('ImportDropzone', () => {
     expect(screen.getByText(/Replace your current library/)).toBeDefined()
   })
 
-  it('renders Choose a JSON file heading', () => {
+  it('renders Choose files or a folder heading', () => {
     render(<ImportDropzone {...defaultProps} />)
-    expect(screen.getByText('Choose a JSON file')).toBeDefined()
+    expect(screen.getByText('Choose files or a folder')).toBeDefined()
   })
 
   it('renders the format description', () => {
     render(<ImportDropzone {...defaultProps} />)
-    expect(screen.getByText(/entities.*claims/)).toBeDefined()
+    expect(screen.getByText(/vault/)).toBeDefined()
   })
 
-  it('renders the Choose file button', () => {
+  it('renders file and folder picker buttons', () => {
     render(<ImportDropzone {...defaultProps} />)
-    expect(screen.getByRole('button', { name: 'Choose file' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Choose files' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Choose folder' })).toBeDefined()
   })
 
   it('calls handleImportClick on button click', () => {
     const handleImportClick = vi.fn()
     render(<ImportDropzone {...defaultProps} handleImportClick={handleImportClick} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Choose file' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Choose files' }))
     expect(handleImportClick).toHaveBeenCalled()
   })
 
-  it('renders a hidden file input', () => {
+  it('renders hidden file and folder inputs', () => {
     const { container } = render(<ImportDropzone {...defaultProps} />)
-    const fileInput = container.querySelector('input[type="file"]')
-    expect(fileInput).toBeDefined()
-    expect(fileInput).toHaveAttribute('accept', '.json,application/json')
+    const inputs = container.querySelectorAll('input[type="file"]')
+    expect(inputs).toHaveLength(2)
+    expect(inputs[0]).toHaveAttribute('accept', '.json,application/json,.md,.markdown,text/markdown,.zip,application/zip')
+    expect(inputs[1]).not.toHaveAttribute('accept')
+    expect(inputs[1]).toHaveAttribute('webkitdirectory', '')
   })
 
   it('file input is hidden and not focusable', () => {

@@ -42,6 +42,10 @@ export interface ImportPreview extends LibraryPayload {
   version: number
   /** Entity ids that already exist in the library. */
   duplicateIds: string[]
+  /** Vault link names that resolved to nothing (stub entities were minted). */
+  stubNames?: string[]
+  /** Vault names shared by several ids (imported, not merged). */
+  conflicts?: string[]
 }
 
 /** Theme color keys used by export format cards. */
