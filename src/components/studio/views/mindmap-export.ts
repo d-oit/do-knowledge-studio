@@ -107,10 +107,10 @@ const resolvePaperBackground = (element: HTMLElement): string => {
  * paint the live DOM tree directly. The caller owns error handling.
  */
 export const exportElementAsPng = async (element: HTMLElement, filename: string): Promise<void> => {
-  const rasterizerModule = (await import('html2canvas')) as unknown as {
+  const html2canvasModule = (await import('html2canvas')) as unknown as {
     default: Html2Canvas;
   };
-  const rasterize = rasterizerModule.default;
+  const rasterize = html2canvasModule.default;
   const canvas = await rasterize(element, {
     backgroundColor: resolvePaperBackground(element),
     scale: EXPORT_SCALE,
