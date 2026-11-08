@@ -192,7 +192,11 @@ export const SynthesisInboxPanel = ({ note }: { note: Entity | null }) => {
           <span className="font-medium uppercase tracking-wide">
             {translate('synthesis.provider')}:
           </span>{' '}
-          {PROVIDER_LABELS[provider]} ·{' '}
+          {provider === 'openrouter'
+            ? PROVIDER_LABELS.openrouter
+            : provider === 'ollama'
+              ? PROVIDER_LABELS.ollama
+              : PROVIDER_LABELS.local} ·{' '}
           <span className="font-medium uppercase tracking-wide">{translate('synthesis.model')}:</span>{' '}
           {model}
         </p>

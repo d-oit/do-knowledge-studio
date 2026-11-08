@@ -138,6 +138,7 @@ describe('migration and hydration properties', () => {
         viewMode: 'grid' as const,
         showAll: false,
         graphViews: [],
+        proposals: [],
         entityHistory: [],
         historyIndex: 0,
       }
