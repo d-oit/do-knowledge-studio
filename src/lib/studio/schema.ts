@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { sanitizeUrl } from '../security'
 import { validateOllamaUrl } from '../ai/url-guard'
 import { SavedGraphViewsSchema } from './graph-views'
+import { SynthesisProposalSchema } from '../synthesis/schema'
 import { VIEW_IDS } from './types'
 
 /** Zod enum schema for EntityType (built-in types only). */
@@ -207,6 +208,9 @@ export const PersistedEnvelopeSchema = z.object({
   // Named graph canvas views (#1058). Defaulted so an envelope written before
   // saved views existed hydrates to an empty list rather than undefined.
   graphViews: SavedGraphViewsSchema.optional().default([]),
+  // Review inbox (#1057). Defaulted for the same reason: an envelope written
+  // before the inbox existed hydrates to an empty inbox.
+  proposals: z.array(SynthesisProposalSchema).optional().default([]),
 })
 
 /** Type of a validated entity record. */

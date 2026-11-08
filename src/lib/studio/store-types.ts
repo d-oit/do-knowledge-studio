@@ -7,6 +7,7 @@
  * temporal dead zone whenever the slice is the entry module.
  */
 import type { Claim, Entity, ViewId, ChatMessage, AnyEntityType } from './types'
+import type { SynthesisProposal } from '@/lib/synthesis/types'
 import type { SavedGraphView } from './graph-views'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from './schema'
 import type { HistorySnapshot } from './history-snapshot'
@@ -73,6 +74,15 @@ export interface StudioState {
   addClaims: (claims: Omit<Claim, 'id'>[]) => void
   updateClaim: (id: string, updates: Partial<Omit<Claim, 'id' | 'entityId'>>) => void
   deleteClaim: (id: string) => void
+
+  // Synthesis inbox (#1057). Proposals are reviewed records, never corpus
+  // entries: accepting is what creates the entity or claim, through the
+  // actions above, so one Undo reverses it.
+  proposals: SynthesisProposal[]
+  addProposals: (proposals: SynthesisProposal[]) => void
+  acceptProposal: (id: string) => void
+  rejectProposal: (id: string) => void
+  setProposalStatus: (id: string, status: SynthesisProposal['status']) => void
 
   // Library controls
   searchQuery: string

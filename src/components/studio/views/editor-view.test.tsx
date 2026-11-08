@@ -38,6 +38,9 @@ vi.mock('lucide-react', () => {
     Link2: Icon,
     ChevronDown: Icon,
     Mic: Icon,
+    Inbox: Icon,
+    Sparkles: Icon,
+    Square: Icon,
   }
 })
 
@@ -72,6 +75,10 @@ vi.mock('@/lib/editor', () => ({
   saveDraft: vi.fn(),
   loadDraft: vi.fn(() => null),
   removeDraft: vi.fn(),
+}))
+
+vi.mock('./synthesis-inbox-panel', () => ({
+  SynthesisInboxPanel: () => <div data-testid="synthesis-inbox" />,
 }))
 
 vi.mock('@/lib/utils', () => ({

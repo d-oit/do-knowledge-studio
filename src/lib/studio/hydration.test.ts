@@ -50,6 +50,7 @@ const createValidPersistedSlice = () => ({
   links: null,
   tags: null,
   graphViews: [],
+  proposals: [],
 })
 
 describe('sanitizeHydration', () => {

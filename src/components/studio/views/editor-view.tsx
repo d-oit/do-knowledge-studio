@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { EditorToolbar } from './editor-toolbar'
 const CursorTracker = lazy(() => import('../remote-cursors').then((module) => ({ default: module.CursorTracker })))
 import { ClaimsPanel } from './editor-claims-panel'
+import { SynthesisInboxPanel } from './synthesis-inbox-panel'
 import { EntityRevisionsPanel } from './editor-revisions-panel'
 import { useRestoreEntityRevision } from './use-restore-entity-revision'
 import { EditorHeader, EditorTags } from './editor-helpers'
@@ -427,6 +428,10 @@ export const EditorView = () => {
           updateClaim={updateClaim}
           deleteClaim={deleteClaim}
         />
+      )}
+
+      {editing && (
+        <SynthesisInboxPanel note={{ ...editing, content }} />
       )}
 
       {editing && (
