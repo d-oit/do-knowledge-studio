@@ -21,12 +21,18 @@ if (!existsSync(chunksDir)) {
   process.exit(0);
 }
 let total = 0;
+let skipped = 0;
 for (const f of readdirSync(chunksDir)) {
   try {
     total += statSync(join(chunksDir, f)).size;
-  } catch {
-    // A chunk disappearing mid-read is not a budget failure.
+  } catch (error) {
+    // A chunk disappearing mid-read is not a budget failure; count and report.
+    skipped += 1;
+    console.error(`Bundle budget: skipped unreadable chunk ${f}`, error);
   }
+}
+if (skipped > 0) {
+  console.log(`Bundle budget: ${skipped} chunk(s) disappeared mid-read (not a failure).`);
 }
 console.log(`Bundle budget: ${(total / 1024).toFixed(0)} KiB raw chunks vs ${(BUDGET_BYTES / 1024).toFixed(0)} KiB budget.`);
 if (total > BUDGET_BYTES) {
