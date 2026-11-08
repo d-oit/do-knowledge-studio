@@ -37,6 +37,8 @@ import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { getConflictResolutionKey, type FieldConflict } from '@/lib/sync/merge'
 import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
+import { SyncConnectionPanel } from './sync-connection-panel'
+import { useSyncIceServers } from './use-sync-ice-servers'
 import { translate as t } from '@/lib/i18n/messages/sync'
 import { translate as navT } from '@/lib/i18n/messages/nav'
 
@@ -249,6 +251,10 @@ export const SyncView = () => {
   const [pairingMode, setPairingMode] = useState<PairingMode>('none')
   const [discoveredPeers, setDiscoveredPeers] = useState<PeerInfo[]>([])
   const [pendingConflicts, setPendingConflicts] = useState<FieldConflict[]>([])
+  // Relays the user configured; held here so a join and a Re-sync use the same
+  // list the diagnostics panel shows. Credentials stay in this state only.
+  const [iceServers, setIceServers] = useSyncIceServers()
+  const setView = useStudioStore((state) => state.setView)
   const reducedMotion = useReducedMotion()
 
   const addEvent = useCallback(
@@ -305,7 +311,14 @@ export const SyncView = () => {
 
     try {
       void ensurePersistenceReady()
-      const newProvider = password ? joinRoom(id, { password }) : joinRoom(id)
+      const roomOptions = {
+        ...(password === '' ? {} : { password }),
+        ...(iceServers.length === 0 ? {} : { iceServers }),
+      }
+      // A room with neither a password nor relays is joined with no options at
+      // all, keeping the unencrypted default path unchanged.
+      const newProvider =
+        password === '' && iceServers.length === 0 ? joinRoom(id) : joinRoom(id, roomOptions)
       setProvider(newProvider)
       setRoomId(id)
       setInputRoomId('')
@@ -348,7 +361,7 @@ export const SyncView = () => {
       addEvent('error', t('sync.event.joinFailed', msg))
       toast.error(t('sync.toast.joinFailed', msg))
     }
-  }, [inputRoomId, roomPassword, entities, claims, addEvent])
+  }, [inputRoomId, roomPassword, entities, claims, iceServers, addEvent])
 
   const handleLeave = useCallback(() => {
     setStatus('leaving')
@@ -449,6 +462,19 @@ export const SyncView = () => {
         onQrScan={handleQrScan}
         roomKeyFingerprint={roomKeyFingerprint}
       />
+
+      <div className="mt-6 space-y-6">
+        <SyncConnectionPanel
+          provider={provider}
+          peerCount={peerCount}
+          roomActive={roomId !== ''}
+          iceServers={iceServers}
+          onIceServersChange={setIceServers}
+          onOpenFileSync={() => {
+            setView('export')
+          }}
+        />
+      </div>
 
       <ConflictSection
         conflicts={pendingConflicts}

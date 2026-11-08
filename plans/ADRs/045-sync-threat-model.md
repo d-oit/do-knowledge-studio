@@ -1,6 +1,6 @@
 # ADR 045: Sync Threat Model and Room Membership
 
-**Status**: Implemented (Issue #1035)
+**Status**: Implemented (Issue #1035; TURN section added by #1052)
 **Applies to**: `y-webrtc` 10.3.0 as installed in this repository.
 
 ## Context
@@ -51,6 +51,30 @@ rooms yields different keys.
   rotation is: leave the room, create a new random room id, and share the new
   password separately. Treat a leaked room id + password as membership for as
   long as that room is used.
+
+## TURN relays (#1052)
+
+A TURN relay is optional. When it carries a room, it carries the same
+DTLS-protected media as a direct connection; what changes is who can observe the
+connection and how it is paid for.
+
+- The relay sees both peers' IP addresses, connection duration and traffic
+  volume. It does not see document contents, and with a room password it does
+  not see signaling payloads either.
+- TURN credentials authorize traffic that is billed per gigabyte. They are
+  stored encrypted with a session-scoped AES-GCM key (same codec as AI API
+  keys), never written to localStorage, invites, QR codes, URLs, logs or
+  analytics, and every displayed server list is redacted to URLs plus an
+  "authenticated" flag.
+- Configured URLs are validated: only `stun:`, `stuns:`, `turn:` and `turns:`
+  are accepted; credentials embedded in a URL (`turn:user:pass@host`) are
+  rejected because those strings reach invites and logs; plaintext `turn:` to a
+  non-loopback host is refused unless the user explicitly allows it.
+- Deployment defaults may arrive through `NEXT_PUBLIC_ICE_SERVERS`. Those are
+  baked into the client bundle, so they are public: a shared credential is
+  suitable for a self-hosted lab, not for a public deployment.
+- A relay is an availability control, not an anonymity or identity control.
+  Using one changes who sees connection metadata, not who can join a room.
 
 ## Non-goals
 
