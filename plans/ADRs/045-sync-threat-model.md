@@ -82,3 +82,27 @@ connection and how it is paid for.
 - Authenticating peers, devices, or accounts.
 - Protecting against a compromised endpoint or a peer that was legitimately
   admitted.
+
+## XSS and exfiltration hardening (#1051)
+
+The app stores encrypted API keys, the knowledge corpus and sync secrets
+client-side, so XSS is the primary threat. The production CSP is the main
+mitigation:
+
+- `connect-src` is an explicit allowlist (`src/lib/security/csp.ts`): `self`,
+  `https://openrouter.ai`, Hugging Face model hosts, `cdn.jsdelivr.net`,
+  `wss://y-webrtc-eu.fly.dev`, and loopback / `*.local` for local Ollama and
+  local signaling. The previous blanket `https:` / `wss:` would have let an
+  injected script exfiltrate the library or a decrypted key anywhere.
+- `img-src` is narrowed to `self` + model hosts + `data:` / `blob:`; remote
+  tracking pixels via arbitrary `https:` images are rejected.
+- `Permissions-Policy` disables camera, microphone, geolocation, payment, USB
+  and serial. `Cross-Origin-Opener-Policy: same-origin-allow-popups` keeps
+  OAuth/popup flows working; `CORP` is deliberately omitted because
+  cross-origin model assets must remain loadable.
+- Residual risks (documented, not ignored): `script-src` keeps `'unsafe-eval'`
+  because `onnxruntime-web` compiles with `eval` in production (measured
+  Chromium drive); dropping it ships a silently lexical fallback.
+  `'unsafe-inline'` for scripts stays until Next emits nonces without breaking
+  the precache/offline contract (ADR 041). `e2e/csp-violations.spec.ts` fails
+  on any violation across all primary views, including offline mode.
