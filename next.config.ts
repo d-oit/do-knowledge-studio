@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 import path from "path";
+import {
+  CONNECT_SRC_SOURCES,
+  CROSS_ORIGIN_OPENER_POLICY_VALUE,
+  IMG_SRC_SOURCES,
+  PERMISSIONS_POLICY_VALUE,
+} from "./src/lib/security/csp";
 
 // `connect-src` has to permit the local AI endpoint. The Ollama adapter fetches
 // `${validateOllamaUrl(url)}/api/chat`, and that validator only accepts `localhost`,
@@ -43,14 +49,14 @@ const cspHeader = `
   default-src 'self';
   ${scriptSrc}
   style-src 'self' 'unsafe-inline';
-  img-src 'self' blob: data: https:;
+  img-src ${IMG_SRC_SOURCES.join(' ')};
   font-src 'self' data:;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
   worker-src 'self' blob:;
-  connect-src 'self' https: wss: ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* http://*.local:*;
+  connect-src ${CONNECT_SRC_SOURCES.join(' ')};
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {
@@ -92,6 +98,16 @@ const nextConfig: NextConfig = {
           // maintainer reading either one alone drew the wrong conclusion.
           // Plan 158 P1-3.
           { key: 'Referrer-Policy', value: 'no-referrer' },
+          // #1051: restrictive permissions + opener policy. COOP uses
+          // `same-origin-allow-popups` (not `same-origin`) so OAuth-style
+          // popups and the PWA share flow keep working; CORP is omitted
+          // because cross-origin model assets (Hugging Face / jsdelivr)
+          // must remain loadable.
+          { key: 'Permissions-Policy', value: PERMISSIONS_POLICY_VALUE },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: CROSS_ORIGIN_OPENER_POLICY_VALUE,
+          },
         ],
       },
     ]);
