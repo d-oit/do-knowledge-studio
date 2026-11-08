@@ -17,11 +17,21 @@
 /** AI provider origin (OpenRouter gateway). */
 export const OPENROUTER_ORIGIN = 'https://openrouter.ai';
 
-/** Embedding model hosts served to transformers.js / cached by the SW. */
+/** Embedding model hosts served to transformers.js / cached by the SW.
+ *
+ * `*.cdn.hf.co` is the Xet CAS bridge: `huggingface.co/.../resolve/...`
+ * answers the config/tokenizer from `huggingface.co` itself but 302s the
+ * ONNX binaries to region-prefixed signed URLs such as
+ * `us.aws.cdn.hf.co` (measured 2026-11-08 after CI showed 16/16 lexical
+ * fallbacks behind the narrowed `connect-src`). `cas-bridge.xethub.*` is
+ * the legacy bridge kept for older cached redirects.
+ */
 export const MODEL_CSP_HOSTS = [
   'https://huggingface.co',
   'https://cdn-lfs.huggingface.co',
   'https://cdn-lfs.hf.co',
+  'https://*.cdn.hf.co',
+  'https://cas-bridge.xethub.huggingface.co',
   'https://cdn.jsdelivr.net',
 ] as const;
 
