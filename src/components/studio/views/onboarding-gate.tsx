@@ -49,10 +49,18 @@ export const OnboardingGate = memo(function OnboardingGate() {
     (index: number) => {
       const clamped = Math.max(0, Math.min(TOUR_STEPS.length - 1, index));
       setStepIndex(clamped);
-      const step = TOUR_STEPS[clamped];
-      if (step !== undefined && step !== 'backup') {
-        navigateToView(step === 'chat' ? 'chat' : step);
-      } else if (step === 'backup') {
+      // Explicit branches: dynamic TOUR_STEPS[clamped] trips
+      // security/detect-object-injection (same pattern as the synthesis
+      // provider-label fix).
+      if (clamped === 0) {
+        navigateToView('editor');
+      } else if (clamped === 1) {
+        navigateToView('library');
+      } else if (clamped === 2) {
+        navigateToView('graph');
+      } else if (clamped === 3) {
+        navigateToView('chat');
+      } else {
         navigateToView('export');
       }
     },
@@ -71,8 +79,17 @@ export const OnboardingGate = memo(function OnboardingGate() {
   }, [visible, stepIndex, goStep, finish]);
 
   if (!visible) return null;
-  const step = TOUR_STEPS[stepIndex] ?? 'editor';
-  const copy = STEP_COPY[step];
+  // Explicit step resolution (see goStep): no dynamic index into tour state.
+  const copy =
+    stepIndex === 1
+      ? STEP_COPY.library
+      : stepIndex === 2
+        ? STEP_COPY.graph
+        : stepIndex === 3
+          ? STEP_COPY.chat
+          : stepIndex >= 4
+            ? STEP_COPY.backup
+            : STEP_COPY.editor;
 
   return (
     <div
@@ -96,7 +113,9 @@ export const OnboardingGate = memo(function OnboardingGate() {
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => goStep(stepIndex - 1)}
+            onClick={() => {
+              goStep(stepIndex - 1);
+            }}
             disabled={stepIndex === 0}
             className="rounded-md border border-border px-4 py-2 text-body disabled:opacity-50"
           >
@@ -105,7 +124,9 @@ export const OnboardingGate = memo(function OnboardingGate() {
           {stepIndex < TOUR_STEPS.length - 1 ? (
             <button
               type="button"
-              onClick={() => goStep(stepIndex + 1)}
+              onClick={() => {
+                goStep(stepIndex + 1);
+              }}
               className="rounded-md bg-saffron px-4 py-2 text-body font-medium text-white"
             >
               {translate('onboarding.next')}
@@ -121,7 +142,9 @@ export const OnboardingGate = memo(function OnboardingGate() {
           )}
           <button
             type="button"
-            onClick={finish}
+            onClick={() => {
+              finish();
+            }}
             className="rounded-md border border-border px-4 py-2 text-body"
           >
             {translate('onboarding.skip')}
