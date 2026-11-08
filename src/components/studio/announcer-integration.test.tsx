@@ -19,6 +19,8 @@ vi.mock('lucide-react', () => {
   )
   return {
     History: Icon,
+    Inbox: Icon,
+    Square: Icon,
     Home: Icon,
     Library: Icon,
     GitBranch: Icon,

@@ -32,6 +32,7 @@ import { buildSeedState } from './seed-state'
 import type { StudioState } from './store-types'
 import { createEntitiesSlice } from './slices/entities-slice'
 import { createClaimsSlice } from './slices/claims-slice'
+import { createProposalsSlice } from './slices/proposals-slice'
 import { createHistorySlice } from './slices/history-slice'
 import { createChatSlice } from './slices/chat-slice'
 import { createDataSlice } from './slices/data-slice'
@@ -124,6 +125,7 @@ export const useStudioStore = create<StudioState>()(
       ...createUiSlice(set, get),
       ...createEntitiesSlice(set, get),
       ...createClaimsSlice(set, get),
+      ...createProposalsSlice(set, get),
       ...createHistorySlice(set, get),
       ...createChatSlice(set, get),
       ...createDataSlice(set, get),
