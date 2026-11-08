@@ -293,7 +293,11 @@ export const parseIceServersEnv = (raw: string | undefined): IceServerConfig[] =
   try {
     parsed = JSON.parse(value)
   } catch (error) {
-    log.warn('NEXT_PUBLIC_ICE_SERVERS is not valid JSON; ignoring it', { error })
+    // The error name only: a `SyntaxError` message quotes a slice of the input,
+    // and that input may be a TURN credential (ADR 045).
+    log.warn('NEXT_PUBLIC_ICE_SERVERS is not valid JSON; ignoring it', {
+      reason: error instanceof Error ? error.name : typeof error,
+    })
     return []
   }
   const result = validateIceServers(parsed)

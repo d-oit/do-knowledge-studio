@@ -113,6 +113,27 @@ password, give up.
 - No automatic relay health check: probing a TURN server from the client costs
   billed traffic and is not evidence that a relay would have been chosen.
 
+## Code review (code-review-assistant pass)
+
+PR [#1095](https://github.com/d-oit/do-knowledge-studio/pull/1095). Adversarial probes run:
+
+- **Swallowed exception** — `decryptSessionValue` returns `null` on a wrong key
+  (documented contract, callers fall back to deployment defaults);
+  `readSelectedCandidate` logs and still reports the ICE state. No blocking change.
+- **Listener/timer teardown** — `useSyncIceServers` cancels its state update in the
+  effect cleanup; the IDB connection is closed on `versionchange`.
+- **Unguarded index** — `samples[0]?.state` and `selectedPairs.at(-1)` are both
+  optional-chained; an empty peer list yields `iceState: null`, not a throw.
+- **Secret leaking into logs** — found and fixed: `parseIceServersEnv` logged the
+  raw `SyntaxError`, whose message quotes a slice of the input, and that input may
+  carry a TURN credential (ADR 045). It now logs the error name only.
+- **Stale base** — `git merge-base --is-ancestor origin/main HEAD` holds; the diff
+  of `origin/main...HEAD` shows no deletions outside the refactors described above.
+- Accessibility: the dark theme failed axe on two new surfaces (destructive text on
+  a red tint at 4.48:1, white on dark saffron at 2.42:1). Both now use
+  `bg-background` and `text-saffron-foreground`; the sync a11y specs pass in both
+  themes locally.
+
 ## Follow-ups
 
 - Coturn container in CI behind a label-gated workflow, if relay coverage becomes
