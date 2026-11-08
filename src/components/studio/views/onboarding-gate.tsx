@@ -75,7 +75,9 @@ export const OnboardingGate = memo(function OnboardingGate() {
       if (e.key === 'ArrowLeft') goStep(stepIndex - 1);
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
   }, [visible, stepIndex, goStep, finish]);
 
   if (!visible) return null;
