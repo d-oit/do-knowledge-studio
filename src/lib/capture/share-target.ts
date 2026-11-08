@@ -13,6 +13,9 @@ export const SHARE_PARAMS = ['title', 'text', 'url'] as const;
 /** Max chars accepted per field (share sheets can be large). */
 export const MAX_SHARE_FIELD_CHARS = 4000;
 
+/** Max chars of the share title kept as the Inbox note name. */
+export const MAX_CAPTURE_TITLE_CHARS = 120;
+
 /** Parsed, sanitized share payload. */
 export interface SharePayload {
   readonly title: string;
@@ -48,7 +51,6 @@ export const parseShareParams = (search: string): SharePayload | null => {
     if (payload.url !== '') {
       const parsed = new URL(payload.url);
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        payload satisfies SharePayload;
         return { ...payload, url: '' };
       }
     }

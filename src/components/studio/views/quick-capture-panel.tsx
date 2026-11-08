@@ -2,7 +2,7 @@ import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { useStudioStore } from '@/lib/studio/store';
 import type { SharePayload } from '@/lib/capture/share-target';
-import { buildCaptureBody } from '@/lib/capture/share-target';
+import { MAX_CAPTURE_TITLE_CHARS, buildCaptureBody } from '@/lib/capture/share-target';
 
 /** Props for the share confirmation screen (nothing is written until Save). */
 interface QuickCaptureProps {
@@ -26,7 +26,7 @@ export const QuickCapturePanel = memo(function QuickCapturePanel({ payload, onDo
       const now = new Date().toISOString();
       commitEntity({
         id: crypto.randomUUID(),
-        name: title.slice(0, 120),
+        name: title.slice(0, MAX_CAPTURE_TITLE_CHARS),
         type: 'note',
         description: '',
         content: body,
