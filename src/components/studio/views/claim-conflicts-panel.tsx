@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Copy, GitMerge, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStudioStore } from '@/lib/studio/store';
@@ -44,8 +44,10 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
     setDismissed(loadDismissedPairs());
   }, []);
 
+  const cancelledRef = useRef(false);
+
   useEffect(() => {
-    let cancelled = false;
+    cancelledRef.current = false;
     const run = async (): Promise<void> => {
       if (claims.length < 2) {
         setPairs([]);
@@ -55,16 +57,16 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
       try {
         const controller = new AbortController();
         const onAbort = (): void => {
-          cancelled = true;
+          cancelledRef.current = true;
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
         const found = await findClaimConflictsAsync(claims);
         controller.signal.removeEventListener('abort', onAbort);
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         const byId = new Map(claims.map((c) => [c.id, c]));
         const resolved: ResolvedConflict[] = [];
         for (const hit of found) {
-          if (cancelled) break;
+          if (cancelledRef.current) break;
           if (isPairDismissed(hit.idA, hit.idB, loadDismissedPairs())) continue;
           const a = byId.get(hit.idA);
           const b = byId.get(hit.idB);
@@ -77,16 +79,16 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
             confidenceB: b.confidence,
           });
         }
-        if (!cancelled) setPairs(resolved);
+        if (!cancelledRef.current) setPairs(resolved);
       } catch (error) {
         console.error('Conflict scan failed', error);
       } finally {
-        if (!cancelled) setScanning(false);
+        if (!cancelledRef.current) setScanning(false);
       }
     };
     void run();
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
     };
   }, [claims]);
 
@@ -159,7 +161,9 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
                 <button
                   type="button"
                   className="rounded-md border border-border px-3 py-2 text-body"
-                  onClick={() => handleMerge(pair.idA, pair.idB)}
+                  onClick={() => {
+                    handleMerge(pair.idA, pair.idB);
+                  }}
                   aria-label={`${translate('conflicts.merge')}: ${pair.statementA}`}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -169,14 +173,18 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
                 <button
                   type="button"
                   className="rounded-md border border-border px-3 py-2 text-body"
-                  onClick={() => handleSuperseded(pair.idB)}
+                  onClick={() => {
+                    handleSuperseded(pair.idB);
+                  }}
                 >
                   {translate('conflicts.superseded')}
                 </button>
                 <button
                   type="button"
                   className="rounded-md border border-border px-3 py-2 text-body"
-                  onClick={() => handleDismiss(pair.idA, pair.idB)}
+                  onClick={() => {
+                    handleDismiss(pair.idA, pair.idB);
+                  }}
                 >
                   <span className="inline-flex items-center gap-1">
                     <X className="h-4 w-4" /> {translate('conflicts.dismiss')}
