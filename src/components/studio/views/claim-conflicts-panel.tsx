@@ -48,6 +48,10 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
 
   useEffect(() => {
     cancelledRef.current = false;
+    // Read through a boolean helper: the cleanup closure below mutates the
+    // ref on unmount/claims-change, but the linter only sees the `= false`
+    // assignment above and narrows direct reads to "always falsy".
+    const isCancelled = (): boolean => cancelledRef.current;
     const run = async (): Promise<void> => {
       if (claims.length < 2) {
         setPairs([]);
@@ -62,11 +66,11 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
         controller.signal.addEventListener('abort', onAbort, { once: true });
         const found = await findClaimConflictsAsync(claims);
         controller.signal.removeEventListener('abort', onAbort);
-        if (cancelledRef.current) return;
+        if (isCancelled()) return;
         const byId = new Map(claims.map((c) => [c.id, c]));
         const resolved: ResolvedConflict[] = [];
         for (const hit of found) {
-          if (cancelledRef.current) break;
+          if (isCancelled()) break;
           if (isPairDismissed(hit.idA, hit.idB, loadDismissedPairs())) continue;
           const a = byId.get(hit.idA);
           const b = byId.get(hit.idB);
@@ -79,11 +83,11 @@ export const ClaimConflictsPanel = memo(function ClaimConflictsPanel() {
             confidenceB: b.confidence,
           });
         }
-        if (!cancelledRef.current) setPairs(resolved);
+        if (!isCancelled()) setPairs(resolved);
       } catch (error) {
         console.error('Conflict scan failed', error);
       } finally {
-        if (!cancelledRef.current) setScanning(false);
+        if (!isCancelled()) setScanning(false);
       }
     };
     void run();
