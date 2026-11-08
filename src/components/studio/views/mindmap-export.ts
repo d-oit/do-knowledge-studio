@@ -110,8 +110,10 @@ export const exportElementAsPng = async (element: HTMLElement, filename: string)
   const html2canvasModule = (await import('html2canvas')) as unknown as {
     default: Html2Canvas;
   };
-  // Named with an `html` infix: the binding holds the html2canvas rasterizer
-  // function (not markup), which is what the XSS mixed-HTML rule keys off.
+  // False positive (xss/no-mixed-html): the binding holds the html2canvas
+  // rasterizer *function* (module default export), not markup, and no user
+  // input flows into it. The rule keys off the 'html2canvas' specifier string.
+  // eslint-disable-next-line xss/no-mixed-html -- see above
   const rasterizeHtml = html2canvasModule.default;
   const canvas = await rasterizeHtml(element, {
     backgroundColor: resolvePaperBackground(element),

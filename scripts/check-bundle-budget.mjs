@@ -24,6 +24,10 @@ let total = 0;
 let skipped = 0;
 for (const f of readdirSync(chunksDir)) {
   try {
+    // False positive (security/detect-non-literal-fs-filename): `f` comes
+    // from readdir of the fixed `.next` build dir, never from user input,
+    // and this advisory script always exits 0.
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- see above
     total += statSync(join(chunksDir, f)).size;
   } catch (error) {
     // A chunk disappearing mid-read is not a budget failure; count and report.
