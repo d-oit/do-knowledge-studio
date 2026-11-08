@@ -28,6 +28,7 @@ import {
 } from '@/lib/studio/hydration-guard'
 import { QuarantineBanner } from './views/quarantine-banner'
 import { RecoveryBanner } from './views/recovery-banner'
+import { OnboardingGate } from './views/onboarding-gate'
 import {
   describeRecoverySnapshot,
   subscribeToRecoveryAvailability,
@@ -357,6 +358,7 @@ export const AppShell = () => {
       />
       <MobileDrawer />
       <ShortcutsDialog />
+      <OnboardingGate />
     </div>
   )
 }
