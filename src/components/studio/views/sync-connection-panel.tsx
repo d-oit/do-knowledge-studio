@@ -32,29 +32,30 @@ import { translate as t } from '@/lib/i18n/messages/sync-connection'
 /** How often the panel re-reads the connection while a room is active. */
 const DIAGNOSTICS_POLL_MS = 3000
 
-/** Message key for every hint; keeps the render free of fallthrough branches. */
-const HINT_MESSAGE_KEYS = {
-  idle: 'syncConnection.hint.idle',
-  'signaling-unreachable': 'syncConnection.hint.signalingUnreachable',
-  'no-peers': 'syncConnection.hint.noPeers',
-  negotiating: 'syncConnection.hint.negotiating',
-  'connected-direct': 'syncConnection.hint.connectedDirect',
-  'connected-relay': 'syncConnection.hint.connectedRelay',
-  'nat-blocked': 'syncConnection.hint.natBlocked',
-  'relay-failed': 'syncConnection.hint.relayFailed',
-} as const satisfies Record<SyncConnectionHint, string>
+/** A message key accepted by this scope's translate helper. */
+type HintMessageKey = Parameters<typeof t>[0]
 
-/** How each hint reads at a glance. */
-const HINT_TONE: Record<SyncConnectionHint, string> = {
-  idle: 'text-ink-faint',
-  'signaling-unreachable': 'text-destructive',
-  'no-peers': 'text-saffron',
-  negotiating: 'text-ink-mute',
-  'connected-direct': 'text-emerald-600',
-  'connected-relay': 'text-saffron',
-  'nat-blocked': 'text-destructive',
-  'relay-failed': 'text-destructive',
+/** Presentation for every hint: its message key and tone class. */
+interface HintPresentation {
+  messageKey: HintMessageKey
+  tone: string
 }
+
+/**
+ * Kept in a `Map` rather than a record on purpose: a dynamic record lookup is
+ * what Codacy's "Generic Object Injection Sink" rule reports, even for a
+ * closed union (the same reason `makeT` materializes its message map).
+ */
+const HINT_PRESENTATION = new Map<SyncConnectionHint, HintPresentation>([
+  ['idle', { messageKey: 'syncConnection.hint.idle', tone: 'text-ink-faint' }],
+  ['signaling-unreachable', { messageKey: 'syncConnection.hint.signalingUnreachable', tone: 'text-destructive' }],
+  ['no-peers', { messageKey: 'syncConnection.hint.noPeers', tone: 'text-saffron' }],
+  ['negotiating', { messageKey: 'syncConnection.hint.negotiating', tone: 'text-ink-mute' }],
+  ['connected-direct', { messageKey: 'syncConnection.hint.connectedDirect', tone: 'text-emerald-600' }],
+  ['connected-relay', { messageKey: 'syncConnection.hint.connectedRelay', tone: 'text-saffron' }],
+  ['nat-blocked', { messageKey: 'syncConnection.hint.natBlocked', tone: 'text-destructive' }],
+  ['relay-failed', { messageKey: 'syncConnection.hint.relayFailed', tone: 'text-destructive' }],
+])
 
 /** One labelled row of the diagnostics table. */
 const DiagnosticRow = ({ label, value }: { label: string; value: string }) => (
@@ -112,7 +113,7 @@ const useConnectionSnapshot = (
 
 /** Recovery block shown when the direct path is blocked. */
 const BlockedNotice = ({ onOpenFileSync }: { onOpenFileSync: () => void }) => (
-  <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+  <div className="mt-3 rounded-md border border-destructive/40 bg-background p-3">
     <p className="flex items-center gap-1.5 text-label-lg font-semibold text-destructive">
       <AlertTriangle className="h-4 w-4" />
       {t('syncConnection.blockedTitle')}
@@ -130,7 +131,7 @@ const BlockedNotice = ({ onOpenFileSync }: { onOpenFileSync: () => void }) => (
       </a>
       <button
         type="button"
-        className="flex min-h-11 items-center gap-1.5 rounded-md bg-saffron px-3 text-label-lg font-medium text-white hover:opacity-90"
+        className="flex min-h-11 items-center gap-1.5 rounded-md bg-saffron px-3 text-label-lg font-medium text-saffron-foreground hover:opacity-90"
         onClick={onOpenFileSync}
       >
         <ArrowRightLeft className="h-3.5 w-3.5" />
@@ -151,6 +152,10 @@ const DiagnosticsSection = ({
   onOpenFileSync: () => void
 }) => {
   const hint: SyncConnectionHint = snapshot.hint
+  const presentation = HINT_PRESENTATION.get(hint)
+  const hintTone = presentation?.tone ?? 'text-ink-faint'
+  const hintMessage =
+    presentation === undefined ? t('syncConnection.hint.idle') : t(presentation.messageKey)
   return (
     <section className="rounded-lg border border-border bg-card p-5">
       <h2 className="mb-1 font-serif text-body-lg font-semibold text-ink">{t('syncConnection.title')}</h2>
@@ -182,7 +187,7 @@ const DiagnosticsSection = ({
           value={snapshot.candidateKind ?? t('syncConnection.notNegotiated')}
         />
       </dl>
-      <p className={`mt-2 text-body-sm ${HINT_TONE[hint]}`}>{t(HINT_MESSAGE_KEYS[hint])}</p>
+      <p className={`mt-2 text-body-sm ${hintTone}`}>{hintMessage}</p>
       {snapshot.recommendFileFallback && <BlockedNotice onOpenFileSync={onOpenFileSync} />}
     </section>
   )
@@ -354,7 +359,7 @@ const IceSettingsSection = ({
       <div className="mt-3 flex items-center gap-3">
         <button
           type="button"
-          className="flex min-h-11 items-center gap-1.5 rounded-md bg-saffron px-3 text-label-lg font-medium text-white hover:opacity-90 disabled:opacity-60"
+          className="flex min-h-11 items-center gap-1.5 rounded-md bg-saffron px-3 text-label-lg font-medium text-saffron-foreground hover:opacity-90 disabled:opacity-60"
           disabled={busy || url.trim() === ''}
           onClick={handleAdd}
         >
@@ -365,7 +370,7 @@ const IceSettingsSection = ({
       </div>
 
       {issues.length > 0 && (
-        <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-body-sm text-destructive">
+        <div className="mt-3 rounded-md border border-destructive/40 bg-background p-3 text-body-sm text-destructive">
           <p className="font-semibold">{t('syncIce.issueCount', String(issues.length))}</p>
           <ul className="mt-1 list-disc space-y-1 pl-4">
             {issues.map((issue) => (
