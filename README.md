@@ -12,7 +12,7 @@ The visual language follows **Editorial Paper & Saffron**: warm paper background
 
 ## Why local-first
 
-Your notes stay in this browser (IndexedDB + a small localStorage envelope). No account, no server. Only opt-in flows leave the device: AI providers, web research, sync signaling and model downloads. Privacy details: [ADR 045](./plans/ADRs/045-sync-threat-model.md). Live demo: https://do-knowledge-studio.vercel.app
+Your notes stay in this browser (IndexedDB + a small localStorage envelope). No account, no server. Only opt-in flows leave the device: AI providers, web research, sync signaling and model downloads. Privacy details: [ADR 045](./plans/ADRs/045-sync-threat-model.md). Live demo: <https://do-knowledge-studio.vercel.app>
 
 ---
 
