@@ -111,6 +111,10 @@ for (const theme of THEME_PASSES) {
 
     test.beforeEach(async ({ page }) => {
       await page.goto('/');
+      // Dismiss the first-run onboarding gate (fresh E2E profile) before
+      // measuring: its modal buttons would otherwise be scanned as shell
+      // targets on the home view.
+      await waitForAppReady(page);
       // Guard: a pass that silently rendered in the other palette would measure
       // the same geometry and prove nothing about the palette it claims.
       await expectThemeApplied(page, theme);

@@ -16,6 +16,7 @@ import {
   SunMoon,
   Search,
   CornerDownLeft,
+  GraduationCap,
 } from 'lucide-react'
 import { useStudioStore } from '@/lib/studio/store'
 import { exportLibraryJson } from '@/components/studio/views/export-library-json'
@@ -24,6 +25,8 @@ import { Overlay } from '@/components/studio/ui/shared-primitives'
 import type { ViewId } from '@/lib/studio/types'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
 import { translate } from '@/lib/i18n/messages/palette'
+import { translate as onboardingT } from '@/lib/i18n/messages/onboarding'
+import { resetOnboarding } from '@/lib/onboarding/tour'
 
 interface CmdItem {
   id: string
@@ -156,6 +159,17 @@ export const CommandPalette = ({ onEntitySelect }: CommandPaletteProps) => {
       onSelect: () => {
         setTheme(nextTheme(theme ?? 'system'))
         close()
+      },
+      group: translate('palette.group.actions'),
+    },
+    {
+      id: 'action-replay-tour',
+      label: onboardingT('onboarding.replay'),
+      hint: translate('palette.group.actions'),
+      icon: GraduationCap,
+      onSelect: () => {
+        resetOnboarding()
+        window.location.reload()
       },
       group: translate('palette.group.actions'),
     },

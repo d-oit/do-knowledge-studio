@@ -62,6 +62,7 @@ vi.mock('lucide-react', () => {
     SunMoon: Icon,
     Search: Icon,
     CornerDownLeft: Icon,
+    GraduationCap: Icon,
   }
 })
 
@@ -221,8 +222,8 @@ describe('CommandPalette', () => {
   it('shows result count', () => {
     commandOpen = true
     render(<CommandPalette {...defaultProps} />)
-    // 9 nav + 1 create + 2 actions + 2 entities = 14
-    expect(screen.getByText('14 results')).toBeDefined()
+    // 9 nav + 1 create + 3 actions (incl. replay-tour) + 2 entities = 15
+    expect(screen.getByText('15 results')).toBeDefined()
   })
 
   it('shows keyboard shortcut hints', () => {
@@ -300,6 +301,12 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Create new entity')).toBeDefined()
     expect(screen.getByText('Export library as JSON')).toBeDefined()
     expect(screen.getByText('Toggle theme')).toBeDefined()
+  })
+
+  it('renders the replay-tour action (#1064)', () => {
+    commandOpen = true
+    render(<CommandPalette {...defaultProps} />)
+    expect(screen.getByText('Replay guided tour')).toBeDefined()
   })
 
   it('keeps group order: Navigate, Create, Actions, then Library results', () => {
