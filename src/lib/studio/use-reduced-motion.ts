@@ -25,13 +25,20 @@ const getServerSnapshot = (): boolean => false
  * callbacks to keep a stable identity across renders, or it re-subscribes on
  * every one.
  */
-const getSnapshot = (): boolean => window.matchMedia(QUERY).matches
+const hasMatchMedia = (): boolean =>
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+
+const getSnapshot = (): boolean => {
+  if (!hasMatchMedia()) return false;
+  return window.matchMedia(QUERY).matches;
+};
 
 const subscribe = (onStoreChange: () => void): (() => void) => {
-  const mediaQuery = window.matchMedia(QUERY)
-  mediaQuery.addEventListener('change', onStoreChange)
-  return () => mediaQuery.removeEventListener('change', onStoreChange)
-}
+  if (!hasMatchMedia()) return () => {};
+  const mediaQuery = window.matchMedia(QUERY);
+  mediaQuery.addEventListener('change', onStoreChange);
+  return () => mediaQuery.removeEventListener('change', onStoreChange);
+};
 
 /**
  * Returns `true` when the user has enabled "reduce motion" in their OS
