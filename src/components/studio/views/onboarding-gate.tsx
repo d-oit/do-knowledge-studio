@@ -119,7 +119,7 @@ export const OnboardingGate = memo(function OnboardingGate() {
               goStep(stepIndex - 1);
             }}
             disabled={stepIndex === 0}
-            className="rounded-md border border-border px-4 py-2 text-body disabled:opacity-50"
+            className="min-h-[44px] rounded-md border border-border px-4 py-2 text-body disabled:opacity-50"
           >
             {translate('onboarding.back')}
           </button>
@@ -129,7 +129,7 @@ export const OnboardingGate = memo(function OnboardingGate() {
               onClick={() => {
                 goStep(stepIndex + 1);
               }}
-              className="rounded-md bg-saffron px-4 py-2 text-body font-medium text-white"
+              className="min-h-[44px] rounded-md bg-saffron px-4 py-2 text-body font-medium text-white"
             >
               {translate('onboarding.next')}
             </button>
@@ -137,7 +137,7 @@ export const OnboardingGate = memo(function OnboardingGate() {
             <button
               type="button"
               onClick={finish}
-              className="rounded-md bg-saffron px-4 py-2 text-body font-medium text-white"
+              className="min-h-[44px] rounded-md bg-saffron px-4 py-2 text-body font-medium text-white"
             >
               {translate('onboarding.done')}
             </button>
@@ -147,7 +147,7 @@ export const OnboardingGate = memo(function OnboardingGate() {
             onClick={() => {
               finish();
             }}
-            className="rounded-md border border-border px-4 py-2 text-body"
+            className="min-h-[44px] rounded-md border border-border px-4 py-2 text-body"
           >
             {translate('onboarding.skip')}
           </button>

@@ -167,6 +167,9 @@ for (const theme of THEME_PASSES) {
     for (const view of AXE_VIEWS) {
       test(view.name, async ({ page }) => {
         await page.goto('/');
+        // Dismiss the first-run onboarding gate (fresh E2E profile) before
+        // scanning: the home view has no navClick to do it implicitly.
+        await waitForAppReady(page);
         // Guard: the palette this pass claims is the one being measured — axe
         // only clears the dark contract if the dark palette really mounted.
         await expectThemeApplied(page, theme);

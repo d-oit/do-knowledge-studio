@@ -16,6 +16,55 @@ import { expect, type Page } from '@playwright/test';
  * Declared first: the helpers below call it, and module-scope const arrows must
  * be defined before use (temporal dead zone).
  */
+/** Accessible name of the first-run onboarding dialog (#1064). */
+const ONBOARDING_DIALOG_NAME = /take the tour/i;
+
+/** Escape presses tried before falling back to a click; see below. */
+const ONBOARDING_DISMISS_ATTEMPTS = 5;
+
+/** How long each Escape press gets to close the gate before the next try. */
+const ONBOARDING_DISMISS_TIMEOUT_MS = 500;
+
+/**
+ * Dismiss the first-run onboarding gate if it is showing.
+ *
+ * The gate appears one animation frame after mount, so the frame is awaited
+ * before deciding whether it is there — checking straight after
+ * `data-app-ready` races its own `requestAnimationFrame`.
+ *
+ * Dismissal is Escape rather than a click on "Skip tour": a click moves the
+ * browser's sequential-focus starting point into the dialog that is about to
+ * unmount, so the next Tab lands elsewhere and the skip-nav specs fail. Escape
+ * leaves focus where it was, giving a fresh profile the same Tab order as a
+ * returning one. The press is retried because the gate's keydown listener is
+ * bound in an effect that can commit a frame after the dialog paints, and a key
+ * pressed in that gap is simply lost. The click is a last-resort fallback so a
+ * spec fails with a dead overlay rather than a silent hang.
+ */
+const dismissOnboardingGate = async (page: Page): Promise<void> => {
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  const gate = page.getByRole('dialog', { name: ONBOARDING_DIALOG_NAME });
+  if (!(await gate.isVisible().catch((error: unknown) => {
+    console.warn('Onboarding gate visibility check failed; assuming closed', error);
+    return false;
+  }))) {
+    return;
+  }
+  for (let attempt = 0; attempt < ONBOARDING_DISMISS_ATTEMPTS; attempt += 1) {
+    await page.keyboard.press('Escape');
+    try {
+      await expect(gate).toBeHidden({ timeout: ONBOARDING_DISMISS_TIMEOUT_MS });
+      return;
+    } catch (error) {
+      if (attempt === ONBOARDING_DISMISS_ATTEMPTS - 1) {
+        console.warn('Onboarding gate ignored Escape; falling back to Skip tour', error);
+      }
+    }
+  }
+  await page.getByRole('button', { name: /skip tour/i }).click();
+  await expect(gate).toBeHidden();
+};
+
 export const waitForAppReady = async (page: Page): Promise<void> => {
   await expect(page.locator('[data-app-ready="true"]')).toBeAttached();
   // First-run onboarding (#1064) renders a modal dialog over the shell for
@@ -23,11 +72,7 @@ export const waitForAppReady = async (page: Page): Promise<void> => {
   // share the same post-onboarding starting point instead of timing out on
   // an overlay that intercepts every click. Unit tests bypass the gate via
   // NODE_ENV=test; E2E runs against the dev server where the flag is absent.
-  const gate = page.getByRole('dialog', { name: /take the tour/i });
-  if (await gate.isVisible().catch(() => false)) {
-    await page.getByRole('button', { name: /skip tour/i }).click();
-    await expect(gate).toBeHidden();
-  }
+  await dismissOnboardingGate(page);
 };
 
 /**
