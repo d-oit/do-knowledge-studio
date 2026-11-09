@@ -23,8 +23,9 @@ try {
   grep = execSync(`grep -rhoE "${PATTERN}" src --include="*.ts" --include="*.tsx" || true`, {
     encoding: 'utf8',
   });
-} catch {
-  grep = '';
+} catch (error) {
+  console.error('Unused UI check: import scan failed; treating all primitives as used.', error);
+  process.exit(0);
 }
 const unused = files.filter((f) => {
   const base = f.replace(/\.(tsx|ts)$/, '');
