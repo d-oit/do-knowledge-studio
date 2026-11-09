@@ -71,6 +71,7 @@ vi.mock('lucide-react', () => {
     SunMoon: Icon,
     Search: Icon,
     CornerDownLeft: Icon,
+    GraduationCap: Icon,
   }
 })
 
