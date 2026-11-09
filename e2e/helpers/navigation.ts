@@ -18,6 +18,16 @@ import { expect, type Page } from '@playwright/test';
  */
 export const waitForAppReady = async (page: Page): Promise<void> => {
   await expect(page.locator('[data-app-ready="true"]')).toBeAttached();
+  // First-run onboarding (#1064) renders a modal dialog over the shell for
+  // fresh profiles — which is every E2E context. Dismiss it here so all specs
+  // share the same post-onboarding starting point instead of timing out on
+  // an overlay that intercepts every click. Unit tests bypass the gate via
+  // NODE_ENV=test; E2E runs against the dev server where the flag is absent.
+  const gate = page.getByRole('dialog', { name: /take the tour/i });
+  if (await gate.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: /skip tour/i }).click();
+    await expect(gate).toBeHidden();
+  }
 };
 
 /**
