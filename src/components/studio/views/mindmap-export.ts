@@ -1,8 +1,6 @@
 import { EXPORT_COLORS } from '@/lib/export/export-theme'
+import { loadHtml2Canvas } from './html2canvas-loader'
 import { downloadBlob } from './export-types'
-
-/** Lazily loaded rasterizer — keeps html2canvas off the initial mind-map chunk. */
-type Html2Canvas = typeof import('html2canvas').default;
 
 /** Raster scale of the exported PNG (2x the CSS pixel box). */
 const EXPORT_SCALE = 2
@@ -107,15 +105,8 @@ const resolvePaperBackground = (element: HTMLElement): string => {
  * paint the live DOM tree directly. The caller owns error handling.
  */
 export const exportElementAsPng = async (element: HTMLElement, filename: string): Promise<void> => {
-  const html2canvasModule = (await import('html2canvas')) as unknown as {
-    default: Html2Canvas;
-  };
-  // False positive (xss/no-mixed-html): the binding holds the html2canvas
-  // rasterizer *function* (module default export), not markup, and no user
-  // input flows into it. The rule keys off the 'html2canvas' specifier string.
-  // eslint-disable-next-line xss/no-mixed-html -- see above
-  const rasterizeHtml = html2canvasModule.default;
-  const canvas = await rasterizeHtml(element, {
+  const rasterize = await loadHtml2Canvas();
+  const canvas = await rasterize(element, {
     backgroundColor: resolvePaperBackground(element),
     scale: EXPORT_SCALE,
     onclone: prepareCaptureClone,
