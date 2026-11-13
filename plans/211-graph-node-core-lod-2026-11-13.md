@@ -58,6 +58,14 @@ the trace predicts: React render work dominates, so element count is the term
 that matters. This is the first configuration in this repository where the
 median pan frame meets #1053's target, and it does so without a GPU.
 
+**Not reproduced on CI, and not claimed to be.** The post-change CI run
+measured pan p50 66.7 ms / p95 1,049.9 ms against 75.0 / 1,062.4 before —
+inside noise. The E2E job runs all projects in parallel on a two-core runner,
+so its frame timeline is dominated by CPU contention; the before/after above
+is four sequential runs on a quiet machine. The change is therefore guarded by
+the unit test and the DOM assertion (both load-independent), not by the frame
+ceiling — which stays where it was for the same reason.
+
 ## Guards, both machine-independent
 
 1. `shouldRenderNodeCore` unit test — flipping the helper to `true` fails it

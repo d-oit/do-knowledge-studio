@@ -127,6 +127,16 @@ At 5,000 nodes the median pan frame now meets the 30 fps target on software
 rendering. The p95 tail remains ~550 ms because ~3,860 nodes are still mounted
 at the fit view; batching node rendering is the open path there (ADR 052).
 
+**The CI runner did not reproduce this gain.** The post-change CI run reported
+pan p50 66.7 ms / p95 1,049.9 ms against 75.0 ms / 1,062.4 ms before it — a
+difference inside run-to-run noise, because the E2E job runs every project in
+parallel on a two-core runner and the frame timeline then measures CPU
+contention rather than the app. The before/after above was measured
+sequentially on a quiet machine, four runs per configuration. Treat the CI
+column as a signal that the floors are stable, never as a comparison between
+configurations; that is exactly why the node-core LOD is guarded by a DOM
+assertion and a unit test rather than by a tightened frame ceiling.
+
 **The 30 fps target is measured, not met.** At 1000/30 = 33.3 ms per frame the
 target implies 30 fps; this runner delivers 15–20 fps median, and the idle
 control is a clean 16.7 ms, so the gap is the work the page does rather than a
