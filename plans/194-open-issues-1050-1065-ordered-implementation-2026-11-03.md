@@ -1,6 +1,6 @@
 # Plan 194 — Ordered implementation of open issues #1050–#1065 (2026-11-03)
 
-**Status**: Active — #1050 (#1084), #1062 (#1086, follow-up #1087), #1065 (#1088), #1055 (#1089), and #1054 (#1090) merged; #1056 ADR + offline MCP server on `feat/1056-mcp-bridge`.
+**Status**: Complete (2026-11-13) — all 16 issues #1050–#1065 are CLOSED and every implementation PR is merged into `main` at `a395626`. Per-issue PRs: #1084 (#1050), #1086 + follow-up #1087 (#1062), #1088 (#1065), #1089 (#1055), #1090 (#1054), #1091 (#1056), #1092 (#1058), #1093 (#1053), #1094 (#1060), #1095 (#1052), #1096 (#1057), #1097 (#1051), #1098 (#1059), #1099 (#1061), #1100 (#1063), #1101 (#1064).
 **Goal**: Complete every currently open issue #1050–#1065 in a dependency-safe sequence, with one focused PR per implementation unit and squash merges only after local gates, all CI, and code review pass.
 **Constraints**: Preserve local-first operation, fail-closed persistence/import, strict TypeScript, current PWA/offline behavior, and no required backend. Do not close an issue on historical plan text alone; verify current code and attach the merge/verification evidence.
 
@@ -300,11 +300,15 @@ global score floor, and retains shard and aggregate artifacts for 14 days.
   typechecks, full Vitest, full E2E, shellcheck, BATS, and markdownlint. The
   first run found a bare Yjs docs URL here; it was linked and the full gate
   passed on rerun.
-  PR review/checks, default-branch mutation workflow, and merge remain.
+  PR #1086 merged as `840f42f` on 2026-11-04 with review and all required
+  checks green; the default-branch mutation workflow and the tombstone /
+  causality / cross-tab survivor triage are recorded above. Follow-up #1087
+  (deterministic same-instant claim history) merged 2026-11-05. Issue #1062
+  closed.
   Codacy flagged three non-literal file-access calls in the report checker; it
   now consumes report JSON on stdin and statically imports the configured
   scope instead of opening caller-selected paths. Checker tests and the
-  68.22% local composite pass; PR Codacy reanalysis remains pending.
+  68.22% local composite pass, and Codacy reanalysis passed on #1086.
 - [x] #1054 implementation and review fixes: vault + export-shape parsers,
   streamed zip reader, staging extracted to `import-staging.ts` (hook 475→381
   LOC), same-name dedupe, synchronous JSON routing restored. Lint/typecheck/
@@ -320,4 +324,15 @@ global score floor, and retains shard and aggregate artifacts for 14 days.
   swallowed handler error; root vitest now excludes `packages/**` so the
   package suite runs once. Gates: lint, both typechecks, 3,361 root + 17
   package tests, build, CLI smoke over a real bundle directory.
-- [ ] Create, review, and merge each remaining issue PR in the recorded dependency order.
+- [x] Created, reviewed, and merged every remaining issue PR in the recorded
+  dependency order (PR list in the status line above). Audit of 2026-11-13:
+  `gh issue list --state open` returns 0, and `gh issue view` reports CLOSED
+  for each of #1050–#1065.
+
+## Closeout (2026-11-13)
+
+The ordered track is finished; this plan is retained as the record of the
+sequence and its per-PR gates. No issue in the #1050–#1065 range remains open,
+so no further work belongs to this plan. New work must open a new numbered plan
+rather than extend this one. Local `main` was fast-forwarded to `a395626` and
+the merged `feat/1064-onboarding-tour` branch was deleted in the same sweep.
