@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 209 — `@types/node` tracks the runtime major (2026-11-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Decide | Resolve Dependabot #1110 instead of letting it rot | Done | Refused the 22 → 26 bump: types must not outrun the Node 22 runtime that `engines`, `.nvmrc` and 13 workflows pin; Dependabot now ignores `@types/node` majors |
+
 ### Plan 208 — Typecheck the Playwright suite (2026-11-13)
 
 | Wave | Goal | Status | Outcome |
