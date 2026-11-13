@@ -30,27 +30,45 @@ Build a local-first, structured knowledge engine that empowers users to capture,
 
 ## Remaining Work
 
-Refreshed 2026-10-05 by [Plan 162](162-roadmap-progress-and-next-work-2026-10-05.md),
-which is the authoritative open-work list. In order:
+**Refreshed 2026-11-13.** The previous list was written 2026-10-05 and had gone
+stale: six of its eight items shipped without the list being updated, which made
+this file — the stated authoritative open-work list — direct the next agent at
+finished work. Each item below was re-checked against `main` at `3b2cadd`, with
+the evidence named.
 
-1. **Recovery reachability and backup outcome** — `restoreFromRecovery` has no
-   production caller and import success is reported without a durable backup.
-   First implementation priority.
-2. **Deletion/export integrity investigation** — entity deletion does not touch
-   optional graph/mind-map/link/tag fields.
-3. **Sync join/rejoin completion** — join-time conflicts are not surfaced and
-   Leave→Join does not re-initialize persistence.
-4. **Remaining heavy-leaf deferral** — editor→Yjs static chain; PDF/DOCX/fflate
-   inside the lazy Export subtree.
-5. **Plan 161 recorded follow-ons** — dev search worker chunk failure, first-mount
-   reduced-motion tween, workflow linter warnings.
-6. **Skills and documentation maintenance** — generated skill catalogs,
+### Shipped since the 2026-10-05 list (do not re-open)
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Recovery reachability and backup outcome | Shipped | Plan 162's own remediation; `restoreFromRecovery` now has a production caller and import reports a durable backup |
+| Deletion/export integrity | Shipped | `deleteEntity` routes through `removeCanvasRefs` (graph, mind map, links) and strips entity links, claims and selection (`slices/entities-slice.ts`) |
+| Sync join/rejoin | Shipped | `src/lib/sync/doc-rejoin.test.ts` covers leave→rejoin; tombstones are room-scoped across rejoin and long offline intervals |
+| Heavy-leaf deferral (editor→Yjs, PDF/DOCX/fflate) | Shipped | The editor view imports no sync module; `export-documents.ts` (`jsPDF`) is reached only through `await import(...)` inside `use-export-handlers.ts`, behind a lazy `ExportView` |
+| Plan 161 reduced-motion follow-on | Recorded tradeoff, closed | Plan 161 §Follow-on 1: first paint must match the server for hydration; `e2e/hydration-mismatch.spec.ts` covers it |
+| URL deep links (ADR 037) | Shipped | `src/lib/studio/view-hash.ts` + `view-hash-sync.ts`, wired from `app-shell.tsx` |
+| Pointer/touch graph and mind-map interaction | Shipped (mandatory scope) | Plans 169/198; `e2e/graph-gestures.spec.ts`, `e2e/mobile-touch-gestures.spec.ts` |
+| Graph revision comparison | Shipped | Plan 170 (#974) |
+| Synthesis Inbox | Shipped | `synthesis-inbox-panel.tsx` plus `src/lib/i18n/messages/synthesis.ts`; candidate list in Plan 162 is out of date |
+
+### Open work, in order
+
+1. **Graph frame rate on GPU hardware** — the 30 fps pan/zoom target from #1053
+   is measured at 15–20 fps only because every runner available here renders in
+   software (Plan 207, `perf-baselines.md`). What is missing is a GPU
+   measurement, not a tightened threshold: no check in the repo can currently
+   say whether the SVG path meets the target on real hardware, and ADR 052's
+   "keep SVG" decision rests on that unmeasured question.
+2. **Visual Query Builder** (Plan 11.6) — the only feature candidate never
+   built: no `QueryBuilder` symbol exists under `src/` or `e2e/`. Plan 197
+   shipped the structured query panel and saved views, so this is a UI layer over an existing model: ADR 018 retired its original SQLite/Orama target, and there is no SQLite in the current architecture, so the plan needs retargeting and an ADR before implementation.
+3. **Skills and documentation maintenance** — generated skill catalogs,
    `agent-surface.py` doc truth, `SCRIPTS.md` drift, nonexistent `SKIP_LINKS`,
-   README claims.
-7. **New features**, in order: AI request control → URL deep links (ADR 037) →
-   pointer/touch graph and mind-map interaction.
-8. **Unscheduled candidates** — graph revision comparison, Synthesis Inbox,
-   Visual Query Builder.
+   README claims. Ongoing; no tracked issue.
+
+### Not tracked here
+
+Optional Mind Map swipe actions and verified-only graph filtering remain
+spec-optional per Plan 166; they are not commitments.
 
 ### Coverage: configured floors vs measured history
 
