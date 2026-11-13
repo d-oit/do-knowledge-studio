@@ -90,6 +90,24 @@ Both runner classes sit inside the ceilings (the CI run is the slower of the
 two at p50 75 ms, still 1.6× under the 120 ms floor), which is what makes the
 floor a usable signal rather than a machine-specific tuning.
 
+### Where the p95 tail comes from (2026-11-13)
+
+A size sweep with a temporary `longtask` observer (Plan 210) — same spec, same
+gestures, same headless software rendering, only `NODE_COUNT` changed:
+
+| Nodes | Pan p50 | Pan p95 | Worst | Mounted circles | Long-task total |
+| ----- | ------- | ------- | ----- | --------------- | --------------- |
+| 50 | 16.7 ms | 16.8 ms | 33.4 ms | not probed | not probed |
+| 500 | 16.7 ms | 200 ms | 300 ms | 804 | 8.3 s |
+| 5,000 | 50.1 ms | 1,050 ms | 1,250 ms | 7,720 | 74.6 s |
+
+The tail is the app's own main-thread work, not the harness: at 50 nodes this
+harness resolves 60 fps with a 33.4 ms worst frame. Cost tracks the mounted DOM
+(2 circles per node, ~77–80% of the corpus mounted at the fit view); mounted
+edge paths stay constant at 105, so edges are batched and not the scaling term.
+The 30 fps target is therefore a scaling problem rather than an impossible one
+— the premise ADR 052's keep-SVG decision rests on.
+
 **The 30 fps target is measured, not met.** At 1000/30 = 33.3 ms per frame the
 target implies 30 fps; this runner delivers 15–20 fps median, and the idle
 control is a clean 16.7 ms, so the gap is the work the page does rather than a

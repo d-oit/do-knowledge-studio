@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 210 — Graph frame-stall investigation (2026-11-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Attribute | Separate a harness artifact from real app cost | Done | Size sweep + `longtask` probe: 50 nodes hold 60 fps (worst 33.4 ms), 5,000 mount ~3,860 nodes and 74.6 s of long tasks. Main-thread bound, proportional to mounted DOM; the 891 ms outlier is still unattributed |
+
 ### Plan 209 — `@types/node` tracks the runtime major (2026-11-13)
 
 | Wave | Goal | Status | Outcome |
