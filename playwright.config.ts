@@ -26,6 +26,18 @@ const isProductionRun = process.env.PLAYWRIGHT_PRODUCTION === '1';
 const PRODUCTION_ONLY_SPECS = ['**/offline-views.spec.ts'];
 
 /**
+ * Frame-timeline perf spec: Chromium desktop only.
+ *
+ * The measurement is a frame cadence, which is a property of one rendering
+ * engine on one viewport — repeating it under WebKit or a phone viewport would
+ * produce four numbers describing four different machines' worth of emulation
+ * and quadruple the suite's slowest test for no additional signal. The
+ * thresholds also only mean anything against the configuration the baseline in
+ * `plans/perf-baselines.md` was recorded on.
+ */
+const FRAME_TIMELINE_SPECS = ['**/graph-frame-timeline.spec.ts'];
+
+/**
  * Local y-webrtc signaling service for the independent-peer sync specs.
  *
  * The public signaling endpoints are shared infrastructure and make the suite
@@ -58,12 +70,12 @@ export default defineConfig({
     {
       name: 'mobile',
       use: { ...devices['iPhone 13'] },
-      testIgnore: PRODUCTION_ONLY_SPECS,
+      testIgnore: [...PRODUCTION_ONLY_SPECS, ...FRAME_TIMELINE_SPECS],
     },
     {
       name: 'tablet',
       use: { ...devices['iPad Pro 11'] },
-      testIgnore: PRODUCTION_ONLY_SPECS,
+      testIgnore: [...PRODUCTION_ONLY_SPECS, ...FRAME_TIMELINE_SPECS],
     },
     {
       name: 'desktop-xl',
@@ -71,7 +83,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
       },
-      testIgnore: PRODUCTION_ONLY_SPECS,
+      testIgnore: [...PRODUCTION_ONLY_SPECS, ...FRAME_TIMELINE_SPECS],
     },
   ],
   webServer: [

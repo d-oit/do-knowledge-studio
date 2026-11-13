@@ -11,6 +11,7 @@ on different hardware.
 ```bash
 pnpm run test:bench          # bench config: src/**/*.bench.test.ts + fusion bench
 pnpm vitest run src/lib/studio/graph-layout.bench.test.ts   # graph layout only
+pnpm exec playwright test e2e/graph-frame-timeline.spec.ts --project=chromium  # frame timeline
 ```
 
 The reporter prints each test's duration next to its name; a budget is a hard
@@ -69,13 +70,53 @@ Capture is fire-and-forget: the store action records it and returns, so a slow
 IndexedDB write cannot add latency to a save. The bench bounds the synchronous
 decision (`shouldCaptureRevision`) and the signature it computes.
 
+## Graph frame timeline (`e2e/graph-frame-timeline.spec.ts`)
+
+Plan 198 recorded the 30 fps pan/zoom target as unasserted because the repo had
+no browser frame harness. Plan 207 added one: the spec seeds 5,000 nodes with
+2 links each through the shared store fixture, waits for progressive placement,
+then records the real interval between animation frames while a drag runs and,
+separately, while a wheel zoom runs.
+
+Frame intervals, measured 2026-11-13 (Chromium 156 headless, software rendering,
+this runner):
+
+| Phase | p50 | p95 | Worst | Ceiling asserted |
+| ----- | --- | --- | ----- | ---------------- |
+| Pan (default focus-mode view) | 50–67 ms | ~1,030–1,050 ms | ~1,170 ms | p50 ≤ 120 ms, p95 ≤ 1,500 ms |
+| Wheel zoom | 50–67 ms | ~950–970 ms | ~1,100 ms | p50 ≤ 120 ms, p95 ≤ 1,500 ms |
+| Pan after zooming out to the whole graph | ~183 ms | ~950 ms | ~1,100 ms | not sampled by the spec |
+
+**The 30 fps target is measured, not met.** At 1000/30 = 33.3 ms per frame the
+target implies 30 fps; this runner delivers 15–20 fps median, and the idle
+control is a clean 16.7 ms, so the gap is the work the page does rather than a
+throttled animation clock. Under software rendering the SVG path pays a full
+CPU raster of the mounted nodes on every pan frame. Two consequences are
+recorded rather than papered over:
+
+- The assertion is a **regression floor**, not the product target: p50/p95
+  ceilings with ~2× headroom over the baseline above. It is falsifiable —
+  disabling `cullNodes`/`cullEdges` raises pan p50 to 216.7 ms and fails it
+  (verified by injection on 2026-11-13), which is the failure the guard exists
+  for.
+- Asserting 33.3 ms would require a GPU-backed runner. No runner in this
+  project has one, so a 30 fps assertion here would be red everywhere and mean
+  nothing. Whether the SVG path reaches 30 fps on a GPU is therefore still
+  unmeasured, and `ADR 052`'s "keep SVG, no Canvas renderer" decision has been
+  taken without that measurement.
+
+The p95 figures are dominated by periodic ~1 s stalls present at baseline and
+with culling disabled alike; they are guarded only against getting worse, not
+explained by this baseline. The spec runs in the `chromium` project only — a
+frame cadence describes one rendering engine on one viewport, so repeating it
+under emulated WebKit and phone viewports would produce four numbers for four
+emulators.
+
 ## Not measured here
 
-- **Frame rate during pan/zoom.** There is no browser profiling harness in this
-  repository; the 30 fps acceptance target from #1053 is not asserted by a
-  check. Measuring it means recording a Playwright trace of a drag on a 5k-node
-  corpus and reading the frame timeline. Until that exists, the guarantee this
-  repo tests is bounded mount counts plus chunked placement, not a frame rate.
+- **Frame rate on GPU hardware.** See the section above: the harness records
+  software-rendered timings, which is what every runner available to this
+  project provides.
 - **Memory.** The 5k pass allocates the node list and grid only; no heap
   measurement is recorded.
 

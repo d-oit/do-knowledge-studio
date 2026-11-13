@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-11-01
+**Updated**: 2026-11-13
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -8,6 +8,13 @@ below; accepted decision records are in `plans/ADRs/NNN-slug.md`. Work still in
 flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
+
+### Plan 207 — Graph frame-timeline harness (2026-11-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Measure | Read a real pan/zoom frame timeline at 5k nodes | Done | `e2e/graph-frame-timeline.spec.ts` samples rAF intervals during a real drag and a real wheel zoom: pan p50 50–67 ms, zoom p50 50–67 ms under software rendering |
+| Guard | Make a bounded-render regression fail a check | Done | Per-phase p50/p95 floors (p50 ≤ 120 ms); verified by disabling culling, which raises pan p50 to 216.7 ms and fails |
 
 ### Plan 194 — Ordered implementation of open issues #1050–#1065 (2026-11-03)
 
