@@ -5,6 +5,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Type packages must not outrun the runtime they describe. `engines`,
+      # `.nvmrc` and all 13 CI workflows pin Node 22, so @types/node 23+ would
+      # type-check code against APIs absent from the interpreter that runs it
+      # — a mismatch no gate can catch, because tsc reads the types, not the
+      # runtime (plans/209).
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
