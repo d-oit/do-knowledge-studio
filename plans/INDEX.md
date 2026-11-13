@@ -13,8 +13,8 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Audit | Inspect all 16 open issues and map dependencies | Done | Plan 194 records current gaps, prerequisite order and per-PR merge gates; implementation remains active. |
-| Delivery | Complete each issue and merge in dependency order | Active | See [Plan 194](194-open-issues-1050-1065-ordered-implementation-2026-11-03.md). |
+| Audit | Inspect all 16 open issues and map dependencies | Done | Plan 194 records current gaps, prerequisite order and per-PR merge gates. |
+| Delivery | Complete each issue and merge in dependency order | Done (2026-11-13) | All 16 issues #1050–#1065 are CLOSED; per-issue PRs #1084–#1101 merged into `main` at `a395626`. See [Plan 194](194-open-issues-1050-1065-ordered-implementation-2026-11-03.md). |
 
 ### Plan 193 — Reconcile license, version and repo-description metadata (2026-11-02)
 
