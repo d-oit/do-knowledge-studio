@@ -78,14 +78,17 @@ no browser frame harness. Plan 207 added one: the spec seeds 5,000 nodes with
 then records the real interval between animation frames while a drag runs and,
 separately, while a wheel zoom runs.
 
-Frame intervals, measured 2026-11-13 (Chromium 156 headless, software rendering,
-this runner):
+Frame intervals, measured 2026-11-13 (Chromium 156 headless, software rendering):
 
-| Phase | p50 | p95 | Worst | Ceiling asserted |
-| ----- | --- | --- | ----- | ---------------- |
-| Pan (default focus-mode view) | 50–67 ms | ~1,030–1,050 ms | ~1,170 ms | p50 ≤ 120 ms, p95 ≤ 1,500 ms |
-| Wheel zoom | 50–67 ms | ~950–970 ms | ~1,100 ms | p50 ≤ 120 ms, p95 ≤ 1,500 ms |
-| Pan after zooming out to the whole graph | ~183 ms | ~950 ms | ~1,100 ms | not sampled by the spec |
+| Phase | Developer machine | CI runner (run 43431371176) | Worst (local) | Ceiling asserted |
+| ----- | ----------------- | --------------------------- | ------------- | ---------------- |
+| Pan (default focus-mode view) | p50 50–67 ms, p95 ~1,030–1,050 ms | p50 75.0 ms, p95 1,062.4 ms | ~1,170 ms | p50 ≤ 120 ms, p95 ≤ 1,500 ms |
+| Wheel zoom | p50 50–67 ms, p95 ~950–970 ms | p50 66.7 ms, p95 967.4 ms | ~1,100 ms | p50 ≤ 120 ms, p95 ≤ 1,500 ms |
+| Pan after zooming out to the whole graph | p50 ~183 ms | not sampled | ~1,100 ms | not sampled by the spec |
+
+Both runner classes sit inside the ceilings (the CI run is the slower of the
+two at p50 75 ms, still 1.6× under the 120 ms floor), which is what makes the
+floor a usable signal rather than a machine-specific tuning.
 
 **The 30 fps target is measured, not met.** At 1000/30 = 33.3 ms per frame the
 target implies 30 fps; this runner delivers 15–20 fps median, and the idle

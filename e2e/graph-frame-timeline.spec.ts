@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { navClick } from './helpers/navigation'
-import { seedStore } from './helpers/store'
+import { seedStore, type PersistedStudioState } from './helpers/store'
 
 /**
  * Graph frame-timeline guard (plans/198 "Known gap", plans/207).
@@ -69,6 +69,11 @@ const PLACEMENT_MAX_WAIT_MS = 90_000
 /** Quiet period after placement, so its frames are never part of the sample. */
 const SETTLE_MS = 500
 
+/** Quantiles reported: the typical frame, the slow tail, and the single worst. */
+const QUANTILE_MEDIAN = 0.5
+const QUANTILE_P95 = 0.95
+const QUANTILE_MAX = 1
+
 /** Drag steps per sampling phase — enough pointer moves to cover a real gesture. */
 const DRAG_STEPS = 48
 
@@ -132,9 +137,9 @@ interface FrameSummary {
 
 /** Describe a frame-interval sample. */
 const summarize = (deltas: number[]): FrameSummary => {
-  const p50 = percentile(deltas, 0.5)
-  const p95 = percentile(deltas, 0.95)
-  const worst = percentile(deltas, 1)
+  const p50 = percentile(deltas, QUANTILE_MEDIAN)
+  const p95 = percentile(deltas, QUANTILE_P95)
+  const worst = percentile(deltas, QUANTILE_MAX)
   return {
     frames: deltas.length,
     p50,
@@ -158,7 +163,7 @@ const percentile = (sample: number[], fraction: number): number => {
 }
 
 /** The seeded library: `NODE_COUNT` notes with `LINKS_PER_NODE` outgoing links. */
-const buildSeededEntities = (): unknown[] =>
+const buildSeededEntities = (): PersistedStudioState['entities'] =>
   Array.from({ length: NODE_COUNT }, (_, index) => ({
     id: `frame-${index}`,
     name: `Frame node ${index}`,
