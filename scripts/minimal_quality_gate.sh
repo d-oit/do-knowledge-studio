@@ -30,6 +30,7 @@ run_check() {
 run_check "Lint" pnpm run lint
 run_check "Docs consistency" pnpm run docs:check
 run_check "Typecheck" pnpm run typecheck
+run_check "E2E typecheck" pnpm run typecheck:e2e
 run_check "Tests" pnpm run test
 
 if [ "$FAILED" -ne 0 ]; then

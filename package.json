@@ -16,6 +16,7 @@
     "docs:check": "node scripts/check-doc-consistency.mjs",
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.app.json && pnpm --filter dks-mcp typecheck",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json",
     "propagate:version": "bash scripts/propagate-version.sh",
     "test": "vitest run && pnpm --filter dks-mcp test",
     "test:mutation": "stryker run && node scripts/check-mutation-score.mjs < reports/mutation.json",
