@@ -12,7 +12,7 @@ paths = [
   "e2e/**",
   "package.json"
 ]
-command = "pnpm run lint && pnpm run typecheck"
+command = "pnpm run lint && pnpm run typecheck && pnpm run typecheck:e2e"
 
 [sensors.verification]
 description = "Comprehensive unit test suite, test typecheck, skill, and configuration validation"

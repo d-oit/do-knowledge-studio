@@ -137,6 +137,17 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
             echo -e "${GREEN}  ✓ pnpm typecheck:test passed${NC}"
         fi
 
+        # E2E typecheck: Playwright transpiles specs without checking types, and
+        # both projects above exclude e2e/, so a spec type error reached CI
+        # undetected (plans/208).
+        if ! OUTPUT=$(pnpm typecheck:e2e 2>&1); then
+            echo -e "${RED}  ✗ pnpm typecheck:e2e failed${NC}"
+            echo "$OUTPUT" >&2
+            CHECKS_FAILED=1
+        else
+            echo -e "${GREEN}  ✓ pnpm typecheck:e2e passed${NC}"
+        fi
+
         # Tests via SKIP_TESTS env var (useful for CI without test env)
         if [ "${SKIP_TESTS:-false}" != "true" ]; then
             if ! OUTPUT=$(pnpm test 2>&1); then
@@ -215,6 +226,15 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
             CHECKS_FAILED=1
         else
             echo -e "${GREEN}  ✓ npm typecheck:test passed${NC}"
+        fi
+
+        # E2E typecheck — see the pnpm branch above (plans/208)
+        if ! OUTPUT=$(npm run typecheck:e2e 2>&1); then
+            echo -e "${RED}  ✗ npm typecheck:e2e failed${NC}"
+            echo "$OUTPUT" >&2
+            CHECKS_FAILED=1
+        else
+            echo -e "${GREEN}  ✓ npm typecheck:e2e passed${NC}"
         fi
 
         if [ "${SKIP_TESTS:-false}" != "true" ]; then

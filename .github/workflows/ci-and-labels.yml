@@ -194,6 +194,11 @@ jobs:
       # full in the job that owns the test program (plans/165, plans/176 T4).
       - name: Run test typecheck
         run: pnpm typecheck:test
+      # Playwright transpiles specs without checking types, and neither the app
+      # project (tsconfig.app.json) nor the test project includes e2e/, so a
+      # spec type error used to reach CI undetected (plans/208).
+      - name: Run e2e typecheck
+        run: pnpm typecheck:e2e
       - name: Run Vitest
         run: pnpm test
 

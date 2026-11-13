@@ -9,6 +9,12 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 208 — Typecheck the Playwright suite (2026-11-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Close the gap | Make a spec type error fail a check | Done | `tsconfig.e2e.json` + `pnpm typecheck:e2e`, wired into the pre-commit gate, CI and the `feedback` sensor; verified by injecting `TS2322` and watching it fail |
+
 ### Plan 207 — Graph frame-timeline harness (2026-11-13)
 
 | Wave | Goal | Status | Outcome |

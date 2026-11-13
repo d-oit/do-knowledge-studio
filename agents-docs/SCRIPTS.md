@@ -8,7 +8,7 @@
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `quality_gate.sh` | Full repository gate: validation, lint, typecheck, tests, conditional E2E | `./scripts/quality_gate.sh` |
-| `minimal_quality_gate.sh` | Minimal quality gate — lint, typecheck, tests (no build) | `./scripts/minimal_quality_gate.sh` |
+| `minimal_quality_gate.sh` | Minimal quality gate — lint, typecheck (app, test and e2e projects), tests (no build) | `./scripts/minimal_quality_gate.sh` |
 | `verify.sh` | Shell/YAML lint, BATS (when installed), frontend lint/typecheck/tests, and production build | `./scripts/verify.sh` |
 | `verify-deps.sh` | Verify dependency changes don't break the build | `./scripts/verify-deps.sh` |
 | `setup-skills.sh` | Create manifest-managed skill links and regenerate skill catalogs | `./scripts/setup-skills.sh` |
