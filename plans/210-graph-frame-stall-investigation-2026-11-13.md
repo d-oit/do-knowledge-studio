@@ -67,6 +67,12 @@ of the whole layer. Separating those needs a Chrome trace (CDP
 `Tracing.start`) or React's profiler — both are new harness machinery and were
 out of scope for an investigation.
 
+**Resolved by Plan 211.** A CDP trace of one pan shows React's scheduler
+flushes owning 19.1 s of 24.7 s of main-thread task time, with the longest
+single flush at 656 ms; paint is 1.5 s, layout 1.6 s and GC 0.65 s. Gating the
+decorative per-node core dot halved the mounted circles and cut pan p50 from
+50 ms to 33.3 ms and p95 from ~1,030 ms to ~575 ms.
+
 ## Candidates, ranked by what the data supports
 
 1. **Per-node DOM**: each node mounts a focusable `<g role="button" tabindex>`

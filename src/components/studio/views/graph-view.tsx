@@ -9,6 +9,7 @@ import {
   cullEdges,
   cullNodes,
   isLargeGraph,
+  shouldRenderNodeCore,
   shouldShowNodeLabels,
   shouldShowRelationLabels,
   visibleRect,
@@ -202,6 +203,7 @@ export const GraphView = () => {
   const hiddenNodeCount = visibleNodes.length - renderedNodes.length
   const showNodeLabels = shouldShowNodeLabels(visibleNodes.length, zoom)
   const showRelationLabels = shouldShowRelationLabels(visibleNodes.length, zoom)
+  const showNodeCore = shouldRenderNodeCore(visibleNodes.length)
   const placementPending = placedNodes.length < filtered.entities.length
 
   const visibleNodeMap = useMemo(
@@ -418,7 +420,9 @@ export const GraphView = () => {
                       stroke={pathNodeIdSet.has(n.id) ? 'var(--saffron)' : 'var(--background)'}
                       strokeWidth={pathNodeIdSet.has(n.id) ? 3 : 2}
                     />
-                    <circle r={r * 0.4} fill="var(--background)" opacity={0.3} />
+                    {showNodeCore && (
+                      <circle r={r * 0.4} fill="var(--background)" opacity={0.3} />
+                    )}
                     {showNodeLabels && (
                       <text
                         y={r + 14}

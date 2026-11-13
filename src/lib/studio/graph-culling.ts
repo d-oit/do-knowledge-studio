@@ -132,5 +132,17 @@ export const shouldShowNodeLabels = (nodeCount: number, zoom: number): boolean =
 export const shouldShowRelationLabels = (nodeCount: number, zoom: number): boolean =>
   nodeCount < LABEL_LOD_NODE_THRESHOLD || zoom >= EDGE_LABEL_MIN_ZOOM
 
+/**
+ * Whether the decorative core dot inside each node should be drawn.
+ *
+ * The dot carries no information the node circle does not already carry, but it
+ * doubles the `<circle>` count and therefore the React work per frame: at 5,000
+ * nodes React's scheduler owned 19.1 s of 24.7 s of main-thread time during one
+ * pan (plans/210). Above the label threshold the graph is already in reduced
+ * detail, so the dot goes with the labels (plans/211).
+ */
+export const shouldRenderNodeCore = (nodeCount: number): boolean =>
+  nodeCount < LABEL_LOD_NODE_THRESHOLD
+
 /** Whether the graph is large enough to warrant the degradation notice. */
 export const isLargeGraph = (nodeCount: number): boolean => nodeCount >= LARGE_GRAPH_NOTICE_THRESHOLD
