@@ -240,6 +240,21 @@ test.describe('Graph frame timeline at 5k nodes', () => {
     }
     await page.waitForTimeout(SETTLE_MS)
 
+    // Above the label threshold each node draws exactly one circle: the
+    // decorative core dot is LOD-gated (plans/211). Re-adding it doubles the
+    // per-node DOM, which the trace in plans/210 shows is what React spends
+    // the frame on, so the shape is asserted rather than left to review.
+    const nodeDom = await page.evaluate(() => {
+      const canvas = document.querySelector('svg[aria-label^="Knowledge graph"]')
+      if (canvas === null) return { nodes: 0, circles: 0 }
+      return {
+        nodes: canvas.querySelectorAll('g[role="button"]').length,
+        circles: canvas.querySelectorAll('circle').length,
+      }
+    })
+    expect(nodeDom.nodes).toBeGreaterThan(0)
+    expect(nodeDom.circles).toBe(nodeDom.nodes)
+
     await startFrameSampling(page)
     await dragCanvas(page, box)
     const panDeltas = await stopFrameSampling(page)

@@ -108,6 +108,25 @@ edge paths stay constant at 105, so edges are batched and not the scaling term.
 The 30 fps target is therefore a scaling problem rather than an impossible one
 — the premise ADR 052's keep-SVG decision rests on.
 
+### After the node-core LOD (Plan 211)
+
+A CDP trace attributed 19.1 s of 24.7 s of main-thread task time to React's
+scheduler flushes (paint 1.5 s, layout 1.6 s, GC 0.65 s), so the fix reduced
+mounted elements rather than paint work. The decorative inner core dot is now
+gated at `LABEL_LOD_NODE_THRESHOLD` (400 visible nodes), the same threshold
+that already drops labels:
+
+| Phase | Before | After |
+| ----- | ------ | ----- |
+| Pan p50 | 50.0 ms | 33.3 ms |
+| Pan p95 | ~1,030 ms | 550–600 ms |
+| Zoom p50 | 50–66.7 ms | 33.3–50 ms |
+| Zoom p95 | ~950 ms | 500–540 ms |
+
+At 5,000 nodes the median pan frame now meets the 30 fps target on software
+rendering. The p95 tail remains ~550 ms because ~3,860 nodes are still mounted
+at the fit view; batching node rendering is the open path there (ADR 052).
+
 **The 30 fps target is measured, not met.** At 1000/30 = 33.3 ms per frame the
 target implies 30 fps; this runner delivers 15–20 fps median, and the idle
 control is a clean 16.7 ms, so the gap is the work the page does rather than a

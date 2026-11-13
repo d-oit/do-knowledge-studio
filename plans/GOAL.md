@@ -58,12 +58,14 @@ the evidence named.
    measurement, not a tightened threshold: no check in the repo can currently
    say whether the SVG path meets the target on real hardware, and ADR 052's
    "keep SVG" decision rests on that unmeasured question.
-2. **Graph pan/zoom stalls at 5k nodes** — not the same question as (1).
-   Plan 210 attributed the ~1 s p95 tail to the app's own main thread, growing
-   with the mounted DOM: 50 nodes hold 60 fps, 5,000 mount ~3,860 focusable
-   nodes and burn 74.6 s in long tasks. The 891 ms outlier itself is still
-   unattributed; the next instrument is a CDP trace, after which the choice is
-   LOD-gating the per-node DOM or batching node rendering.
+2. **Graph pan/zoom tail at 5k nodes** — not the same question as (1).
+   A CDP trace put 19.1 s of 24.7 s of main-thread task time in React's
+   scheduler (paint 1.5 s, layout 1.6 s, GC 0.65 s), so Plan 211 gated the
+   decorative per-node core dot at the existing 400-node LOD threshold: pan p50
+   50 → 33.3 ms (the median now meets the target without a GPU) and p95 ~1,030
+   → ~575 ms. What remains is the tail: ~3,860 nodes still mount at the fit
+   view, and cutting that further means batching node rendering, which ADR 052
+   deferred. The 3,860 tab stops are an accessibility track, not a perf one.
 3. **Visual Query Builder** (Plan 11.6) — the only feature candidate never
    built: no `QueryBuilder` symbol exists under `src/` or `e2e/`. Plan 197
    shipped the structured query panel and saved views, so this is a UI layer over an existing model: ADR 018 retired its original SQLite/Orama target, and there is no SQLite in the current architecture, so the plan needs retargeting and an ADR before implementation.

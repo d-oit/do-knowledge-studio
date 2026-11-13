@@ -8,6 +8,7 @@ import {
   cullEdges,
   cullNodes,
   isLargeGraph,
+  shouldRenderNodeCore,
   shouldShowNodeLabels,
   shouldShowRelationLabels,
   viewBoxRect,
@@ -142,6 +143,11 @@ describe('level of detail', () => {
   it('drops node labels for large graphs when zoomed out', () => {
     expect(shouldShowNodeLabels(LABEL_LOD_NODE_THRESHOLD, LABEL_LOD_MIN_ZOOM - 0.01)).toBe(false)
     expect(shouldShowNodeLabels(LABEL_LOD_NODE_THRESHOLD, LABEL_LOD_MIN_ZOOM)).toBe(true)
+  })
+
+  it('drops the decorative node core once the graph is in reduced detail', () => {
+    expect(shouldRenderNodeCore(LABEL_LOD_NODE_THRESHOLD - 1)).toBe(true)
+    expect(shouldRenderNodeCore(LABEL_LOD_NODE_THRESHOLD)).toBe(false)
   })
 
   it('hides relation labels for large graphs below the edge-label zoom', () => {

@@ -9,6 +9,13 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 211 — Decorative node-core LOD (2026-11-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Attribute | Name the stalled main-thread work | Done | CDP trace: React scheduler 19.1 s of 24.7 s task time (paint 1.5 s, GC 0.65 s) |
+| Fix | Cut React work per frame without losing information | Done | `shouldRenderNodeCore` gates the inner dot at the 400-node threshold: pan p50 50 → 33.3 ms, p95 ~1,030 → ~575 ms; guarded by a unit test and a DOM assertion that fails 10,000 vs 5,000 when reverted |
+
 ### Plan 210 — Graph frame-stall investigation (2026-11-13)
 
 | Wave | Goal | Status | Outcome |
