@@ -118,6 +118,56 @@ const messages = {
   'sync.toast.inviteExpired': 'That invitation has expired. Ask for a fresh room ID.',
   /** Toast when an invitation token is malformed. */
   'sync.toast.inviteMalformed': 'That invitation is not valid.',
+
+  /** Heading of the file-based sync fallback panel. */
+  'syncFile.title': 'Sync via file',
+  /** Explanation of the file-based fallback. */
+  'syncFile.description':
+    'When a network blocks peer-to-peer connections, exchange a bundle file instead. Importing merges records and surfaces conflicts; it never replaces your library.',
+  /** Label for the room id used to bind a bundle. Distinct from the live room field. */
+  'syncFile.roomId': 'Bundle room ID',
+  /** Placeholder for the room id field. */
+  'syncFile.roomIdPlaceholder': 'Room ID shared with the other device',
+  /** Label for the optional bundle passphrase. */
+  'syncFile.password': 'Passphrase (optional)',
+  /** Hint that the passphrase must match on both devices. */
+  'syncFile.passwordHint': 'Use the same passphrase on both devices. Leave empty for an unencrypted bundle.',
+  /** Export button label. */
+  'syncFile.export': 'Export bundle',
+  /** Import button label. */
+  'syncFile.import': 'Import bundle',
+  /** Label for the bundle file picker. */
+  'syncFile.file': 'Bundle file',
+  /** Toast after a bundle is written. */
+  'syncFile.exported': (name: string) => `Exported ${name}`,
+  /** Toast after a bundle is merged; counts interpolated. */
+  'syncFile.imported': (entities: string, claims: string) =>
+    `Merged ${entities} entities, ${claims} claims from the bundle`,
+  /** Toast when a bundle merges with conflicts; count interpolated. */
+  'syncFile.importedWithConflicts': (count: string) =>
+    `Merged the bundle with ${count} conflict(s) to resolve`,
+  /** Error when the bundle file is too large. */
+  'syncFile.error.tooLarge': 'That bundle is too large to import.',
+  /** Error when the bundle is not valid JSON. */
+  'syncFile.error.invalidJson': 'That file is not a valid sync bundle.',
+  /** Error when the file is not a sync bundle. */
+  'syncFile.error.unsupportedFormat': 'That file is not a DO Knowledge Studio sync bundle.',
+  /** Error when the bundle version is newer than this app supports. */
+  'syncFile.error.unsupportedVersion': 'That bundle was written by a newer version of the app.',
+  /** Error when an encrypted bundle is imported without a passphrase. */
+  'syncFile.error.passwordRequired': 'This bundle is encrypted. Enter its passphrase.',
+  /** Error when decryption fails. */
+  'syncFile.error.decryptFailed':
+    'Could not decrypt the bundle. Check the passphrase and that it came from the same room.',
+  /** Error when a record in the bundle fails validation. */
+  'syncFile.error.invalidRecords': (detail: string) =>
+    `The bundle contains invalid records: ${detail}`,
+  /** Error when the bundle cannot be read from disk. */
+  'syncFile.error.readFailed': 'Could not read that file.',
+  /** Error when the merged state cannot be committed. */
+  'syncFile.error.commitFailed': 'The merged bundle could not be saved.',
+  /** Error when the room id is empty on export. */
+  'syncFile.error.roomRequired': 'Enter a room ID before exporting.',
 } as const
 
 /** Typed `translate` helper bound to the sync view message scope. */

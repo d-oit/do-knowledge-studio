@@ -17,6 +17,7 @@ vi.mock('lucide-react', () => {
     Wifi: Icon, WifiOff: Icon, Copy: Icon, Check: Icon, RefreshCw: Icon, Trash2: Icon,
     History: Icon, Loader2: Icon, QrCode: Icon, Camera: Icon, Radio: Icon, Users: Icon,
     AlertTriangle: Icon, ArrowRightLeft: Icon, ExternalLink: Icon, Plus: Icon, ShieldCheck: Icon,
+    Download: Icon, Upload: Icon,
   }
 })
 

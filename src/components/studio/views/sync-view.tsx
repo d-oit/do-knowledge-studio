@@ -2,11 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import {
-  Wifi,
-  History,
-  Users,
-} from 'lucide-react'
+import { Wifi } from 'lucide-react'
 import { toast } from 'sonner'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
 import { cn } from '@/lib/utils'
@@ -35,21 +31,15 @@ import {
 import { ConflictUI } from '../conflict-ui'
 import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
 import { getConflictResolutionKey, type FieldConflict } from '@/lib/sync/merge'
-import { PresenceList } from '../presence-indicator'
 import { usePresence } from '@/lib/sync/use-presence'
 import { SyncConnectionPanel } from './sync-connection-panel'
+import { SyncFilePanel } from './sync-file-panel'
+import { OnlineUsersCard, SyncHistoryCard, type SyncEvent } from './sync-history-card'
 import { useSyncIceServers } from './use-sync-ice-servers'
 import { translate as t } from '@/lib/i18n/messages/sync'
 import { translate as navT } from '@/lib/i18n/messages/nav'
 
 type PairingMode = 'none' | 'display' | 'scan'
-
-interface SyncEvent {
-  id: string
-  type: 'join' | 'leave' | 'sync' | 'error'
-  message: string
-  timestamp: number
-}
 
 interface SyncProviderEventHandlers {
   addEvent: (type: SyncEvent['type'], message: string) => void
@@ -134,22 +124,6 @@ const useRoomDiscovery = (
   }, [status, roomId, setDiscoveredPeers])
 }
 
-/** Maps a sync event type to its status-dot colour. */
-const eventDotClass = (type: SyncEvent['type']): string => {
-  switch (type) {
-    case 'join':
-      return 'bg-emerald-500'
-    case 'leave':
-      return 'bg-ink-faint'
-    case 'sync':
-      return 'bg-saffron'
-    case 'error':
-      return 'bg-red-500'
-    default:
-      return 'bg-ink-faint'
-  }
-}
-
 /** Page header for the sync view. */
 const SyncHeader = ({ reducedMotion }: { reducedMotion: boolean }) => (
   <motion.div
@@ -186,46 +160,6 @@ const ConflictSection = ({
   )
 }
 
-/** Chronological list of sync events. */
-const SyncHistoryCard = ({ events }: { events: SyncEvent[] }) => (
-  <div className="rounded-lg border border-border bg-card p-5">      <h2 className="mb-3 font-serif text-body-lg font-semibold text-ink">
-        <History className="mr-1.5 inline h-4 w-4" />
-        {t('sync.history.title')}
-      </h2>
-      {events.length === 0 ? (
-        <p className="text-body-sm text-ink-faint">{t('sync.history.empty')}</p>
-    ) : (
-      <div className="space-y-2">
-        {events.map((event) => (
-          <div
-            key={event.id}
-            className="flex items-center gap-3 rounded-md bg-muted/30 px-3 py-2"
-          >
-            <span className={cn('h-2 w-2 shrink-0 rounded-full', eventDotClass(event.type))} />
-            <span className="flex-1 text-body-sm text-ink">{event.message}</span>
-            <span className="text-caption text-ink-faint">
-              {new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(event.timestamp))}
-            </span>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-)
-
-/** Online collaborators card, rendered only when peers are present. */
-const OnlineUsersCard = ({ visible }: { visible: boolean }) => {
-  if (!visible) return null
-  return (
-    <div className="mt-6 rounded-lg border border-border bg-card p-5">        <h2 className="mb-3 font-serif text-body-lg font-semibold text-ink">
-          <Users className="mr-1.5 inline h-4 w-4" />
-          {t('sync.onlineUsers')}
-        </h2>
-      <PresenceList />
-    </div>
-  )
-}
-
 /** Peer-to-peer sync view with room management, QR pairing, conflict resolution, and presence. */
 // Arrow form, not `function`: DeepSource flags top-level function declarations in modules
 // as global-scope declarations (JS-0067), and the repo convention is `const fn = () => {}`.
@@ -254,7 +188,6 @@ export const SyncView = () => {
   // Relays the user configured; held here so a join and a Re-sync use the same
   // list the diagnostics panel shows. Credentials stay in this state only.
   const [iceServers, setIceServers] = useSyncIceServers()
-  const setView = useStudioStore((state) => state.setView)
   const reducedMotion = useReducedMotion()
 
   const addEvent = useCallback(
@@ -379,6 +312,10 @@ export const SyncView = () => {
     toast.info(t('sync.toast.left'))
   }, [addEvent])
 
+  const handleFileConflicts = useCallback((conflicts: FieldConflict[]) => {
+    setPendingConflicts((previous) => [...previous, ...conflicts])
+  }, [])
+
   const handleResync = useCallback(() => {
     // Re-sync doubles as the explicit reconnect control: after a network loss
     // the provider can be disconnected while the room view is still mounted.
@@ -471,8 +408,13 @@ export const SyncView = () => {
           iceServers={iceServers}
           onIceServersChange={setIceServers}
           onOpenFileSync={() => {
-            setView('export')
+            document.getElementById('sync-file-panel')?.scrollIntoView({ behavior: 'smooth' })
           }}
+        />
+        <SyncFilePanel
+          activeRoomId={roomId}
+          onConflicts={handleFileConflicts}
+          onEvent={addEvent}
         />
       </div>
 

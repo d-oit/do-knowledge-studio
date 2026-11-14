@@ -74,3 +74,22 @@ export {
   getAllTombstones,
 } from './tombstones'
 export type { Tombstone } from './tombstones'
+
+export {
+  SYNC_BUNDLE_FORMAT,
+  SYNC_BUNDLE_VERSION,
+  SYNC_BUNDLE_EXTENSION,
+  MAX_SYNC_BUNDLE_BYTES,
+  buildSyncBundle,
+  parseSyncBundle,
+  mergeSyncBundle,
+  isSyncBundleFileName,
+  syncBundleFileName,
+} from './file-bundle'
+export type {
+  SyncBundle,
+  SyncBundleErrorCode,
+  SyncBundleParseResult,
+  SyncBundleMergeResult,
+  BuildSyncBundleOptions,
+} from './file-bundle'
