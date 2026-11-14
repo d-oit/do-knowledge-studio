@@ -71,4 +71,4 @@ jobs:
           filter_mode: nofilter
 
       - name: Check workflow hygiene
-        run: node scripts/check-workflow-hygiene.mjs
+        run: ./scripts/check-workflow-hygiene.sh

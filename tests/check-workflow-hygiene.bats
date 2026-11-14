@@ -4,7 +4,7 @@
 bats_require_minimum_version 1.5.0
 
 setup() {
-  export SCRIPT="$BATS_TEST_DIRNAME/../scripts/check-workflow-hygiene.mjs"
+  export SCRIPT="$BATS_TEST_DIRNAME/../scripts/check-workflow-hygiene.sh"
   export WORKFLOWS="$BATS_TEST_TMPDIR/workflows"
   mkdir -p "$WORKFLOWS"
 }
@@ -31,7 +31,7 @@ write_workflow() {
     '    steps:' \
     '      - run: echo ok'
 
-  run node "$SCRIPT" "$WORKFLOWS"
+  run bash "$SCRIPT" "$WORKFLOWS"
   [ "$status" -eq 0 ]
   [[ "$output" == *"1 workflow(s) clean"* ]]
 }
@@ -49,7 +49,7 @@ write_workflow() {
     '    steps:' \
     '      - run: echo ok'
 
-  run node "$SCRIPT" "$WORKFLOWS"
+  run bash "$SCRIPT" "$WORKFLOWS"
   [ "$status" -eq 1 ]
   [[ "$output" == *"declares no concurrency group"* ]]
 }
@@ -65,7 +65,7 @@ write_workflow() {
     '    steps:' \
     '      - run: echo ok'
 
-  run node "$SCRIPT" "$WORKFLOWS"
+  run bash "$SCRIPT" "$WORKFLOWS"
   [ "$status" -eq 1 ]
   [[ "$output" == *"missing top-level permissions"* ]]
 }
@@ -84,7 +84,7 @@ write_workflow() {
     '      - uses: actions/checkout@v4' \
     '        continue-on-error: true'
 
-  run node "$SCRIPT" "$WORKFLOWS"
+  run bash "$SCRIPT" "$WORKFLOWS"
   [ "$status" -eq 1 ]
   [[ "$output" == *"allow-continue-on-error"* ]]
 }
@@ -104,7 +104,7 @@ write_workflow() {
     '        # allow-continue-on-error: SARIF upload is best-effort' \
     '        continue-on-error: true'
 
-  run node "$SCRIPT" "$WORKFLOWS"
+  run bash "$SCRIPT" "$WORKFLOWS"
   [ "$status" -eq 0 ]
 }
 
@@ -123,7 +123,7 @@ write_workflow() {
     '    steps:' \
     '      - run: echo ok'
 
-  run node "$SCRIPT" "$WORKFLOWS"
+  run bash "$SCRIPT" "$WORKFLOWS"
   [ "$status" -eq 1 ]
   [[ "$output" == *"concurrency block has no group"* ]]
 }
