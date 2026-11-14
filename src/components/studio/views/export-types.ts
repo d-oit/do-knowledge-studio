@@ -195,26 +195,9 @@ export const todayStamp = (): string => {
   return `${year}-${month}-${day}`
 }
 
-/** Triggers a browser download for the given blob. */
-export const downloadBlob = (filename: string, blob: Blob) => {
-  /** The url. */
-  const url = URL.createObjectURL(blob)
-  /** The anchor. */
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  document.body.appendChild(anchor)
-  anchor.click()
-  document.body.removeChild(anchor)
-  URL.revokeObjectURL(url)
-}
-
-/** Triggers a browser download for the given text content. */
-export const downloadFile = (filename: string, content: string, mimeType = 'text/plain') => {
-  /** The blob. */
-  const blob = new Blob([content], { type: mimeType })
-  downloadBlob(filename, blob)
-}
+// Re-exported so existing importers keep working; the implementation lives in
+// `download.ts` to keep this module free of a download-only dependency edge.
+export { downloadBlob, downloadFile } from './download'
 
 /** Groups claims by their owning entity id. */
 export const buildClaimsByEntityId = (claims: Claim[]): Map<string, Claim[]> => {

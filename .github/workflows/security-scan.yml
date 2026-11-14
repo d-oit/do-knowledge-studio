@@ -18,6 +18,12 @@ permissions:
   contents: read
   security-events: write
 
+# A newer push or PR commit supersedes the older scan; scheduled runs are never
+# cancelled mid-scan.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # ============================================================================
   # SHELL SCRIPT SECURITY SCAN
@@ -68,16 +74,20 @@ jobs:
           if [[ ! -s shellcheck-results.sarif ]] || \
              ! python3 -c "import json,sys; json.load(open('shellcheck-results.sarif'))" \
              2>/dev/null; then
-            json_str='{"$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/'
-            json_str+='master/Schemata/sarif-schema-2.1.0.json","version":"2.1.0",'
-            json_str+='"runs":[{"tool":{"driver":{"name":"shellcheck",'
-            json_str+='"informationUri":"https://www.shellcheck.net/"}},"results":[]}]}'
-            printf '%s\n' "$json_str" > shellcheck-results.sarif
+            # Quoted heredoc keeps the JSON literal; `$schema` is optional in SARIF.
+            cat > shellcheck-results.sarif <<'SARIF'
+          {
+            "version": "2.1.0",
+            "runs": [{"tool": {"driver": {"name": "shellcheck",
+              "informationUri": "https://www.shellcheck.net/"}}, "results": []}]
+          }
+          SARIF
           fi
 
       - name: Upload ShellCheck SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+        # allow-continue-on-error: SARIF upload is best-effort; the scan itself already ran
         continue-on-error: true
         with:
           sarif_file: shellcheck-results.sarif
@@ -150,12 +160,13 @@ jobs:
       - name: Fallback Secret Scan with TruffleHog
         if: steps.gitleaks.outcome == 'failure'
         uses: trufflesecurity/trufflehog@ea68ca03c865c5f324e86e849ced20ed3cf9dbbb  # v3.99.8
+        # allow-continue-on-error: fallback only; Gitleaks is the primary gate
+        continue-on-error: true
         with:
           path: ./
           base: ""
           head: HEAD
           extra_args: --debug --only-verified
-        continue-on-error: true
 
   # ============================================================================
   # LOCKFILE DEPENDENCY ADVISORY AUDIT

@@ -29,6 +29,7 @@ the scope from changed paths and requires a resolvable base ref.
 | `validate-package-manager.sh` | Validate the correct package manager (pnpm) is used | `./scripts/validate-package-manager.sh` |
 | `check-dependency-downgrades.mjs` | Fail on lower/unparseable ranges; allow only the exact `@types/node` range matching the runtime floor | `node scripts/check-dependency-downgrades.mjs <base-ref>` |
 | `check-stale-base-deletions.mjs` | Fail when target-branch additions are missing from the PR head | `node scripts/check-stale-base-deletions.mjs <base-ref>` |
+| `check-workflow-hygiene.mjs` | Fail on unannotated `continue-on-error`, missing `concurrency` on push/PR workflows, or missing top-level `permissions` | `node scripts/check-workflow-hygiene.mjs [workflowDir]` |
 
 ## Automation Scripts
 

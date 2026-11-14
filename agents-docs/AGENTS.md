@@ -62,7 +62,7 @@ See [`AVAILABLE_SKILLS.md`](AVAILABLE_SKILLS.md) for authoring guide.
 | `jules-implement` | `.agents/skills/jules-implement` | Repository-aware implementation agent that handles delta-bas |
 | `jules` | `.agents/skills/jules` | Autonomous Jules Delegator skill for delegating complex, mul |
 | `learn` | `.agents/skills/learn` | Extract non-obvious session learnings into scoped AGENTS.md  |
-| `local-chat-policy` | `.agents/skills/local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local |
+| `local-chat-policy` | `.agents/skills/local-chat-policy` | Enforce the local-first chat contract: in-browser retrieval, entity citations, untrusted-content isolation, consent before egress |
 | `memory-context` | `.agents/skills/memory-context` | Retrieve semantically relevant past learnings and analysis o |
 | `migration-refactoring` | `.agents/skills/migration-refactoring` | Automate complex code migrations and refactorings with safet |
 | `parallel-execution` | `.agents/skills/parallel-execution` | Execute multiple independent tasks simultaneously using para |
@@ -84,7 +84,7 @@ See [`AVAILABLE_SKILLS.md`](AVAILABLE_SKILLS.md) for authoring guide.
 | `triz-solver` | `.agents/skills/triz-solver` | Systematic problem-solving using TRIZ (Theory of Inventive P |
 | `turso-db` | `.agents/skills/turso-db` | Use this skill for Turso (LibSQL/Limbo) database development |
 | `ui-ux-optimize` | `.agents/skills/ui-ux-optimize` | Swarm-powered UI/UX prompt optimizer with auto-research agen |
-| `validation-checklist` | `.agents/skills/validation-checklist` | Maintain high data quality and schema adherence within the k |
+| `validation-checklist` | `.agents/skills/validation-checklist` | Validate at the real boundaries (IndexedDB/localStorage rehydration, import, sync, provider responses) with Zod and referential integrity |
 | `web-search-researcher` | `.agents/skills/web-search-researcher` | Research topics using web search to find accurate, current i |
 
 ---

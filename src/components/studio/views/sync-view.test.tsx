@@ -47,6 +47,8 @@ vi.mock('lucide-react', () => {
     ExternalLink: Icon,
     Plus: Icon,
     ShieldCheck: Icon,
+    Download: Icon,
+    Upload: Icon,
   }
 })
 
