@@ -124,8 +124,12 @@ const messages = {
   /** Explanation of the file-based fallback. */
   'syncFile.description':
     'When a network blocks peer-to-peer connections, exchange a bundle file instead. Importing merges records and surfaces conflicts; it never replaces your library.',
-  /** Label for the room id used to bind a bundle. Distinct from the live room field. */
-  'syncFile.roomId': 'Bundle room ID',
+  /**
+   * Label for the room id used to bind a bundle. Deliberately does not contain
+   * "Room ID": the live room field already uses that label, and two fields with
+   * the same accessible name are ambiguous for users and for `getByLabel`.
+   */
+  'syncFile.roomId': 'Room for this bundle',
   /** Placeholder for the room id field. */
   'syncFile.roomIdPlaceholder': 'Room ID shared with the other device',
   /** Label for the optional bundle passphrase. */
