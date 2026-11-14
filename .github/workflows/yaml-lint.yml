@@ -23,6 +23,11 @@ on:
 permissions:
   contents: read
 
+# A newer push or PR commit supersedes the older lint run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   yamllint:
     name: YAML Syntax Validation
@@ -61,7 +66,9 @@ jobs:
 
       - name: Run actionlint
         uses: reviewdog/action-actionlint@78b296370c5c75abca79860e9baa9846e3286a29  # v1
-        continue-on-error: true
         with:
           fail_level: error
           filter_mode: nofilter
+
+      - name: Check workflow hygiene
+        run: node scripts/check-workflow-hygiene.mjs

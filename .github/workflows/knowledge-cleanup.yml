@@ -11,6 +11,11 @@ permissions:
   contents: read
   pull-requests: write
 
+# Monthly and manual runs must not race on the same branch.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   analyze-knowledge:
     name: Identify Outdated Knowledge

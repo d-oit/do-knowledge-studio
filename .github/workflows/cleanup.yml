@@ -23,6 +23,12 @@ permissions:
   contents: read
   pull-requests: write
 
+# One cleanup at a time: a second scheduled or manual run would race the first
+# on the same branch. Never cancel a run that is already creating a PR.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   detect-unused:
     name: Detect Unused Files
@@ -131,6 +137,7 @@ jobs:
             echo "quality_passed=false" >> "${GITHUB_OUTPUT}"
             exit 1
           fi
+        # allow-continue-on-error: the step records quality_passed; the PR step is gated on it
         continue-on-error: true
 
       - name: Create cleanup PR

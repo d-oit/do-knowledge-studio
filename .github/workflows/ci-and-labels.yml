@@ -48,6 +48,7 @@ jobs:
       - name: Path Filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
         id: filter
+        # allow-continue-on-error: a filter failure falls back to the forced/default outputs below
         continue-on-error: true
         with:
           filters: |

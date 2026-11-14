@@ -14,6 +14,7 @@
     "start": "next start",
     "lint": "eslint .",
     "docs:check": "node scripts/check-doc-consistency.mjs",
+    "workflows:check": "node scripts/check-workflow-hygiene.mjs",
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.app.json && pnpm --filter dks-mcp typecheck",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json",
