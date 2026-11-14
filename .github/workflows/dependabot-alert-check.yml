@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+# Nightly and manual runs share one group so they never overlap.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   check:
     name: Open Alert Check

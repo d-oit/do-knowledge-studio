@@ -10,6 +10,11 @@ permissions:
   contents: write
   pull-requests: write
 
+# Weekly and manual runs must not race on the same branch.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -25,7 +30,7 @@ jobs:
         run: |
           LATEST_RELEASE=$(curl -s https://api.github.com/repos/tursodatabase/turso/releases/latest | jq -r .tag_name)
           curl -s https://docs.turso.tech/llms.txt -o /tmp/llms.txt
-          echo "LATEST_RELEASE=$LATEST_RELEASE" >> $GITHUB_ENV
+          echo "LATEST_RELEASE=$LATEST_RELEASE" >> "$GITHUB_ENV"
 
       - name: Compare llms.txt with cached version
         id: check_changes
@@ -34,14 +39,14 @@ jobs:
             echo "Initial fetch of llms.txt"
             mkdir -p .agents/skills/turso-db/references
             cp /tmp/llms.txt .agents/skills/turso-db/references/llms.txt
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           elif ! cmp -s /tmp/llms.txt .agents/skills/turso-db/references/llms.txt; then
             echo "llms.txt has changed"
             cp /tmp/llms.txt .agents/skills/turso-db/references/llms.txt
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "No changes in llms.txt"
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Update Skill Version
