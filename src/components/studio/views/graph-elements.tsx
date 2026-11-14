@@ -177,7 +177,7 @@ export const GraphNodeElement = ({
       onBlur={onBlurNode}
       tabIndex={tabIndex}
       role="button"
-      aria-label={`${label} — ${meta.label}${selected ? ' (selected)' : ''}${onPath ? ' (on path)' : ''}`}
+      aria-label={`${node.label} — ${meta.label}${selected ? ' (selected)' : ''}${onPath ? ' (on path)' : ''}`}
       className={cn(
         'cursor-pointer outline-none',
         (focused || selected) && 'focus-visible:ring-2 focus-visible:ring-saffron/60',
