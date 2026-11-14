@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import type { GraphEdge, GraphNode } from '@/lib/studio/types'
-import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement } from './graph-elements'
+import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement, GraphNodeElement } from './graph-elements'
 
 const sourceNode: GraphNode = { id: 'a', label: 'Alpha', type: 'note', x: 0, y: 0 }
 const targetNode: GraphNode = { id: 'b', label: 'Beta', type: 'note', x: 100, y: 40 }
@@ -68,5 +68,56 @@ describe('GraphEdgeElement', () => {
   it('keeps the focus-mode filter as a drop-shadow', () => {
     // Guards the visual affordance that marks the focused graph node.
     expect(String(FOCUS_MODE_FILTER_STYLE.filter)).toContain('drop-shadow')
+  })
+})
+
+const longNode: GraphNode = {
+  id: 'long',
+  label: 'A very long entity label indeed',
+  type: 'note',
+  x: 5,
+  y: 6,
+}
+
+const renderNode = (node: GraphNode, tabIndex: number) =>
+  render(
+    <svg>
+      <GraphNodeElement
+        node={node}
+        selected={false}
+        focused={false}
+        onPath={false}
+        showLabel
+        showCore
+        animDur="8s"
+        tabIndex={tabIndex}
+        onSelect={() => {}}
+        onKeyDown={() => {}}
+        onFocusNode={() => {}}
+        onBlurNode={() => {}}
+      />
+    </svg>,
+  )
+
+describe('GraphNodeElement', () => {
+  it('truncates the visible label but announces the whole name', () => {
+    const { container } = renderNode(longNode, 0)
+
+    expect(container.querySelector('text')?.textContent).toBe('A very long entity lab…')
+    // A screen reader must not be given the abbreviated form.
+    expect(container.querySelector('g[role="button"]')?.getAttribute('aria-label')).toBe(
+      'A very long entity label indeed — Note',
+    )
+  })
+
+  it('carries the roving tab index it is given', () => {
+    expect(renderNode(longNode, 0).container.querySelector('g[role="button"]')).toHaveAttribute(
+      'tabindex',
+      '0',
+    )
+    expect(renderNode(longNode, -1).container.querySelector('g[role="button"]')).toHaveAttribute(
+      'tabindex',
+      '-1',
+    )
   })
 })

@@ -259,6 +259,8 @@ tree or native scroll.
 
 Graph **revision comparison**, Synthesis Inbox, and Visual Query Builder.
 Linked to [Plan 04 §4.4](04-feature-roadmap.md) and
+(Superseded in part: revision comparison and Synthesis Inbox have since
+shipped — see the 2026-11-13 addendum at the end of this file.)
 [Plan 11 §11.1/§11.6](11-expansion-roadmap.md). Their original SQL/Orama designs
 are historical. No new storage schema is invented here, and none is scheduled
 ahead of the integrity gaps above. Canvas save/restore **is** implemented;
@@ -304,6 +306,7 @@ but appears in **neither** generated catalog (0 matches in each). S1 is its fix.
 6. **F1 AI request control** — first new feature.
 7. **F2 deep links**, then **F3 gestures**.
 8. **Unscheduled** — revision comparison, Synthesis Inbox, Visual Query Builder.
+   (Superseded — see the 2026-11-13 addendum.)
 
 As of 2026-10-05, Step 2 was the only item this plan had implemented. Every
 other listed item was open at that date. Plan 165 records the later resolutions
@@ -401,4 +404,13 @@ Re-verified against `main` at `a947b04`:
 | F3 — touch/gesture implementation | **Implemented** (mandatory scope) | Phases 1–2 in [#968](https://github.com/d-oit/do-knowledge-studio/pull/968)/[#969](https://github.com/d-oit/do-knowledge-studio/pull/969); Phase 4 e2e in `e2e/graph-gestures.spec.ts` + `e2e/mobile-touch-gestures.spec.ts`; the four-project sweep on `main` runs green (run 38914290426). The spec-optional Mind Map swipe actions and the §4 double-tap/long-press remain **unbuilt by design**: Plan 169 marks swipe “optional”, and §4 is absent from its delivery table. |
 | S3 — Cursor/Windsurf strategy semantics | **Resolved** | Plan 166 aligned every tool in `.agents/manifest.json` to `symlink_strategy: "relative"`; `scripts/agent-surface.py` creates relative symlinks for every non-`none` strategy. Verification: `./scripts/validate-skills.sh` passes, `./scripts/setup-skills.sh` is idempotent (clean tree), and the tooling BATS suites are 27/27 green (validate-skills 4, setup-skills 12, generate-skills-docs 11). |
 | Plan 161 — first-mount reduced motion | **Recorded tradeoff, not an open defect** | Plan 161 §Follow-on 1 records the decision: a server-identical first render is required for hydration, so the first paint may tween before the preference applies; `initial={false}` at ~25 sites was deliberately not taken because it visibly changes first paint for no-preference users. The hydration guarantee for reduce users is covered by `e2e/hydration-mismatch.spec.ts` (`reducedMotion: 'reduce'`). |
-| Unscheduled candidates | One delivered, two unprioritized | Graph revision comparison shipped as [Plan 170](170-graph-revision-comparison-2026-10-16.md) (#974); Synthesis Inbox and Visual Query Builder remain unprioritized per Plan 166. |
+| Unscheduled candidates | One delivered, two unprioritized | Graph revision comparison shipped as [Plan 170](170-graph-revision-comparison-2026-10-16.md) (#974); Synthesis Inbox and Visual Query Builder remain unprioritized per Plan 166. **Synthesis Inbox shipped later — see the 2026-11-13 addendum.** |
+
+## Addendum (2026-11-13) — Synthesis Inbox
+
+Re-verified against `main` at `762315d`:
+
+| Item | Current status | Evidence |
+|---|---|---|
+| Synthesis Inbox | **Implemented** | `feat(synthesis): AI extraction with a review inbox` (#1057, merged as `bbc86ef4` via #1096). `SynthesisInboxPanel` is mounted in `editor-view.tsx` beside the note being edited; strings live in `src/lib/i18n/messages/synthesis.ts` and the panel has its own test file. The three "unscheduled" claims above predate it and are kept as the historical record. |
+| Visual Query Builder | **Still unbuilt** | No `QueryBuilder` symbol under `src/` or `e2e/`. [Plan 197](197-structured-query-and-saved-views-2026-10-31.md) shipped the structured query panel and saved views, so this is a UI layer over an existing model; ADR 018's original SQLite/Orama target is historical, so the plan needs retargeting and an ADR before implementation. |

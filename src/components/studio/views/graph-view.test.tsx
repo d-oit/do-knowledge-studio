@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
 import type * as SharedPrimitives from '../ui/shared-primitives'
 import { act, render, screen, fireEvent } from '@testing-library/react'
+import type { GraphNode } from '@/lib/studio/types'
+import { findDirectionalNodeId } from '@/lib/studio/graph-keyboard-nav'
 
 vi.mock('lucide-react', () => {
   const I = ({ className }: { className?: string }) => (
@@ -239,6 +241,59 @@ describe('GraphView', () => {
     const container = screen.getByRole('application', { name: /graph canvas/i })
     expect(container).toBeDefined()
     expect(container).toHaveAttribute('tabIndex', '0')
+  })
+
+  it('keeps a single tab stop across the rendered nodes', () => {
+    render(<GraphView />)
+    const nodes = Array.from(document.querySelectorAll('svg g[role="button"]'))
+    expect(nodes.length).toBeGreaterThan(1)
+
+    const tabbable = nodes.filter((node) => node.getAttribute('tabindex') === '0')
+    expect(tabbable).toHaveLength(1)
+    expect(nodes.filter((node) => node.getAttribute('tabindex') === '-1')).toHaveLength(
+      nodes.length - 1,
+    )
+  })
+
+  it('moves roving focus to the node in the pressed direction without panning', () => {
+    render(<GraphView />)
+    const svg = screen.getByRole('img', { name: /knowledge graph/i })
+    const nodes = Array.from(svg.querySelectorAll<SVGGElement>('g[role="button"]'))
+    const position = (element: SVGGElement): GraphNode => {
+      const match = /translate\(([-\d.]+), ([-\d.]+)\)/.exec(
+        element.getAttribute('transform') ?? '',
+      )
+      return {
+        id: element.dataset.nodeId ?? '',
+        label: '',
+        type: 'note',
+        x: Number(match?.[1] ?? 0),
+        y: Number(match?.[2] ?? 0),
+      }
+    }
+    const graphNodes = nodes.map(position)
+    const first = nodes.find((node) => node.getAttribute('tabindex') === '0')
+    expect(first).toBeDefined()
+    first?.focus()
+    const currentId = first?.dataset.nodeId ?? ''
+
+    // Pick a direction that has a node in it, so the assertion is not vacuous.
+    const direction = (['right', 'down', 'left', 'up'] as const).find(
+      (candidate) => findDirectionalNodeId(graphNodes, currentId, candidate) !== null,
+    )
+    expect(direction).toBeDefined()
+    const expectedId = findDirectionalNodeId(graphNodes, currentId, direction ?? 'right')
+    expect(expectedId).not.toBeNull()
+
+    const viewBoxBefore = svg.getAttribute('viewBox')
+    fireEvent.keyDown(first as SVGGElement, { key: `Arrow${direction?.[0].toUpperCase()}${direction?.slice(1)}` })
+
+    // A node key must not reach the canvas, which pans on arrows.
+    expect(svg.getAttribute('viewBox')).toBe(viewBoxBefore)
+    const tabbable = nodes.filter((node) => node.getAttribute('tabindex') === '0')
+    expect(tabbable).toHaveLength(1)
+    expect(tabbable[0]?.dataset.nodeId).toBe(expectedId)
+    expect(document.activeElement).toBe(tabbable[0])
   })
 
   it('arrow keys pan the graph viewBox', () => {

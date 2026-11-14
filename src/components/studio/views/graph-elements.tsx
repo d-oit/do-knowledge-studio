@@ -2,6 +2,24 @@
 
 import { type GraphEdge, type GraphNode } from '@/lib/studio/types'
 import { cn } from '@/lib/utils'
+import { getEntityTypeMeta } from '@/lib/studio/entity-types'
+
+/** Node dot radius in px; the selected node draws larger. */
+const NODE_RADIUS = 11
+const SELECTED_NODE_RADIUS = 14
+
+/** Dashed selection ring, drawn this far outside the node radius. */
+const SELECTION_RING_OFFSET = 6
+
+/** Decorative core dot radius as a fraction of the node radius. */
+const NODE_CORE_RATIO = 0.4
+
+/** Label baseline offset below the node radius. */
+const LABEL_OFFSET_PX = 14
+
+/** Node labels longer than this are truncated to keep the row readable. */
+const LABEL_MAX_CHARS = 24
+const LABEL_CUT_CHARS = 22
 
 /** CSS filter applied to focused nodes in focus mode. */
 export const FOCUS_MODE_FILTER_STYLE: React.CSSProperties = {
@@ -100,6 +118,103 @@ export const GraphEdgeElement = ({
           relation={edge.relation}
         />
       )}
+    </g>
+  )
+}
+
+/**
+ * One graph node: dot, selection ring, optional core and label.
+ *
+ * Extracted from `graph-view.tsx` to keep that module under the repository's
+ * 500-LOC limit while it gained roving-tabindex keyboard navigation
+ * (plans/213). Render output is unchanged.
+ */
+export const GraphNodeElement = ({
+  node,
+  selected,
+  focused,
+  onPath,
+  showLabel,
+  showCore,
+  animDur,
+  tabIndex,
+  onSelect,
+  onKeyDown,
+  onFocusNode,
+  onBlurNode,
+}: {
+  node: GraphNode
+  selected: boolean
+  focused: boolean
+  /** Whether the node lies on the recovered shortest path (#1058). */
+  onPath: boolean
+  /** Level-of-detail switches; both are off above the label threshold. */
+  showLabel: boolean
+  showCore: boolean
+  animDur: string
+  /** Roving tabindex: 0 only for the single tabbable node. */
+  tabIndex: number
+  onSelect: (nodeId: string, selected: boolean) => void
+  onKeyDown: (nodeId: string, event: React.KeyboardEvent<SVGGElement>) => void
+  onFocusNode: (nodeId: string) => void
+  onBlurNode: () => void
+}) => {
+  const meta = getEntityTypeMeta(node.type)
+  const radius = selected ? SELECTED_NODE_RADIUS : NODE_RADIUS
+  const label = node.label.length > LABEL_MAX_CHARS
+    ? `${node.label.slice(0, LABEL_CUT_CHARS)}…`
+    : node.label
+
+  return (
+    <g
+      data-node-id={node.id}
+      transform={`translate(${node.x}, ${node.y})`}
+      onClick={() => {
+        onSelect(node.id, selected)
+      }}
+      onKeyDown={(event) => { onKeyDown(node.id, event) }}
+      onFocus={() => { onFocusNode(node.id) }}
+      onBlur={onBlurNode}
+      tabIndex={tabIndex}
+      role="button"
+      aria-label={`${node.label} — ${meta.label}${selected ? ' (selected)' : ''}${onPath ? ' (on path)' : ''}`}
+      className={cn(
+        'cursor-pointer outline-none',
+        (focused || selected) && 'focus-visible:ring-2 focus-visible:ring-saffron/60',
+      )}
+      style={focused ? FOCUS_MODE_FILTER_STYLE : undefined}
+    >
+      <g aria-hidden="true">
+        {selected && (
+          <circle r={radius + SELECTION_RING_OFFSET} fill="none" className="stroke-saffron" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.6}>
+            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur={animDur} repeatCount="indefinite" />
+          </circle>
+        )}
+        <circle
+          r={radius}
+          className={cn(
+            'transition-all',
+            selected ? 'fill-saffron' : meta.dot.replace('bg-', 'fill-'),
+          )}
+          stroke={onPath ? 'var(--saffron)' : 'var(--background)'}
+          strokeWidth={onPath ? 3 : 2}
+        />
+        {showCore && (
+          <circle r={radius * NODE_CORE_RATIO} fill="var(--background)" opacity={0.3} />
+        )}
+        {showLabel && (
+          <text
+            y={radius + LABEL_OFFSET_PX}
+            textAnchor="middle"
+            className={cn(
+              'font-sans text-caption font-medium transition-colors',
+              selected ? 'fill-ink' : 'fill-ink-soft',
+            )}
+          >
+            {label}
+          </text>
+        )}
+      </g>
     </g>
   )
 }

@@ -246,14 +246,18 @@ test.describe('Graph frame timeline at 5k nodes', () => {
     // the frame on, so the shape is asserted rather than left to review.
     const nodeDom = await page.evaluate(() => {
       const canvas = document.querySelector('svg[aria-label^="Knowledge graph"]')
-      if (canvas === null) return { nodes: 0, circles: 0 }
+      if (canvas === null) return { nodes: 0, circles: 0, tabStops: 0 }
       return {
         nodes: canvas.querySelectorAll('g[role="button"]').length,
         circles: canvas.querySelectorAll('circle').length,
+        // Roving tabindex: 5,000 nodes must not mean 5,000 tab stops
+        // (plans/213).
+        tabStops: canvas.querySelectorAll('g[role="button"][tabindex="0"]').length,
       }
     })
     expect(nodeDom.nodes).toBeGreaterThan(0)
     expect(nodeDom.circles).toBe(nodeDom.nodes)
+    expect(nodeDom.tabStops).toBe(1)
 
     await startFrameSampling(page)
     await dragCanvas(page, box)

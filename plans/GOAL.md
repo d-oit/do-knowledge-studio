@@ -65,7 +65,9 @@ the evidence named.
    50 → 33.3 ms (the median now meets the target without a GPU) and p95 ~1,030
    → ~575 ms. What remains is the tail: ~3,860 nodes still mount at the fit
    view, and cutting that further means batching node rendering, which ADR 052
-   deferred. The 3,860 tab stops are an accessibility track, not a perf one.
+   deferred. Plans 212 rejected node memoisation and per-move layout caching as
+   explanations (both measured, both reverted); the 3,860 tab stops were fixed
+   separately as an accessibility track in [Plan 213](213-graph-keyboard-navigation-2026-11-13.md).
 3. **Visual Query Builder** (Plan 11.6) — the only feature candidate never
    built: no `QueryBuilder` symbol exists under `src/` or `e2e/`. Plan 197
    shipped the structured query panel and saved views, so this is a UI layer over an existing model: ADR 018 retired its original SQLite/Orama target, and there is no SQLite in the current architecture, so the plan needs retargeting and an ADR before implementation.
