@@ -1,0 +1,46 @@
+{
+  "skill_name": "validation-checklist",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a `pinned` boolean to entities and persist it. What validation work is required?",
+      "files": [],
+      "assertions": [
+        "The output updates the Zod schema in src/lib/studio/schema.ts",
+        "The output adds a migration and bumps the persisted schema version",
+        "The output covers localStorage/IndexedDB rehydration with a test",
+        "The output does not cast parsed JSON with `as`"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "An imported JSON file has no `version` field. Should we default it to the current version?",
+      "files": [],
+      "assertions": [
+        "The output rejects the missing version with a specific error",
+        "The output does not silently default to the current shape",
+        "The output surfaces the error to the user with a localized message"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "A stored entity fails schema validation on load. What should the app do with it?",
+      "files": [],
+      "assertions": [
+        "The output quarantines the record instead of deleting it",
+        "The output logs the failure meaningfully (no empty catch)",
+        "The output keeps the rest of the corpus loadable"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Where do I add a Zod schema for a new sync message?",
+      "files": [],
+      "assertions": [
+        "The output points at src/lib/sync/inbound.ts for inbound records",
+        "The output does not mention an API server or database boundary",
+        "The output mentions validating before merging into the store"
+      ]
+    }
+  ]
+}

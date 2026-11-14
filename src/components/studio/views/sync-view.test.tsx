@@ -29,25 +29,9 @@ vi.mock('lucide-react', () => {
   const Icon = ({ className }: { className?: string }) => (
     <span data-testid="icon" className={className} />
   )
-  return {
-    Wifi: Icon,
-    WifiOff: Icon,
-    Copy: Icon,
-    Check: Icon,
-    RefreshCw: Icon,
-    Trash2: Icon,
-    History: Icon,
-    Loader2: Icon,
-    QrCode: Icon,
-    Camera: Icon,
-    Radio: Icon,
-    Users: Icon,
-    AlertTriangle: Icon,
-    ArrowRightLeft: Icon,
-    ExternalLink: Icon,
-    Plus: Icon,
-    ShieldCheck: Icon,
-  }
+  // Any icon name resolves to the same stub: the view imports icons through
+  // several child modules, and a fixed list breaks whenever one adds an icon.
+  return new Proxy({}, { get: () => Icon })
 })
 
 vi.mock('sonner', () => ({

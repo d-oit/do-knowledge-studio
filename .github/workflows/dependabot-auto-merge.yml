@@ -11,6 +11,11 @@ on: pull_request
 permissions:
   contents: read
 
+# One auto-merge decision per pull request; a new push supersedes the old run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   auto-merge:
     # Only run for dependabot or jules bots with the automerge label

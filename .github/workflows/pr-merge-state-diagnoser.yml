@@ -37,6 +37,7 @@ jobs:
       # never a merge gate — so fork PRs and transient API errors must not
       # turn the check red.
       - name: Diagnose and comment
+        # allow-continue-on-error: informational comment, never a merge gate
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

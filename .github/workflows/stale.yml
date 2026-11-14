@@ -12,6 +12,11 @@ permissions:
   issues: write
   pull-requests: write
 
+# Daily and manual runs share one group; never cancel a run mid-sweep.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   stale:
     runs-on: ubuntu-latest
