@@ -14,9 +14,10 @@ import {
   shouldShowRelationLabels,
   visibleRect,
 } from '@/lib/studio/graph-culling'
+import { findDirectionalNodeId, NAV_KEY_DIRECTIONS } from '@/lib/studio/graph-keyboard-nav'
 import { canvasSize, canvasViewBox } from '@/lib/studio/graph-viewport'
 import { useElementSize } from '@/lib/studio/use-element-size'
-import { getEntityTypeDefs, getEntityTypeMeta } from '@/lib/studio/entity-types'
+import { getEntityTypeDefs } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { exportGraphPng } from './export-graph-png'
 import { CircleDot, GitFork, Plus } from 'lucide-react'
@@ -32,7 +33,7 @@ import type { GraphLayout } from '@/lib/studio/graph-snapshot'
 import { GraphComparisonDialog } from './graph-comparison-dialog'
 import { useGraphKeyboard } from './use-graph-keyboard'
 import { useGraphSnapshotComparison } from './use-graph-snapshot-comparison'
-import { FOCUS_MODE_FILTER_STYLE, GraphEdgeElement } from './graph-elements'
+import { GraphEdgeElement, GraphNodeElement } from './graph-elements'
 import { useGraphCanvasGestures } from './use-graph-canvas-gestures'
 import { GraphQueryPanel } from './graph-query-panel'
 import {
@@ -200,6 +201,14 @@ export const GraphView = () => {
     () => cullEdges(visibleEdges, renderedNodeIds),
     [visibleEdges, renderedNodeIds],
   )
+  // Roving tabindex: with 5,000 nodes every one of them being a tab stop made
+  // the graph impossible to Tab past, so exactly one node is tabbable and the
+  // arrow keys move between them (plans/213).
+  const [activeNodeId, setActiveNodeId] = useState<string | null>(null)
+  const tabbableNodeId = useMemo(() => {
+    if (activeNodeId && renderedNodeIds.has(activeNodeId)) return activeNodeId
+    return renderedNodes[0]?.id ?? null
+  }, [activeNodeId, renderedNodeIds, renderedNodes])
   const hiddenNodeCount = visibleNodes.length - renderedNodes.length
   const showNodeLabels = shouldShowNodeLabels(visibleNodes.length, zoom)
   const showRelationLabels = shouldShowRelationLabels(visibleNodes.length, zoom)
@@ -256,15 +265,45 @@ export const GraphView = () => {
   const animDur = reducedMotion ? '0s' : '8s'
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
 
+  /** Moves DOM focus to a rendered node without needing a CSS selector escape. */
+  const focusNode = useCallback(
+    (nodeId: string) => {
+      const group = Array.from(
+        svgRef.current?.querySelectorAll<SVGGElement>('[data-node-id]') ?? [],
+      ).find((element) => element.dataset.nodeId === nodeId)
+      group?.focus()
+    },
+    [svgRef],
+  )
+
   const handleNodeKeyDown = useCallback(
     (nodeId: string, e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
+        // The canvas pans on arrows and resets on other keys; a key handled
+        // here must not also reach it.
+        e.stopPropagation()
         selectEntity(nodeId)
+        return
       }
+      const direction = NAV_KEY_DIRECTIONS[e.key]
+      if (!direction) return
+      e.preventDefault()
+      e.stopPropagation()
+      const nextNodeId = findDirectionalNodeId(renderedNodes, nodeId, direction)
+      if (!nextNodeId) return
+      setActiveNodeId(nextNodeId)
+      focusNode(nextNodeId)
     },
-    [selectEntity],
+    [renderedNodes, selectEntity, focusNode],
   )
+  const handleNodeFocus = useCallback((nodeId: string) => {
+    setFocusedNodeId(nodeId)
+    setActiveNodeId(nodeId)
+  }, [])
+  const handleNodeBlur = useCallback(() => {
+    setFocusedNodeId(null)
+  }, [])
   const handleNodeClick = useCallback(
     (nodeId: string, isCurrentlySelected: boolean) => {
       if (isDraggingRef.current) return
@@ -382,63 +421,23 @@ export const GraphView = () => {
 
           {/* Nodes */}
           <g>
-            {renderedNodes.map((n) => {
-              const meta = getEntityTypeMeta(n.type)
-              const isSelected = n.id === selectedEntityId
-              const r = isSelected ? 14 : 11
-              return (
-                <g
-                  key={n.id}
-                  transform={`translate(${n.x}, ${n.y})`}
-                  onClick={() => {
-                    handleNodeClick(n.id, isSelected)
-                  }}
-                  onKeyDown={(e) => { handleNodeKeyDown(n.id, e) }}
-                  onFocus={() => { setFocusedNodeId(n.id) }}
-                  onBlur={() => { setFocusedNodeId(null) }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${n.label} — ${meta.label}${isSelected ? ' (selected)' : ''}${pathNodeIdSet.has(n.id) ? ' (on path)' : ''}`}
-                  className={cn(
-                    'cursor-pointer outline-none',
-                    (focusedNodeId === n.id || isSelected) && 'focus-visible:ring-2 focus-visible:ring-saffron/60',
-                  )}
-                  style={focusedNodeId === n.id ? FOCUS_MODE_FILTER_STYLE : undefined}
-                >
-                  <g aria-hidden="true">
-                    {isSelected && (
-                      <circle r={r + 6} fill="none" className="stroke-saffron" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.6}>
-                        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur={animDur} repeatCount="indefinite" />
-                      </circle>
-                    )}
-                    <circle
-                      r={r}
-                      className={cn(
-                        'transition-all',
-                        isSelected ? 'fill-saffron' : meta.dot.replace('bg-', 'fill-'),
-                      )}
-                      stroke={pathNodeIdSet.has(n.id) ? 'var(--saffron)' : 'var(--background)'}
-                      strokeWidth={pathNodeIdSet.has(n.id) ? 3 : 2}
-                    />
-                    {showNodeCore && (
-                      <circle r={r * 0.4} fill="var(--background)" opacity={0.3} />
-                    )}
-                    {showNodeLabels && (
-                      <text
-                        y={r + 14}
-                        textAnchor="middle"
-                        className={cn(
-                          'font-sans text-caption font-medium transition-colors',
-                          isSelected ? 'fill-ink' : 'fill-ink-soft',
-                        )}
-                      >
-                        {n.label.length > 24 ? `${n.label.slice(0, 22)}…` : n.label}
-                      </text>
-                    )}
-                  </g>
-                </g>
-              )
-            })}
+            {renderedNodes.map((n) => (
+              <GraphNodeElement
+                key={n.id}
+                node={n}
+                selected={n.id === selectedEntityId}
+                focused={focusedNodeId === n.id}
+                onPath={pathNodeIdSet.has(n.id)}
+                showLabel={showNodeLabels}
+                showCore={showNodeCore}
+                animDur={animDur}
+                tabIndex={n.id === tabbableNodeId ? 0 : -1}
+                onSelect={handleNodeClick}
+                onKeyDown={handleNodeKeyDown}
+                onFocusNode={handleNodeFocus}
+                onBlurNode={handleNodeBlur}
+              />
+            ))}
           </g>
         </svg>
 

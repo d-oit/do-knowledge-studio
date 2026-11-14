@@ -9,6 +9,19 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 213 — Graph keyboard navigation (2026-11-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Fix | Make 5,000 graph nodes keyboard-navigable without 3,860 tab stops | Done | Roving tabindex (one tabbable node) plus arrow-key directional navigation in `graph-keyboard-nav.ts`; node keys `stopPropagation()` so they do not also pan the canvas. `graph-view.tsx` was over the 500-LOC limit, so the node element moved to `graph-elements.tsx`. 7 unit + 2 component tests, both guards seen to fail when re-injected; the 5,000-node e2e spec now asserts `tabStops === 1`. See [Plan 213](213-graph-keyboard-navigation-2026-11-13.md) |
+
+### Plan 212 — Two falsified frame-tail hypotheses (2026-11-13)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Attribute | Test whether node re-rendering explains the pan tail | Rejected | `React.memo` per-node element: bailout proven by a call-count test, but no frame change outside noise (baseline p95 550–1,050 ms spans the result). Reverted |
+| Attribute | Test whether the per-move `getBoundingClientRect()` explains it | Rejected | Rect cached per gesture, four alternating A/B pairs: two favoured the cache, two were parity (< 3%). Reverted. See [Plan 212](212-graph-frame-tail-null-results.md) |
+
 ### Plan 211 — Decorative node-core LOD (2026-11-13)
 
 | Wave | Goal | Status | Outcome |
