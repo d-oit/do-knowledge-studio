@@ -8,6 +8,11 @@ permissions:
   contents: read
   issues: write
 
+# Manual only, but a double click must not create the issue set twice.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   create-issues:
     name: Create Jules Issues

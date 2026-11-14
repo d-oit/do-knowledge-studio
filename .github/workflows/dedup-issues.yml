@@ -153,6 +153,7 @@ jobs:
       - name: Run LLM duplicate detection
         uses: pelikhan/action-genai-issue-dedup@bdb3b5d9451c1090ffcdf123d7447a5e7c7a2528  # v0.0.19
         id: dedup_llm
+        # allow-continue-on-error: advisory only; a model failure must not block issue triage
         continue-on-error: true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
