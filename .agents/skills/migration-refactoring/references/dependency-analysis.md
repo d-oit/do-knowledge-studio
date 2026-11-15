@@ -969,6 +969,7 @@ class MigrationOrderCalculator:
 ### Smart Test Selection
 
 ```yaml
+# example - not in this repo
 # .github/workflows/smart-test.yml - 2026 Enhanced
 name: Smart Test Selection
 

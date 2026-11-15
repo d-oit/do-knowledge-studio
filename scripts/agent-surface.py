@@ -97,6 +97,18 @@ def validate_skill_frontmatter(repo_root: Path) -> list[str]:
             for field in required_fields:
                 if field not in frontmatter:
                     errors.append(f"{skill_md.relative_to(repo_root)}: missing required field '{field}'")
+            # Portable descriptions (#1150): block scalars render as ">"
+            # in some loaders, hiding the skill from description matching.
+            raw_frontmatter = parts[1]
+            if re.search(r'^description:\s*[>|]', raw_frontmatter, re.MULTILINE):
+                errors.append(
+                    f"{skill_md.relative_to(repo_root)}: description must be a single-line quoted string, not a block scalar (#1150)"
+                )
+            description = frontmatter.get("description")
+            if isinstance(description, str) and len(description) > 300:
+                errors.append(
+                    f"{skill_md.relative_to(repo_root)}: description is {len(description)} chars, over the 300-char budget (#1150)"
+                )
         except yaml.YAMLError as e:
             errors.append(f"{skill_md.relative_to(repo_root)}: invalid YAML: {e}")
 
@@ -254,6 +266,109 @@ def validate_broken_links(repo_root: Path) -> list[str]:
     return errors
 
 
+EXAMPLE_MARKER_RE = re.compile(
+    r"^\s*(?:#{1,6}\s+|(?:<!--|//|--|;|%|\"|')\s*)?example\b",
+    re.IGNORECASE,
+)
+FENCE_RE = re.compile(r"^(`{3,})(.*)$")
+REF_TOKEN_RE = re.compile(
+    r"(?:^|[\s(\[\"'`>$=/*])"
+    r"((?:[a-z0-9][a-z0-9-]*/)?"
+    r"(?:scripts|agents-docs|references)/[A-Za-z0-9_][A-Za-z0-9_./-]*)"
+)
+
+
+def validate_dead_skill_refs(repo_root: Path) -> list[str]:
+    """Every scripts/agents-docs/references path in a skill must resolve (#1148).
+
+    A skill that tells an agent to run `scripts/foo.sh` that exists nowhere
+    fails the agent at runtime. Tokens resolve against the repo root (for
+    `scripts/` and `agents-docs/`) or the skill's own directory (for
+    `scripts/` and `references/`). Fenced blocks explicitly marked as an
+    example — info string containing "example", or a first content line
+    like `# example -- not in this repo` — are illustrative and skipped.
+    The first-line marker only applies to top-level fences; snippets nested
+    inside a template literal (a ```` outer block) inherit the outer fence,
+    so mark the outer fence instead. Fence runs are length-aware (````
+    closes only on a run at least as long), matching CommonMark so template
+    literals containing inner ``` fences keep parity. Cross-skill references
+    (`testing-strategy/references/x.md`) resolve against the named skill.
+    Globs (`scripts/*.sh`) and bare directory mentions (`scripts/`) are
+    not file references and are skipped.
+    """
+    errors = []
+    skills_dir = repo_root / ".agents" / "skills"
+    if not skills_dir.is_dir():
+        return errors
+    skill_names = {
+        child.name for child in skills_dir.iterdir() if child.is_dir()
+    }
+    for md in sorted(skills_dir.rglob("*.md")):
+        skill_dir = md.parent
+        while skill_dir != skills_dir and skill_dir.parent != skills_dir:
+            skill_dir = skill_dir.parent
+        lines = md.read_text(encoding="utf-8").split("\n")
+        in_fence = False
+        fence_is_example = False
+        fence_saw_content = False
+        fence_len = 0
+        for lineno, line in enumerate(lines, 1):
+            stripped = line.strip()
+            fence_match = FENCE_RE.match(stripped)
+            # Length-aware toggling: a ```` outer block (used for template
+            # literals containing inner ``` fences) only closes on a run at
+            # least as long — matching CommonMark, so the scanner and the
+            # rendered doc agree on what is code and what is prose.
+            if fence_match and (
+                not in_fence or not fence_match.group(2).strip()
+            ):
+                run = len(fence_match.group(1))
+                if not in_fence:
+                    in_fence = True
+                    fence_len = run
+                    fence_is_example = "example" in stripped.lower()
+                    fence_saw_content = False
+                elif run >= fence_len:
+                    in_fence = False
+                    fence_is_example = False
+                continue
+            if in_fence:
+                if not fence_is_example and not fence_saw_content and stripped:
+                    fence_saw_content = True
+                    if EXAMPLE_MARKER_RE.match(stripped):
+                        fence_is_example = True
+                if fence_is_example:
+                    continue
+            for match in REF_TOKEN_RE.finditer(line):
+                ref = match.group(1).rstrip(".,:;)")
+                if ref.endswith(("/", ".", ",")):
+                    continue
+                basename = ref.rsplit("/", 1)[-1]
+                if not basename or "*" in basename or "." not in basename:
+                    continue
+                first = ref.partition("/")[0]
+                if first in skill_names:
+                    # Cross-skill reference, e.g.
+                    # `testing-strategy/references/mutation-testing.md`.
+                    ok = (skills_dir / ref).exists()
+                elif ref.startswith("scripts/"):
+                    sub = ref[len("scripts/"):]
+                    ok = (repo_root / "scripts" / sub).exists() or (
+                        skill_dir / "scripts" / sub
+                    ).exists()
+                elif ref.startswith("references/"):
+                    ok = (skill_dir / ref).exists()
+                else:
+                    ok = (repo_root / ref).exists()
+                if not ok:
+                    errors.append(
+                        f"{md.relative_to(repo_root)}:{lineno}: dead reference "
+                        f"'{ref}' resolves neither at the repo root nor in "
+                        f"{skill_dir.name}/ (#1148)"
+                    )
+    return errors
+
+
 def validate_agents_md(repo_root: Path) -> list[str]:
     """Validate AGENTS.md exists, has key sections, and honors the line cap."""
     errors = []
@@ -281,6 +396,62 @@ def validate_agents_md(repo_root: Path) -> list[str]:
                 "into agents-docs/ and link to it — do not raise the limit to "
                 "make a growing file pass."
             )
+    return errors
+
+
+def validate_agent_guard(repo_root: Path) -> list[str]:
+    """The PreToolUse guard and its registration must agree (#1144)."""
+    errors = []
+    guard = repo_root / "scripts" / "agent-guard.sh"
+    settings = repo_root / ".claude" / "settings.json"
+    if not guard.is_file():
+        return ["Agent guard missing: scripts/agent-guard.sh"]
+    if not os.access(guard, os.X_OK):
+        errors.append("Agent guard is not executable: scripts/agent-guard.sh")
+    if not settings.is_file():
+        errors.append("Claude hook settings missing: .claude/settings.json")
+        return errors
+    try:
+        payload = json.loads(settings.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [f".claude/settings.json is not valid JSON: {exc}"]
+    pre_tool = (payload.get("hooks") or {}).get("PreToolUse") or []
+    commands = [
+        hook.get("command", "")
+        for entry in pre_tool
+        for hook in (entry.get("hooks") or [])
+    ]
+    if not any("agent-guard.sh" in command for command in commands):
+        errors.append(".claude/settings.json does not register scripts/agent-guard.sh as a PreToolUse hook")
+    return errors
+
+
+def validate_eval_presence(repo_root: Path) -> list[str]:
+    """Every advertised skill ships evals (#1149).
+
+    Edits to a skill without evals cannot be regression-tested, so the
+    skill-evaluator has nothing to benchmark. Redirect stubs keep their
+    evals directories; only names listed in EVAL_ALLOWLIST with a recorded
+    reason are exempt.
+    """
+    # skill name -> reason for exemption. Empty: no advertised skill is
+    # exempt today. Add entries only with maintainer approval in plans/.
+    EVAL_ALLOWLIST: dict[str, str] = {}
+    errors = []
+    skills_dir = repo_root / ".agents" / "skills"
+    if not skills_dir.is_dir():
+        return errors
+    for skill in sorted(skills_dir.iterdir()):
+        if not skill.is_dir():
+            continue
+        if (skill / "evals").is_dir():
+            continue
+        if skill.name in EVAL_ALLOWLIST:
+            continue
+        errors.append(
+            f"Advertised skill {skill.name} has no evals/ directory (#1149); "
+            "add evals or record an exemption in EVAL_ALLOWLIST"
+        )
     return errors
 
 
@@ -379,6 +550,13 @@ def check_managed_skill_links(
                 continue
             full_skills_dir.mkdir(parents=True, exist_ok=True)
 
+        if repair:
+            # Prune symlinks left behind by skills moved out of the canonical
+            # directory (#1147): a moved skill must stop being advertised.
+            # Only broken symlinks are removed; real files are never touched.
+            for stale in full_skills_dir.iterdir():
+                if stale.is_symlink() and not stale.exists():
+                    stale.unlink()
         for skill in canonical_path.iterdir():
             if not skill.is_dir():
                 continue
@@ -463,6 +641,9 @@ def main() -> int:
         errors.extend(validate_broken_symlinks(repo_root))
         errors.extend(validate_broken_links(repo_root))
         errors.extend(validate_agents_md(repo_root))
+        errors.extend(validate_agent_guard(repo_root))
+        errors.extend(validate_dead_skill_refs(repo_root))
+        errors.extend(validate_eval_presence(repo_root))
         errors.extend(validate_canonical_skills(repo_root, manifest))
         errors.extend(validate_skill_frontmatter(repo_root))
         errors.extend(validate_skill_name_mismatch(repo_root))

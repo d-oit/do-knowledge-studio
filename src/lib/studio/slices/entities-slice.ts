@@ -27,6 +27,7 @@ export type EntitiesSlice = Pick<
   | 'navigateToView'
   | 'deleteEntity'
   | 'restoreEntityRevision'
+  | 'mergeEntities'
 >
 
 /** Applies an upsert to the entity list, inserting new entities at the front. */
@@ -138,6 +139,64 @@ export const createEntitiesSlice: StudioSlice<EntitiesSlice> = (set, get) => ({
 
   navigateToView: (v) => {
     set({ currentView: v })
+  },
+
+  mergeEntities: (survivorId, loserId) => {
+    if (survivorId === loserId) return false
+    const state = get()
+    const survivor = state.entities.find((x) => x.id === survivorId)
+    const loser = state.entities.find((x) => x.id === loserId)
+    if (!survivor || !loser) return false
+    const loserName = loser.name.trim()
+    const mergedAliases = [...(survivor.aliases ?? [])]
+    if (loserName !== '' && !mergedAliases.some((a) => a.toLowerCase() === loserName.toLowerCase())) {
+      mergedAliases.push(loserName)
+    }
+    for (const alias of loser.aliases ?? []) {
+      if (!mergedAliases.some((a) => a.toLowerCase() === alias.toLowerCase())) mergedAliases.push(alias)
+    }
+    const mergedTags = [...survivor.tags]
+    for (const tag of loser.tags) {
+      if (!mergedTags.some((t) => t.toLowerCase() === tag.toLowerCase())) mergedTags.push(tag)
+    }
+    const mergedEntity: Entity = {
+      ...survivor,
+      aliases: mergedAliases,
+      tags: mergedTags,
+      content: survivor.content !== '' ? survivor.content : loser.content,
+      description: survivor.description !== '' ? survivor.description : loser.description,
+      links: [
+        ...survivor.links,
+        ...loser.links.filter((l) => l.targetId !== survivorId && !survivor.links.some((s) => s.targetId === l.targetId && s.relation === l.relation)),
+      ].map((l) => (l.targetId === loserId ? { ...l, targetId: survivorId } : l)),
+      updatedAt: new Date().toISOString(),
+    }
+    set((current) => {
+      const canvas = removeCanvasRefs(
+        { graph: current.graph, mindMap: current.mindMap, links: current.links },
+        loserId,
+      )
+      return {
+        entities: current.entities
+          .filter((x) => x.id !== loserId)
+          .map((e) => {
+            if (e.id === survivorId) return mergedEntity
+            return { ...e, links: e.links.map((l) => (l.targetId === loserId ? { ...l, targetId: survivorId } : l)) }
+          }),
+        claims: current.claims.map((c) => (c.entityId === loserId ? { ...c, entityId: survivorId } : c)),
+        graph: canvas.graph,
+        mindMap: canvas.mindMap,
+        links: (canvas.links ?? []).map((l) =>
+          l.sourceId === loserId || l.targetId === loserId
+            ? { ...l, sourceId: l.sourceId === loserId ? survivorId : l.sourceId, targetId: l.targetId === loserId ? survivorId : l.targetId }
+            : l,
+        ),
+        selectedEntityId: current.selectedEntityId === loserId ? survivorId : current.selectedEntityId,
+      }
+    })
+    get().pushHistory()
+    recordEntityRevision({ entity: mergedEntity, previous: survivor, reason: 'save' })
+    return true
   },
 
   deleteEntity: (id) => {

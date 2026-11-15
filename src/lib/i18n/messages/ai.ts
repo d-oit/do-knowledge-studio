@@ -27,6 +27,11 @@ const messages = {
   'ai.chat.error.timeout': 'The provider took too long to respond (2 minute limit).',
   'ai.chat.error.unexpected': 'The provider returned an unexpected error.',
   'ai.chat.error.hint': 'Check your provider settings and try again.',
+  'ai.chat.error.missingKey': 'Set an API key in settings to send messages.',
+  'ai.chat.fetch.urls': (count: string) => `Fetching ${count} URL(s)…`,
+  'ai.chat.fetch.urlsFailed': (count: string) => `Failed to fetch ${count} URL(s)`,
+  'ai.harness.models.found': (count: string) => `Found ${count} Ollama models`,
+  'ai.harness.models.fetchFailed': (detail: string) => `Failed to fetch Ollama models: ${detail}`,
 } as const
 
 export const translate = makeT(messages)

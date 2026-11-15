@@ -1,6 +1,6 @@
 ---
 name: api-design-first
-description: Design and document RESTful APIs using design-first principles with OpenAPI specifications. Use when users ask to 'design an API', 'create API spec', 'REST API', 'OpenAPI', 'Swagger', or 'API documentation'. Trigger on API design tasks, endpoint planning, request/response modeling, or API versioning discussions.
+description: "Design and document RESTful APIs with OpenAPI: endpoint planning, request/response modeling, versioning. Trigger on 'design an API', 'OpenAPI', 'Swagger'."
 version: "1.0"
 template_version: "0.2"
 license: MIT

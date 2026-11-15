@@ -7,61 +7,55 @@
 
 | Skill | Description |
 |-------|-------------|
-| `triz-analysis` | Run a systematic TRIZ contradiction audit against a codebase, architecture, or workflow to identify hidden trade-offs and innovation opportunities. |
 
 ## General
 
 | Skill | Description |
 |-------|-------------|
-| `accessibility-auditor` | Audit web applications for WCAG 2.2 compliance, screen reader compatibility, keyboard navigation, and color contrast. Triggers on "accessibility audit", "a11y check", "WCAG compliance", "screen reader test", "keyboard navigation", "color contrast check", "ARIA validation", "wcag", " Section 508", "ADA compliance". |
-| `agent-coordination` | Coordinate multiple agents for software development across any language. Use for parallel execution of independent tasks, sequential chains with dependencies, swarm analysis from multiple perspectives, or iterative refinement loops. Handles Python, JavaScript, Java, Go, Rust, C#, and other languages. |
+| `accessibility-auditor` | Audit WCAG 2.2 compliance: screen readers, keyboard navigation, color contrast. Trigger on 'a11y check', 'WCAG compliance', 'ARIA validation'. |
+| `agent-coordination` | Coordinate multiple agents: parallel independent tasks, sequential chains, swarm analysis, iterative refinement across languages. |
 | `agents-md` | Create AGENTS.md files with production-ready best practices. Use when creating new AGENTS.md or implementing quality gates. |
-| `anti-ai-slop` | Apply this skill whenever the user wants to audit, fix, redesign, write, or review UI, UX, copy, or text to avoid the generic "AI slop" aesthetic of 2025–2026. Triggers include: "make this feel less AI", "this looks too generic", "avoid AI clichés", "audit my copy", "anti-pattern review", "humanize this", "this feels soulless", "too corporate", "fix the UX writing", "why does this feel like ChatGPT made it", "anti-design", "brutalist", "raw", "intentional", "authentic", "distinctive", "not like every other AI app", "responsive", "mobile", "tablet", "desktop". Also trigger when producing new UI, copy, or UX flows and the user cares about quality and distinctiveness. Always verify mobile, tablet, and desktop views for proper navigation and layout. This skill is your checklist, diagnostic tool, and creative brief for everything that makes design feel human, considered, and real in 2026. |
-| `api-design-first` | Design and document RESTful APIs using design-first principles with OpenAPI specifications. Use when users ask to 'design an API', 'create API spec', 'REST API', 'OpenAPI', 'Swagger', or 'API documentation'. Trigger on API design tasks, endpoint planning, request/response modeling, or API versioning discussions. |
-| `architecture-diagram` | Generate or update a project architecture SVG diagram by scanning the live project structure. Use this skill whenever the user asks to regenerate, refresh, or update the architecture diagram, or when skills, agents, or commands have been added/removed and the diagram is stale. Triggers on phrases like "update the diagram", "regenerate the architecture SVG", "sync the diagram", or "diagram is out of date". |
-| `atomic-commit` | Atomic git workflow - validates, commits, pushes, creates PR, and verifies CI with zero-warnings policy. Orchestrates complete code submission as state machine with rollback on failure. |
+| `anti-ai-slop` | Audit or create UI, UX, and copy that avoids the generic AI-slop aesthetic. Use for design reviews, UX writing, or distinctive human-feeling interfaces. |
+| `api-design-first` | Design and document RESTful APIs with OpenAPI: endpoint planning, request/response modeling, versioning. Trigger on 'design an API', 'OpenAPI', 'Swagger'. |
+| `architecture-diagram` | Generate or refresh the project architecture SVG from live structure. Trigger on 'update the diagram', 'regenerate the architecture SVG', 'diagram is out of date'. |
+| `atomic-commit` | Sub-procedure of github-workflow for code submission: validate, commit, push, create PR, verify CI with zero-warnings policy and rollback. |
 | `cicd-pipeline` | Design and implement CI/CD pipelines with GitHub Actions, GitLab CI, and Forgejo Actions. Use for automated testing, deployment strategies (blue-green, canary), security scanning, and multi-environment workflows. Includes pipeline optimization, secrets management, and failure handling patterns. |
-| `code-quality` | Review and improve code quality across any programming language. Use when conducting code reviews, refactoring for best practices, identifying code smells, or improving maintainability. |
-| `code-review-assistant` | Automated code review with PR analysis, change summaries, quality checks, and required adversarial probing. Use for reviewing pull requests, generating review comments, checking against best practices, and identifying potential issues. Includes style guide compliance, security issue detection, review automation, and the probing patterns that catch defects a read-through misses (unguarded index, swallowed exception, the fix that evicts a shared resource). |
-| `codeberg-api` | Interact with Forgejo/Codeberg repositories via the REST API — read or write files, manage issues, create pull requests, list branches/tags, search repos, and automate CI/CD workflows. Use this skill when the user wants to: read file contents from a Forgejo repo, create or update files, manage issues (create, list, close), list repositories for a user, search, set up Forgejo Actions workflows, or automate any git-forge operation. Works without authentication for public repos; requires FORGEJO_TOKEN for private repos and write operations. |
-| `database-devops` | Database design, migration, and DevOps automation with safety patterns. Use for schema design, migration planning, query optimization, multi-database orchestration, and Infrastructure-as-Code. Includes rollback strategies, performance analysis, and cross-database synchronization. |
-| `deepsource` | Retrieve code review results from DeepSource — issues, vulnerabilities, report cards, and analysis runs. Use when asked about code quality, security findings, dependency CVEs, coverage metrics, or analysis status. |
-| `do-web-doc-resolver` | Python resolver for URLs and queries into compact, LLM-ready markdown. Uses progressive free-first cascade with quality scoring, circuit breakers, layered routing memory, trace-based evaluation, and agent-friendly docs validation. Use when fetching documentation, resolving web URLs, or building context from web sources. |
+| `code-quality` | General code cleanup reference (refactoring, smells, maintainability). For PR review with adversarial probing, use code-review-assistant. |
+| `code-review-assistant` | Entry skill for PR review: diff analysis, change summaries, adversarial probing for swallowed exceptions, unguarded indexes, evicted shared resources. |
+| `deepsource` | Read DeepSource review results: issues, vulnerabilities, report cards, CVEs, coverage, analysis runs. |
+| `do-web-doc-resolver` | Resolve URLs and queries into compact LLM-ready markdown: progressive free-first cascade, quality scoring, trace evaluation. Use for docs fetching and web-source context. |
 | `docs-hook` | Lightweight git hook integration for updating agents-docs with minimal tokens. Triggered on commit/merge events to sync documentation. |
-| `git-github-workflow` | Unified atomic git workflow with GitHub integration - commits all changes, checks GitHub issues, creates PR, validates all Actions pass including pre-existing, uses swarm coordination with web research on failures. Post-merge validation of all files and docs. |
+| `git-github-workflow` | Retired alias of github-workflow. Use github-workflow for the full commit to PR to CI to merge flow. |
 | `github-readme` | Create human-focused GitHub README.md files with 2026 best practices. Use when creating new projects, improving documentation, adding quick start guides, writing contribution guidelines, or making repositories more discoverable and user-friendly. |
-| `github-workflow` | Complete GitHub workflow automation - push, create branch/PR, monitor Actions with pre-existing issue detection, auto-merge/rebase when checks pass. Handles the full git→GitHub→merge lifecycle. |
-| `goap-planning` | Invoke for complex multi-step tasks requiring intelligent planning and multi-agent coordination. Use when tasks need decomposition, dependency mapping, parallel/sequential/swarm/iterative execution strategies, or coordination of multiple specialized agents with quality gates. |
-| `impeccable` | Use when the user wants to design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, or otherwise improve a frontend interface. Covers websites, landing pages, dashboards, product UI, app shells, components, forms, settings, onboarding, and empty states. Handles UX review, visual hierarchy, information architecture, cognitive load, accessibility, performance, responsive behavior, theming, anti-patterns, typography, fonts, spacing, layout, alignment, color, motion, micro-interactions, UX copy, error states, edge cases, i18n, and reusable design systems or tokens. Also use for bland designs that need to become bolder or more delightful, loud designs that should become quieter, live browser iteration on UI elements, or ambitious visual effects that should feel technically extraordinary. Not for backend-only or non-UI tasks. |
-| `intent-classifier` | Classify user intents and route to appropriate skills, commands, or workflows. Use when determining which skill to invoke, routing requests to specialized agents, or building skill selection logic. Trigger on 'which skill should I use', 'route this to', 'classify this request', 'skill selection', or when multiple skills could handle a task. |
+| `github-workflow` | Entry skill for commit to PR to CI to merge: push, PR, Actions monitoring, auto-merge. Merge rules live in agents-docs/GIT-WORKFLOW.md. |
+| `goap-planning` | Entry point for planning multi-step work and coordinating agents: decomposition, dependency mapping, parallel/sequential/swarm execution with quality gates. |
+| `impeccable` | Design, critique, and polish frontend interfaces: UX review, visual hierarchy, accessibility, responsive behavior, theming, motion, UX copy. Not for backend-only tasks. |
+| `intent-classifier` | Classify user intents and route to skills, commands, or workflows. Trigger on 'which skill should I use', 'route this to', 'classify this request', 'skill selection'. |
 | `iterative-refinement` | Execute iterative refinement workflows with validation loops until quality criteria are met. Use for test-fix cycles, code quality improvement, performance optimization, or any task requiring repeated action-validate-improve cycles. |
-| `jules` | Autonomous Jules Delegator skill for delegating complex, multi-file tasks to a persistent repository-aware session. |
-| `jules-implement` | Repository-aware implementation agent that handles delta-based targeted research, code generation, and validation of Stitch-rendered designs. |
-| `local-chat-policy` | Enforce the local-first chat contract in this knowledge studio - retrieval from the in-browser corpus, entity citations, untrusted-content isolation, and consent before any remote provider call. Trigger when changing chat, AI context building, retrieval wiring, provider selection, or anything that decides what corpus text leaves the browser. |
+| `local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local data and respects privacy. |
 | `memory-context` | Retrieve semantically relevant past learnings and analysis outputs using the csm CLI (HDC encoder with hybrid BM25 retrieval) |
-| `migration-refactoring` | Automate complex code migrations and refactorings with safety patterns. Use when upgrading dependencies, migrating frameworks (React class→hooks, Flask→FastAPI), modernizing languages (Python 2→3), or performing large-scale refactories. Includes breaking change analysis, automated fix application, rollback strategies, and cross-file dependency tracking. |
-| `parallel-execution` | Execute multiple independent tasks simultaneously using parallel agent coordination to maximize throughput and minimize execution time. Use when tasks have no dependencies, results can be aggregated, and agents are available for concurrent work. |
-| `privacy-first` | Prevent email addresses and personal data from entering the codebase. Use when user asks to "prevent emails", "remove personal data", "privacy check", "no email", or when writing/ editing any code, config, or documentation files. |
-| `security-code-auditor` | Perform security audits on code to identify vulnerabilities, misconfigurations, and security anti-patterns. Use when users ask to 'audit', 'review', or 'check security' of code, configurations, or repositories. Trigger on keywords like 'security review', 'vulnerability scan', 'OWASP', 'secure coding', 'penetration test', or 'security assessment'. |
-| `self-fix-loop` | Self-learning fix loop - commit, push, monitor CI, auto-fix failures using swarm agents with skills on demand, loop until all checks pass. |
+| `migration-refactoring` | Automate code migrations and refactorings with safety patterns: dependency upgrades, framework moves, breaking-change analysis, rollback strategies. |
+| `parallel-execution` | Reference for dependency-free fan-out under goap-planning: run independent tasks simultaneously and aggregate results. |
+| `privacy-first` | Keep emails and personal data out of the codebase. Use for privacy checks when writing code, config, or docs. |
+| `security-code-auditor` | Audit code for vulnerabilities and misconfigurations. Trigger on 'security review', 'vulnerability scan', 'OWASP', 'penetration test', 'security assessment'. |
+| `self-fix-loop` | Sub-procedure of github-workflow for CI repair: monitor runs, auto-fix failures with skills on demand, loop until green. |
 | `shell-script-quality` | Lint and test shell scripts using ShellCheck and BATS. Use when checking bash/sh scripts for errors, writing shell script tests, fixing ShellCheck warnings, setting up CI/CD for shell scripts, or improving bash code quality. |
-| `skill-creator` | Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy. |
+| `skill-creator` | Create, edit, and benchmark skills: new skills from scratch, evals, performance variance analysis, description optimization. |
 | `skill-evaluator` | Reusable skill for evaluating other skills with structure checks, eval coverage review, and real usage spot checks. Use when you need to check a skill, add evals, benchmark a skill, validate outputs against assertions, or compare current skill behavior against a baseline. |
-| `stitch-design` | Headless Stitch CLI / MCP skill for automated UI/UX design and rendering. Orchestrates responsive layouts across all breakpoints (mobile, tablet, desktop, large screens) with zero-overlap navigation and atomic design exports. |
-| `task-decomposition` | Break down complex tasks into atomic, actionable goals with clear dependencies and success criteria. Use when planning multi-step projects, coordinating agents, or decomposing complex requests. |
+| `task-decomposition` | Retired alias of goap-planning. Use goap-planning to decompose goals and coordinate agents. |
 | `test-runner` | Execute tests, analyze results, and diagnose failures across any testing framework. Use when running test suites, debugging failing tests, or configuring CI/CD testing pipelines. |
 | `testing-strategy` | Design comprehensive testing strategies with modern techniques. Use for test planning, property-based testing, visual regression, load testing, mutation testing, and E2E test generation. Includes coverage analysis, test maintenance strategies, and CI/CD integration. |
-| `turso-db` | Use this skill for Turso (LibSQL/Limbo) database development, including scaffolding, querying, migrations, and maintenance. Supports vector search, full-text search, CDC, MVCC, encryption, and bidirectional remote sync. Use when working with Turso SDKs for JavaScript, Rust, Python, Go, and React Native. Provides current API guidance to avoid stale "libsql" legacy knowledge. |
-| `ui-ux-optimize` | Swarm-powered UI/UX prompt optimizer with auto-research agents, handoff coordination, confidence-scored autoresearch loops, and backpressure quality gates. Use for web apps, mobile apps, games, dashboards, SaaS, e-commerce, kiosks, and any screen-based product. |
-| `validation-checklist` | Validate data at this app's real boundaries - IndexedDB and localStorage rehydration, file import, sync payloads, AI provider responses, and MCP input - with Zod, meaningful errors, and referential integrity. Trigger when adding a persisted field, a migration, an import/export format, a sync message, or any code that parses external or stored JSON. |
-| `vercel-deployment` | Diagnose and prevent Vercel deployment failures. Use when a deployment shows "Deployment has failed", when Vercel previews or production are red on every PR, when the live site stops updating, when a deployment hits a plan limit (api-deployments-free-per-day, free-per-hour, flood), or before changing vercel.json, build/install commands, or Git deployment settings. |
+| `triz-analysis` | Retired alias of triz-solver audit mode. Use triz-solver for contradiction audits and inventive solving. |
+| `ui-ux-optimize` | Optimize UI/UX prompts with auto-research agents, handoff coordination, and quality gates for screen products. |
+| `validation-checklist` | Maintain high data quality and schema adherence within the knowledge studio. |
+| `vercel-deployment` | Diagnose Vercel deployment failures: red previews/production, plan-limit errors (api-deployments-free-per-day), vercel.json or build-command changes. |
 | `web-search-researcher` | Research topics using web search to find accurate, current information. Use when you need modern information, official documentation, best practices, or technical solutions beyond training data. |
 
 ## Innovation Problem Solving
 
 | Skill | Description |
 |-------|-------------|
-| `triz-solver` | Systematic problem-solving using TRIZ (Theory of Inventive Problem Solving) principles adapted for software engineering. Use when stuck on complex problems, facing technical contradictions, optimizing system design, or seeking innovative solutions beyond trial-and-error. Prevents solving the wrong problem correctly. |
+| `triz-solver` | Solve hard problems with TRIZ inventive principles: audit mode finds the contradiction, solve mode resolves it. Use when stuck or facing design trade-offs. |
 
 ## Knowledge Management
 
@@ -73,23 +67,22 @@
 
 | Skill | Description |
 |-------|-------------|
-| `codacy` | Use Codacy static analysis CLIs to query PR analysis, triage issues, suppress false positives, and run local analysis. Trigger when Codacy blocks a PR, CI quality gate fails, asked to fix/suppress Codacy issues, query PR quality data, or integrate Codacy into agent workflows. Also trigger on "Codacy is failing", "static analysis check", "code quality gate", "Codacy check blocked", "Codacy findings", "Codacy issues", "suppress Codacy", "Codacy reanalysis", "fix Codacy", "Codacy PR", "code review quality gate". |
-| `dogfood` | Systematically explore and test a web application to find bugs, UX issues, and other problems. Use when asked to "dogfood", "QA", "exploratory test", "find issues", "bug hunt", "test this app/site/platform", or review the quality of a web application. Produces a structured report with full reproduction evidence. |
-| `static-analysis-suppression` | Suppress false positive or pre-existing issues from static analysis tools on PRs. Use when Codacy, DeepSource, or ESLint blocks a PR with inline review comments that are false positives, pre-existing (not introduced by the diff), or config-level noise (e.g., Qwik-specific Biome rules in a React project). Covers all suppression methods: code-level fixes, eslint-disable comments, config changes (.codacy.yml, .deepsource.toml), and admin merge override. |
-| `testdata-builders` | Maintain deterministic builders/factories for test entities. Activate when authoring tests, extending test utilities, or adding schema fields that affect fixtures. |
+| `codacy` | Tool reference under static-analysis-suppression: query Codacy PR analysis, triage issues, suppress false positives, run local analysis. |
+| `dogfood` | Exploratory QA of a web app with full reproduction evidence. Trigger on 'dogfood', 'bug hunt', 'exploratory test', 'find issues', app quality review. |
+| `static-analysis-suppression` | Suppress false-positive or pre-existing static-analysis findings blocking a PR: Codacy, DeepSource, ESLint. |
+| `testdata-builders` | Maintain deterministic builders and factories for test entities, fixtures, and schema-driven test data. |
 
 ## Workflow
 
 | Skill | Description |
 |-------|-------------|
-| `agent-browser` | Browser automation CLI for AI agents. Use when the user needs to interact with websites, including navigating pages, filling forms, clicking buttons, taking screenshots, extracting data, testing web apps, or automating any browser task. Triggers include requests to "open a website", "fill out a form", "click a button", "take a screenshot", "scrape data from a page", "test this web app", "login to a site", "automate browser actions", or any task requiring programmatic web interaction. |
-| `cloudflare-worker-api` | Structure Worker API routes and handlers. Activate for route definition, response helpers, and typed handler patterns. Auth belongs to secure-invite-and-access. |
-| `database-schema-migrations` | Design database schema and write migrations. Activate for table design, migration scripts, or schema changes. Generic pattern adaptable to any SQL database. |
-| `document-rendering-and-locators` | Implement resilient document rendering and annotation anchoring. Activate for reader-core, TOC, locator, or highlight anchoring changes. Generic pattern applicable to EPUB, PDF, or any document format. |
-| `pwa-offline-sync` | Design Cache Storage + IndexedDB strategy and sync queue. Activate for service worker, cache, or offline bug investigation. Generic pattern for any offline-first application. |
-| `reader-ui-ux` | Build localized, accessible reader/admin UI with responsive layouts, telemetry, and state management. Activate for React screens or UX polish. Generic pattern for any document reader application. |
-| `secure-invite-and-access` | Implement access control, authentication, and authorization patterns. Activate for auth endpoints, permission management, session/token logic, or signed URL generation. Generic template adaptable to any project's auth needs. |
-| `verify-before-asserting` | Mandatory verification discipline before claiming, changing, or shipping anything. Use when about to state a fact about the code, declare a bug fixed, add a regression test, dismiss a review finding, or act on a plan, ticket, or prior session's notes. Triggers include "the bug is", "should be", "just fixed", "add a test", "looks correct", "this is a false positive", "the plan says", or any change to module structure. |
+| `agent-browser` | Drive websites via CLI: navigate, fill forms, click, screenshot, scrape, test web apps. Trigger on 'open a website', 'take a screenshot', 'scrape data', 'test this app'. |
+| `document-rendering-and-locators` | Implement resilient document rendering and annotation anchoring: TOC, locators, highlight anchoring for EPUB/PDF. |
+| `persistence-data-safety` | Verify storage, hydration, migration and sync changes against a real corpus in a real browser: shadow fingerprints, quarantine, cross-tab, undo/redo and export round trip. |
+| `pwa-offline-sync` | Design Cache Storage plus IndexedDB strategy and sync queue for offline-first apps and service-worker bugs. |
+| `reader-ui-ux` | Build localized accessible reader/admin UI: responsive layouts, telemetry, state management for React screens. |
+| `secure-invite-and-access` | Implement access control, authentication, and authorization: auth endpoints, sessions, signed URLs. |
+| `verify-before-asserting` | Verify before claiming, fixing, or shipping: reproduce first, watch the test fail, then fix. Trigger on 'the bug is', 'just fixed', 'false positive', module changes. |
 
 ## Usage
 

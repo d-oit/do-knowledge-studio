@@ -187,7 +187,7 @@ stage needs — every always-loaded instruction is a tax on every step.
 
 | Need | Load |
 |------|-------|
-| Plan a multi-step change | `goap-agent`, `task-decomposition` |
+| Plan a multi-step change | `goap-agent`, `goap-planning` (`task-decomposition` retired → `goap-planning`) |
 | Split independent work | `parallel-execution`, `agent-coordination` |
 | Fix CI / monitor a PR | `self-fix-loop` skill + `scripts/self-fix-loop.sh` |
 | Review a diff adversarially | `code-review-assistant`, `code-quality` |
@@ -195,7 +195,8 @@ stage needs — every always-loaded instruction is a tax on every step.
 | Accessibility regressions | `accessibility-auditor` |
 | Static-analysis blockers | `codacy`, `deepsource`, `static-analysis-suppression` |
 | Prove a UI change in a real browser | `agent-browser`, `dogfood` |
-| Commit → push → PR → CI | `atomic-commit` |
+| Storage, hydration, migration or sync change | `persistence-data-safety` (real corpus, shadow fingerprints) |
+| Commit → push → PR → CI | `github-workflow` (`atomic-commit`/`self-fix-loop` are its sub-procedures) |
 
 **Guardrails that must hold at every stage:**
 
@@ -219,13 +220,13 @@ every step.
 
 | Stage | Skills |
 |-------|--------|
-| Plan | `goap-agent`, `task-decomposition` |
+| Plan | `goap-agent`, `goap-planning` |
 | Fan out | `parallel-execution`, `agent-coordination` |
 | Reproduce | `test-runner`, `dogfood` |
 | Evaluate | `code-quality`, `testing-strategy` |
 | Adversarial | `code-review-assistant`, `security-code-auditor` |
-| Shadow / Canary | `agent-browser`, `pwa-offline-sync` |
-| Promote / repair CI | `atomic-commit`, `self-fix-loop` |
+| Shadow / Canary | `agent-browser`, `pwa-offline-sync`, `persistence-data-safety` (required for storage/hydration/sync changes) |
+| Promote / repair CI | `github-workflow` (`atomic-commit`/`self-fix-loop` sub-procedures) |
 | Analysis blockers | `codacy`, `deepsource`, `static-analysis-suppression` |
 | Accessibility regressions | `accessibility-auditor` |
 

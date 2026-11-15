@@ -1,8 +1,7 @@
 ---
 version: "1.0.0"
 name: testdata-builders
-description: >
-  Maintain deterministic builders/factories for test entities. Activate when authoring tests, extending test utilities, or adding schema fields that affect fixtures.
+description: "Maintain deterministic builders and factories for test entities, fixtures, and schema-driven test data."
 category: quality
 ---
 

@@ -211,6 +211,71 @@ for (const [name, text] of [
   }
 }
 
+// --- Lesson index consistency (#1141, #1142) ---------------------------------
+// The LESSONS.md index (one `- [LESSON-NNN: …](lessons/NNN-slug.md)` line per
+// lesson), the agents-docs/lessons/ files, and lessons.jsonl rows must carry
+// the same id set; index lines must be unique; the index stays under a 400
+// line budget; every LESSON-NNN cited in AGENTS.md/agents-docs must exist.
+const lessonsMd = readFileSync('agents-docs/LESSONS.md', 'utf8')
+const LESSON_INDEX_BUDGET_LINES = 400
+const indexLineCount = lessonsMd.split('\n').length
+if (indexLineCount > LESSON_INDEX_BUDGET_LINES) {
+  fail(`agents-docs/LESSONS.md index is ${indexLineCount} lines, over the ${LESSON_INDEX_BUDGET_LINES}-line budget (#1142)`)
+}
+const indexEntries = [...lessonsMd.matchAll(/^- \[(LESSON-\d+): [^\]]+\]\((lessons\/[^)]+)\)/gm)]
+const lessonHeadingIds = []
+for (const entry of indexEntries) {
+  lessonHeadingIds.push(entry[1])
+  const lessonFile = `agents-docs/${entry[2]}`
+  let lessonText = ''
+  try {
+    lessonText = readFileSync(lessonFile, 'utf8')
+  } catch {
+    fail(`LESSONS.md index links to missing file: ${lessonFile}`)
+    continue
+  }
+  if (!new RegExp(`^#{2,3} ${entry[1]}:`, 'm').test(lessonText)) {
+    fail(`${lessonFile} does not contain its ${entry[1]} heading`)
+  }
+}
+const duplicateHeadings = lessonHeadingIds.filter((id, i) => lessonHeadingIds.indexOf(id) !== i)
+for (const id of [...new Set(duplicateHeadings)]) {
+  fail(`agents-docs/LESSONS.md has a duplicate heading: ${id}`)
+}
+const jsonlIds = readFileSync('agents-docs/lessons.jsonl', 'utf8')
+  .split('\n')
+  .filter((line) => line.trim() !== '')
+  .map((line, i) => {
+    try {
+      return JSON.parse(line).id
+    } catch {
+      fail(`agents-docs/lessons.jsonl line ${i + 1} is not valid JSON`)
+      return undefined
+    }
+  })
+  .filter(Boolean)
+const headingSet = new Set(lessonHeadingIds)
+const jsonlSet = new Set(jsonlIds)
+for (const id of lessonHeadingIds) {
+  if (!jsonlSet.has(id)) fail(`LESSONS.md ${id} has no lessons.jsonl row`)
+}
+for (const id of jsonlIds) {
+  if (!headingSet.has(id)) fail(`lessons.jsonl ${id} has no LESSONS.md heading`)
+}
+if (jsonlIds.length !== jsonlSet.size) {
+  fail('agents-docs/lessons.jsonl has duplicate ids')
+}
+const knownLessons = new Set([...lessonHeadingIds, ...jsonlIds])
+const citingFiles = ['AGENTS.md', ...readdirSync('agents-docs').filter((f) => f.endsWith('.md')).map((f) => `agents-docs/${f}`)]
+for (const file of citingFiles) {
+  const text = readFileSync(file, 'utf8')
+  for (const match of text.matchAll(/LESSON-(\d{3})/g)) {
+    if (!knownLessons.has(match[0])) {
+      fail(`${file} cites unknown lesson ${match[0]}`)
+    }
+  }
+}
+
 if (process.exitCode !== 1) {
   console.log('✓ Public documentation consistency checks passed')
 }

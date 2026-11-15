@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { translate as exportT } from '@/lib/i18n/messages/export'
 import type { Claim, Entity } from '@/lib/studio/types'
 import type { ImportPreview } from './export-types'
 import { isMarkdownExportFile, parseMarkdownExport } from '@/lib/import/markdown-export-parse'
@@ -29,10 +30,8 @@ const MAX_ERROR_CHARS = 240
  * @returns A `; `-joined message capped at MAX_ERROR_CHARS characters.
  */
 export const joinErrorMessages = (errors: string[]): string => {
-  /** The fully joined message. */
   const joined = errors.join('; ')
   if (joined.length <= MAX_ERROR_CHARS) return joined
-  /** The budgeted prefix. */
   const prefix = joined.slice(0, MAX_ERROR_CHARS)
   /** The cut position at the last complete error boundary. */
   const cut = prefix.lastIndexOf('; ')
@@ -49,7 +48,6 @@ export const stageImportPreview = (
   setImportPreview: (preview: ImportPreview | null) => void,
   extra?: Pick<ImportPreview, 'stubNames' | 'conflicts'>,
 ): void => {
-  /** The existing ids. */
   const existingIds = new Set(current.map((ent) => ent.id))
   setImportPreview({
     entities: staged.entities,
@@ -69,12 +67,12 @@ export const stageMarkdownResult = (
   setImportPreview: (preview: ImportPreview | null) => void,
 ): void => {
   if (!result.success) {
-    toast.error('Import failed', { description: result.error })
+    toast.error(exportT('export.import.failed'), { description: result.error })
     return
   }
   if (result.warnings.length > 0) {
     // Partial success: stage the valid notes but surface the skipped ones.
-    toast.warning('Partial import', { description: `${result.warnings.length} file(s) skipped — ${joinErrorMessages(result.warnings)}` })
+    toast.warning(exportT('export.import.partial'), { description: exportT('export.import.partialBody', String(result.warnings.length), joinErrorMessages(result.warnings)) })
   }
   stageImportPreview(entities, result, setImportPreview, {
     stubNames: result.stubNames,
@@ -99,10 +97,9 @@ export const handleZipImport = async (
     /** The vault files read through the streaming size-guarded reader. */
     const zipResult = await readVaultZip(await file.arrayBuffer())
     if (!zipResult.success) {
-      toast.error('Import failed', { description: zipResult.error })
+      toast.error(exportT('export.import.failed'), { description: zipResult.error })
       return
     }
-    /** The root index. */
     const rootIndex = zipResult.files.get('index.md') ?? ''
     if (rootIndex.includes('okf_version')) {
       /** The OKF-only files (the vault reader also keeps `.markdown`). */
@@ -111,19 +108,19 @@ export const handleZipImport = async (
       const { parseOkfBundle } = await import('@/lib/okf/import')
       const { entities: ents, claims: cls, errors } = parseOkfBundle(okfFiles)
       if (errors.length > 0 && ents.length === 0) {
-        toast.error('Import failed', { description: joinErrorMessages(errors) })
+        toast.error(exportT('export.import.failed'), { description: joinErrorMessages(errors) })
         return
       }
       if (errors.length > 0) {
         // Partial success: stage the valid files but surface the skipped ones.
-        toast.warning('Partial import', { description: `${errors.length} file(s) skipped — ${joinErrorMessages(errors)}` })
+        toast.warning(exportT('export.import.partial'), { description: exportT('export.import.partialBody', String(errors.length), joinErrorMessages(errors)) })
       }
       stageImportPreview(entities, { entities: ents, claims: cls }, setImportPreview)
       return
     }
     stageMarkdownResult(parseVaultFiles(zipResult.files), entities, setImportPreview)
   } catch (err) {
-    toast.error('Import failed', { description: err instanceof Error ? err.message : 'Could not unzip the archive.' })
+    toast.error(exportT('export.import.failed'), { description: err instanceof Error ? err.message : exportT('export.import.unzipFailed') })
   }
 }
 
@@ -187,7 +184,6 @@ export const stagePickedNonJsonFiles = async (
     // lone vault note falls through to the batch path so its [[links]]
     // resolve by the same rules (unresolved → stubs).
     if (batch.size === 1) {
-      /** The single picked note. */
       const onlyText = [...batch.values()][0] ?? ''
       if (isMarkdownExportFile(onlyText)) {
         stageMarkdownResult(parseMarkdownExport(onlyText), entities, setImportPreview)
@@ -196,7 +192,7 @@ export const stagePickedNonJsonFiles = async (
     }
     stageMarkdownResult(parseVaultFiles(batch), entities, setImportPreview)
   } catch (err) {
-    toast.error('Import failed', { description: err instanceof Error ? err.message : 'Could not read the file.' })
+    toast.error(exportT('export.import.failed'), { description: err instanceof Error ? err.message : exportT('export.import.unreadable') })
   }
   return true
 }

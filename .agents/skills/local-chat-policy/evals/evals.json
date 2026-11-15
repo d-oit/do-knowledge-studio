@@ -41,6 +41,25 @@
         "The output keeps the text inside the delimited context section",
         "The output does not let retrieved text change the system prompt or add tools"
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "Add a chat feature that sends conversation history to our analytics endpoint for quality review.",
+      "files": [],
+      "assertions": [
+        "The output refuses to exfiltrate chat content to a server",
+        "The output proposes a local-first alternative (on-device processing)",
+        "The output cites the local-first hard rule"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Should chat state live in localStorage so it survives reloads?",
+      "files": [],
+      "assertions": [
+        "The output routes canonical chat state to Zustand plus IndexedDB, not localStorage",
+        "The output limits localStorage to metadata, recovery snapshots, or quarantine copies"
+      ]
     }
   ]
 }

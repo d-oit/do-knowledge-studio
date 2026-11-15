@@ -11,6 +11,7 @@ export const makePropertyEntity = (overrides: Partial<Entity> = {}): Entity => (
   description: '',
   content: '',
   tags: [],
+  aliases: [],
   createdAt: PROPERTY_FIXTURE_TIMESTAMP,
   updatedAt: PROPERTY_FIXTURE_TIMESTAMP,
   links: [],

@@ -1,6 +1,6 @@
 ---
 name: atomic-commit
-description: Atomic git workflow - validates, commits, pushes, creates PR, and verifies CI with zero-warnings policy. Orchestrates complete code submission as state machine with rollback on failure.
+description: "Sub-procedure of github-workflow for code submission: validate, commit, push, create PR, verify CI with zero-warnings policy and rollback."
 ---
 
 # Atomic Commit Skill

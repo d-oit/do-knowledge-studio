@@ -53,6 +53,8 @@ const messages = {
     'The next semantic search downloads the model again, which needs a network connection.',
   /** Shown when storage cannot be measured at all. */
   'settings.unavailable': 'Storage is not available in this browser',
+  /** Settings persist failure toast. */
+  'settings.save.failed': 'Failed to save settings. Your changes may not persist.',
 } as const
 
 /** Typed `translate` helper bound to the settings message scope. */

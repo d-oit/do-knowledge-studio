@@ -1,7 +1,7 @@
 ---
 name: vercel-deployment
 version: "1.0.0"
-description: Diagnose and prevent Vercel deployment failures. Use when a deployment shows "Deployment has failed", when Vercel previews or production are red on every PR, when the live site stops updating, when a deployment hits a plan limit (api-deployments-free-per-day, free-per-hour, flood), or before changing vercel.json, build/install commands, or Git deployment settings.
+description: "Diagnose Vercel deployment failures: red previews/production, plan-limit errors (api-deployments-free-per-day), vercel.json or build-command changes."
 ---
 
 # Vercel Deployment

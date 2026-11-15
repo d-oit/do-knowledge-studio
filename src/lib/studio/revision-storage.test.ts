@@ -12,16 +12,16 @@ import {
   listEntityRevisions,
   readRevisionUsage,
 } from './revision-storage'
-import type { Entity } from './types'
 
 /** Entity fixture; the body is what the throttle compares. */
-const makeEntity = (id: string, content = 'first draft'): Entity => ({
+const makeEntity = (id: string, content = 'first draft'): EntityRevision['entity'] => ({
   id,
   name: `Entity ${id}`,
   type: 'note',
   description: '',
   content,
   tags: [],
+  aliases: [],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   links: [],

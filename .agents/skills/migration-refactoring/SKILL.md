@@ -1,6 +1,6 @@
 ---
 name: migration-refactoring
-description: Automate complex code migrations and refactorings with safety patterns. Use when upgrading dependencies, migrating frameworks (React class→hooks, Flask→FastAPI), modernizing languages (Python 2→3), or performing large-scale refactories. Includes breaking change analysis, automated fix application, rollback strategies, and cross-file dependency tracking.
+description: "Automate code migrations and refactorings with safety patterns: dependency upgrades, framework moves, breaking-change analysis, rollback strategies."
 license: MIT
 ---
 

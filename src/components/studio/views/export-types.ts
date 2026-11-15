@@ -13,7 +13,7 @@ export type ExportFormatId = 'json' | 'markdown' | 'html' | 'pdf' | 'docx' | 'en
 
 /** Result of parsing an import file: either validated data or a list of errors. */
 export type ImportResult =
-  | { success: true; entities: Entity[]; claims: Claim[]; graph?: ValidatedGraph; mindMap?: ValidatedMindMap; links?: ValidatedLink[]; tags?: ValidatedTag[] }
+  | { success: true; entities: Entity[]; claims: Claim[]; version: number; graph?: ValidatedGraph; mindMap?: ValidatedMindMap; links?: ValidatedLink[]; tags?: ValidatedTag[] }
   | { success: false; errors: ValidationError[] }
 
 /** A library snapshot carried between the store, previews, and handlers. */
@@ -184,13 +184,9 @@ export const COLOR_MAP: Record<ExportColorKey, string> = {
 
 /** Returns today's date formatted as YYYY-MM-DD for export filenames. */
 export const todayStamp = (): string => {
-  /** The date. */
   const date = new Date()
-  /** The year. */
   const year = date.getFullYear()
-  /** The month. */
   const month = String(date.getMonth() + 1).padStart(2, '0')
-  /** The day. */
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
@@ -201,10 +197,8 @@ export { downloadBlob, downloadFile } from './download'
 
 /** Groups claims by their owning entity id. */
 export const buildClaimsByEntityId = (claims: Claim[]): Map<string, Claim[]> => {
-  /** The map. */
   const map = new Map<string, Claim[]>()
   for (const c of claims) {
-    /** The list. */
     const list = map.get(c.entityId)
     if (list) {
       list.push(c)

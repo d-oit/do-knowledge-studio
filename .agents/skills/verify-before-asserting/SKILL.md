@@ -1,6 +1,6 @@
 ---
 name: verify-before-asserting
-description: Mandatory verification discipline before claiming, changing, or shipping anything. Use when about to state a fact about the code, declare a bug fixed, add a regression test, dismiss a review finding, or act on a plan, ticket, or prior session's notes. Triggers include "the bug is", "should be", "just fixed", "add a test", "looks correct", "this is a false positive", "the plan says", or any change to module structure.
+description: "Verify before claiming, fixing, or shipping: reproduce first, watch the test fail, then fix. Trigger on 'the bug is', 'just fixed', 'false positive', module changes."
 category: workflow
 version: 1.0.0
 compatibility: Language-agnostic. Needs read access to the repo and the ability to run its test suite.

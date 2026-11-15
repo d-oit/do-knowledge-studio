@@ -77,9 +77,7 @@ export const createDataSlice: StudioSlice<DataSlice> = (set, get) => ({
     abortChatSend(get, set)
     resetSearchCache()
     const preImport = get()
-    /** The snapshot. */
     const snapshot = buildRecoverySnapshot(preImport)
-    /** The outcome. */
     const backup = persistRecoverySnapshot(snapshot)
     try {
       set(corpusPatch(entities, claims, options))

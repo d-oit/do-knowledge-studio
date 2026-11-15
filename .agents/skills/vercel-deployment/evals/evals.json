@@ -1,0 +1,36 @@
+{
+  "skill_name": "vercel-deployment",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Vercel check is red on every PR with `api-deployments-free-per-day`. The code builds fine locally. What is wrong?",
+      "files": [],
+      "assertions": [
+        "The output identifies the Hobby plan 100-deployments-per-24h owner-scoped limit",
+        "The output notes production shares the preview budget",
+        "The output does not suggest skipping scripts/ in the build",
+        "The output fails closed on unknown state rather than retrying blindly"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The live site stopped updating but PRs still merge. The Vercel check is red with `flood`. What do I check before touching code?",
+      "files": [],
+      "assertions": [
+        "The output checks deployment quota and failure history across commits first",
+        "The output distinguishes a repo-wide outage from a PR-specific failure",
+        "The output does not propose code changes before ruling out the quota"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I need to change the build command in vercel.json because builds are slow. What must I verify first?",
+      "files": ["vercel.json"],
+      "assertions": [
+        "The output warns that scripts/ steps (precache manifest) must keep running in the build",
+        "The output requires checking what the current build command does before changing it",
+        "The output mentions verifying the change on a preview deployment"
+      ]
+    }
+  ]
+}

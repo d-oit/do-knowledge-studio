@@ -29,6 +29,9 @@ if [ "${#SH_FILES[@]}" -gt 0 ]; then
     --enable=check-unassigned-uppercase,quote-safe-variables "${SH_FILES[@]}"
 fi
 
+# Lessons automation report (#1142): report-only by design — it always exits
+# 0 so the backlog is visible in CI without gating on it.
+node scripts/lessons-report.mjs
 run_check "Lint" pnpm run lint
 # Match the CI yaml-lint workflow exactly: inline -d config with a 120-char
 # line limit (the repo's .yamllint.yml is more lenient at 254).

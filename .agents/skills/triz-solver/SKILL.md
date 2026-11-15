@@ -1,12 +1,16 @@
 ---
 name: triz-solver
-description: Systematic problem-solving using TRIZ (Theory of Inventive Problem Solving) principles adapted for software engineering. Use when stuck on complex problems, facing technical contradictions, optimizing system design, or seeking innovative solutions beyond trial-and-error. Prevents solving the wrong problem correctly.
+description: "Solve hard problems with TRIZ inventive principles: audit mode finds the contradiction, solve mode resolves it. Use when stuck or facing design trade-offs."
 category: innovation-problem-solving
 ---
 
 # TRIZ Problem Solver
 
-Systematic innovation methodology for software engineering problems.
+Systematic innovation methodology for software engineering problems. Two
+modes: **audit** (absorbed `triz-analysis` in Plan 214 — find the
+contradiction and hidden trade-offs in code, architecture, or workflow)
+and **solve** (resolve it with separation principles). Start every
+engagement in audit mode; only solve a contradiction the audit confirmed.
 
 ## When to Use
 

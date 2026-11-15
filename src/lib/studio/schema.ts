@@ -52,6 +52,7 @@ export const EntitySchema = z.object({
     })
     .optional(),
   tags: z.array(z.string()),
+  aliases: z.array(z.string()).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
   links: z.array(

@@ -77,6 +77,8 @@ const messages = {
   'synthesis.failure.empty': 'The model found nothing it could support with the note.',
   /** Failure: rate limit reached. */
   'synthesis.rateLimited': 'That is a lot of extractions in a minute. Wait a moment and try again.',
+  /** Quick-capture success toast. */
+  'synthesis.inbox.saved': 'Saved to Inbox',
 } as const
 
 /** Typed `translate` helper bound to the synthesis message scope. */

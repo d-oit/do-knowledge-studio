@@ -1,0 +1,5 @@
+# File-size gate allowlist (Plan 214 #1129).
+# Each line is a repo-relative path exempt from the 500-LOC limit, with reason.
+# See plans/214-all-open-issues-2026-11-15.md.
+# shadcn-generated primitive: vendor scaffolding, must not be split (AGENTS.md exception).
+src/components/ui/sidebar.tsx

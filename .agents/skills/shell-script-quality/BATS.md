@@ -5,6 +5,7 @@ Comprehensive BATS reference for shell script testing.
 ## Test Structure
 
 ```bash
+# example - not in this repo
 #!/usr/bin/env bats
 
 setup() {
@@ -76,6 +77,7 @@ teardown() {
 ### 4. JSON Validation
 
 ```bash
+# example - not in this repo
 @test "returns valid JSON" {
     run bash scripts/api.sh
     [ "$status" -eq 0 ]
@@ -86,6 +88,7 @@ teardown() {
 ### 5. Mock External Commands
 
 ```bash
+# example - not in this repo
 create_mock() {
     local cmd="$1" output="$2" code="${3:-0}"
     cat > "$TEST_TEMP_DIR/$cmd" <<EOF
@@ -136,6 +139,7 @@ assert_output_contains() {
 
 ### Environment Variables
 ```bash
+# example - not in this repo
 @test "respects LOG_LEVEL" {
     LOG_LEVEL=DEBUG run bash scripts/logger.sh
     [[ "$output" =~ "[DEBUG]" ]]
@@ -144,6 +148,7 @@ assert_output_contains() {
 
 ### Piped Input
 ```bash
+# example - not in this repo
 @test "reads from stdin" {
     run bash scripts/processor.sh <<< "test input"
     [[ "$output" =~ "test input" ]]
@@ -152,6 +157,7 @@ assert_output_contains() {
 
 ### Claude Plugin Testing
 ```bash
+# example - not in this repo
 @test "uses CLAUDE_PLUGIN_ROOT" {
     export CLAUDE_PLUGIN_ROOT="$BATS_TEST_DIRNAME/.."
     run bash "$CLAUDE_PLUGIN_ROOT/scripts/search.sh" "query"

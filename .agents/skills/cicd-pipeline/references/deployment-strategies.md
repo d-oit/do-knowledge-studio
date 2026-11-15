@@ -138,6 +138,7 @@ Deploy code disabled by default, enable gradually.
 
 ### LaunchDarkly Integration
 ```yaml
+# example - not in this repo
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -156,6 +157,7 @@ jobs:
 
 ### Environment Variable Flags
 ```yaml
+# example - not in this repo
 jobs:
   deploy:
     runs-on: ubuntu-latest

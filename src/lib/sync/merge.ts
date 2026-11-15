@@ -115,6 +115,7 @@ function mergeSingleEntity(
     content: mergeField(local.id, 'entity', 'content', local.content, remote.content, local.updatedAt, remote.updatedAt, conflicts),
     sourceUrl: mergeField(local.id, 'entity', 'sourceUrl', local.sourceUrl, remote.sourceUrl, local.updatedAt, remote.updatedAt, conflicts),
     tags: mergeArrayField(local.id, 'entity', 'tags', local.tags, remote.tags, local.updatedAt, remote.updatedAt, conflicts),
+    aliases: mergeArrayField(local.id, 'entity', 'aliases', local.aliases ?? [], remote.aliases ?? [], local.updatedAt, remote.updatedAt, conflicts),
     createdAt: earlierTimestamp(local.createdAt, remote.createdAt),
     updatedAt: laterTimestamp(local.updatedAt, remote.updatedAt),
     links: mergeLinks(local.id, local.links, remote.links, local.updatedAt, remote.updatedAt, conflicts),

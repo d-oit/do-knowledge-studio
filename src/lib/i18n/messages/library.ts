@@ -26,6 +26,8 @@ const messages = {
     "Try adjusting your search terms or filters to find what you're looking for.",
   /** Empty state action that drops every filter and query. */
   'library.noMatches.action': 'Clear all filters',
+  /** Validation: entity name is required. */
+  'library.entity.emptyName': 'Entity name cannot be empty',
 } as const
 
 /** Typed `translate` helper bound to the library message scope. */

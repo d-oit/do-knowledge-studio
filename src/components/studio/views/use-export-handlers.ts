@@ -6,7 +6,7 @@ import type { ImportOutcome } from '@/lib/studio/store-types'
 import type { LibraryPayload, ImportPreview, ExportFormatId, ExportOptions } from './export-types'
 import { todayStamp, downloadFile, downloadBlob } from './export-types'
 import {
-  buildMarkdownExport, buildHtmlExport, parseImportFile, buildJsonExport,
+  buildMarkdownExport, buildHtmlExport, parseImportFile, buildJsonExport, checkImportSize,
 } from './export-helpers'
 import { buildExportSummary, exportLibraryJson } from './export-library-json'
 import { useAnnouncer } from '@/lib/a11y/announcer'
@@ -46,17 +46,12 @@ interface UseExportHandlersParams extends LibraryPayload {
 
 /** Handlers and password state exposed to the export view. */
 export interface UseExportHandlersReturn {
-  /** The handle export. */
   handleExport: (format: ExportFormatId) => Promise<void>
   /** The format whose export is still running, or null when idle. */
   exportingFormat: ExportFormatId | null
-  /** The handle import click. */
   handleImportClick: () => void
-  /** The handle file change. */
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  /** The handle confirm import. */
   handleConfirmImport: () => void
-  /** The handle reset. */
   handleReset: () => void
   /** Whether the password modal is open. */
   showPassword: boolean
@@ -112,9 +107,7 @@ export const useExportHandlers = ({
   const exportInFlightRef = useRef(false)
   const announce = useAnnouncer()
 
-  /** The export options. */
   const exportOptions: ExportOptions = { graph, mindMap, links, tags }
-  /** The stamp. */
   const stamp = todayStamp()
 
   /** Downloads the library as a JSON backup file. */
@@ -127,7 +120,7 @@ export const useExportHandlers = ({
     /** Markdown or text content. */
     const content = buildMarkdownExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.md`, content, 'text/markdown')
-    toast.success('Markdown export downloaded', { description: `${entities.length} entities concatenated into one .md file` })
+    toast.success(exportT('export.download.markdown'), { description: exportT('export.download.markdownBody', String(entities.length)) })
   }
 
   /** Downloads the library as a self-contained static HTML page. */
@@ -135,7 +128,7 @@ export const useExportHandlers = ({
     /** Markdown or text content. */
     const content = buildHtmlExport(entities, claims)
     downloadFile(`do-knowledge-studio-${stamp}.html`, content, 'text/html')
-    toast.success('HTML export downloaded', { description: 'Self-contained .html page — open in any browser.' })
+    toast.success(exportT('export.download.html'), { description: exportT('export.download.htmlBody') })
   }
 
   /** Downloads a print-ready PDF of all entities and claims. */
@@ -147,9 +140,9 @@ export const useExportHandlers = ({
        *  export's busy state) covers the whole build, not just its call. */
       const blob = await buildPdfExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.pdf`, blob)
-      toast.success('PDF export downloaded', { description: `${entities.length} entities formatted in a print-ready PDF.` })
+      toast.success(exportT('export.download.pdf'), { description: exportT('export.download.pdfBody', String(entities.length)) })
     } catch (err) {
-      toast.error('PDF export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+      toast.error(exportT('export.download.pdfFailed'), { description: err instanceof Error ? err.message : 'Unknown error' })
     }
   }
 
@@ -160,26 +153,22 @@ export const useExportHandlers = ({
         import('@/lib/okf/bundle'),
         import('fflate'),
       ])
-      /** The edges. */
       const edges = graph?.edges ?? []
-      /** The bundle. */
       const bundle = buildOkfBundle(entities, claims, edges, packageJson.version)
-      /** The files record. */
       const filesRecord: Record<string, Uint8Array> = {}
       for (const f of bundle.files) {
         filesRecord[`okf-bundle/${f.path}`] = strToU8(f.content)
       }
-      /** The zipped. */
       const zipped = zipSync(filesRecord)
       downloadBlob(
         `do-knowledge-studio-okf-${stamp}.zip`,
         new Blob([zipped], { type: 'application/zip' }),
       )
-      toast.success('OKF v0.2 bundle exported', {
-        description: `${bundle.files.length} files — consumable by any OKF-aware agent, no SDK required`,
+      toast.success(exportT('export.download.okf'), {
+        description: exportT('export.download.okfBody', String(bundle.files.length)),
       })
     } catch (err) {
-      toast.error('OKF export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+      toast.error(exportT('export.download.okfFailed'), { description: err instanceof Error ? err.message : 'Unknown error' })
     }
   }
 
@@ -188,35 +177,31 @@ export const useExportHandlers = ({
     try {
       /** The DOCX builder. */
       const { buildDocxExport } = await import('./export-documents')
-      /** The blob. */
       const blob = await buildDocxExport(entities, claims)
       downloadBlob(`do-knowledge-studio-${stamp}.docx`, blob)
-      toast.success('DOCX export downloaded', { description: `${entities.length} entities in a Word document.` })
+      toast.success(exportT('export.download.docx'), { description: exportT('export.download.docxBody', String(entities.length)) })
     } catch (err) {
-      toast.error('DOCX export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+      toast.error(exportT('export.download.docxFailed'), { description: err instanceof Error ? err.message : 'Unknown error' })
     }
   }
 
   /** Downloads a password-encrypted self-contained HTML reader. */
   const handleExportEncrypted = async () => {
     if (!password || password !== confirm) {
-      toast.error('Password fields must match and not be empty.')
+      toast.error(exportT('export.download.passwordMismatch'))
       return
     }
     try {
-      /** The encryption helpers. */
       const { encryptData, buildEncryptedReaderHtml } = await import('@/lib/export/encrypt')
-      /** The json. */
       const json = buildJsonExport(entities, claims, exportOptions)
-      /** The encrypted. */
       const encrypted = await encryptData(json, password)
       /** The self-contained reader document. */
       const readerDocument = buildEncryptedReaderHtml(encrypted)
       // Downloaded as a file (Blob → anchor.click) and never injected into the DOM.
       downloadFile(`do-knowledge-studio-encrypted-${stamp}.html`, readerDocument, 'text/html')
-      toast.success('Encrypted export downloaded', { description: 'AES-256-GCM encrypted with PBKDF2 key derivation.' })
+      toast.success(exportT('export.download.encrypted'), { description: exportT('export.download.encryptedBody') })
     } catch (err) {
-      toast.error('Encrypted export failed', { description: err instanceof Error ? err.message : 'Unknown error' })
+      toast.error(exportT('export.download.encryptedFailed'), { description: err instanceof Error ? err.message : 'Unknown error' })
     } finally {
       setShowPassword(false)
       setPassword('')
@@ -259,7 +244,6 @@ export const useExportHandlers = ({
         case 'okf':
           await handleExportOkf()
           break
-        /** The default. */
         default:
           break
       }
@@ -278,7 +262,6 @@ export const useExportHandlers = ({
    * anything else falls through to the JSON backup path below.
    */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    /** The selected files. */
     const selected = Array.from(e.target.files ?? [])
     e.target.value = ''
     if (selected.length === 0) return
@@ -291,30 +274,30 @@ export const useExportHandlers = ({
 
     {
       // Non-empty: `selected.length === 0` returns above.
-      /** The file. */
       const file = selected[0]
-      /** The reader. */
+      const oversized = checkImportSize(file.size)
+      if (oversized !== null) {
+        toast.error(exportT('export.import.failed'), { description: oversized })
+        return
+      }
       const reader = new FileReader()
       reader.onload = () => {
-        /** The text. */
         const text = String(reader.result || '')
-        /** The result. */
         const result = parseImportFile(text)
         if (!result.success) {
-          toast.error('Import failed', { description: result.errors.map((err) => `${err.path}: ${err.message}`).join('; ') })
+          toast.error(exportT('export.import.failed'), { description: result.errors.map((err) => `${err.path}: ${err.message}`).join('; ') })
           return
         }
-        const { entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t } = result
-        /** The existing ids. */
+        const { entities: ents, claims: cls, version: fileVersion, graph: g, mindMap: m, links: l, tags: t } = result
         const existingIds = new Set(entities.map((ent) => ent.id))
         setImportPreview({
           entities: ents, claims: cls, graph: g, mindMap: m, links: l, tags: t,
           entityCount: ents.length,
-          claimCount: cls.length, version: 1,
+          claimCount: cls.length, version: fileVersion,
           duplicateIds: ents.filter((ent) => existingIds.has(ent.id)).map((ent) => ent.id),
         })
       }
-      reader.onerror = () => { toast.error('Import failed', { description: 'Could not read the file.' }) }
+      reader.onerror = () => { toast.error(exportT('export.import.failed'), { description: exportT('export.import.unreadable') }) }
       reader.readAsText(file)
     }
   }
@@ -322,7 +305,6 @@ export const useExportHandlers = ({
   /** Commits the staged import preview into the store with rollback on failure. */
   const handleConfirmImport = () => {
     if (!importPreview) return
-    /** The result. */
     const result = importWithRollback(
       importPreview.entities,
       importPreview.claims,
@@ -340,7 +322,6 @@ export const useExportHandlers = ({
           importPreview.claimCount === 1 ? 'claim' : 'claims',
         ),
       )
-      /** The summary. */
       const summary = buildExportSummary({
         entities: importPreview.entities,
         claims: importPreview.claims,
@@ -377,7 +358,7 @@ export const useExportHandlers = ({
   const handleReset = () => {
     announce(announceT('announce.storeReset'))
     resetStore()
-    toast.success('Restored to demo data', { description: 'All entities and claims have been reset to the seed dataset.' })
+    toast.success(exportT('export.import.restoredDemo'), { description: exportT('export.import.restoredDemoBody') })
   }
 
   return {

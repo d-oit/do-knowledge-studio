@@ -1,21 +1,21 @@
 # CLI Reference
 
-## Python CLI (`scripts/cli.py`)
+## Python CLI (`python -m scripts.resolve`)
 
 ### Basic Usage
 
 ```bash
 # Resolve a URL
-python scripts/cli.py "https://docs.rs/tokio"
+python -m scripts.resolve "https://docs.rs/tokio"
 
 # Resolve a query
-python scripts/cli.py "Rust async runtime comparison"
+python -m scripts.resolve "Rust async runtime comparison"
 
 # JSON output
-python scripts/cli.py "query" --json
+python -m scripts.resolve "query" --json
 
 # Specify max characters
-python scripts/cli.py "query" --max-chars 5000
+python -m scripts.resolve "query" --max-chars 5000
 ```
 
 ### Options
@@ -34,36 +34,36 @@ python scripts/cli.py "query" --max-chars 5000
 
 ```bash
 # Free-only (no paid APIs)
-python scripts/cli.py "query" --profile free
+python -m scripts.resolve "query" --profile free
 
 # Fast response (max 4s, 1 paid provider)
-python scripts/cli.py "query" --profile fast
+python -m scripts.resolve "query" --profile fast
 
 # Balanced (default)
-python scripts/cli.py "query" --profile balanced
+python -m scripts.resolve "query" --profile balanced
 
 # Quality (max 20s, up to 5 paid providers)
-python scripts/cli.py "query" --profile quality
+python -m scripts.resolve "query" --profile quality
 ```
 
 ### Skip Providers
 
 ```bash
 # Skip specific providers
-python scripts/cli.py "query" --skip exa_mcp --skip exa
+python -m scripts.resolve "query" --skip exa_mcp --skip exa
 
 # Skip multiple at once
-python scripts/cli.py "query" --skip exa --skip tavily --skip serper
+python -m scripts.resolve "query" --skip exa --skip tavily --skip serper
 ```
 
 ### Direct Provider Selection
 
 ```bash
 # Use only DuckDuckGo
-python scripts/cli.py "query" --provider duckduckgo
+python -m scripts.resolve "query" --provider duckduckgo
 
 # Custom provider order
-python scripts/cli.py "query" --providers-order "exa,jina,duckduckgo"
+python -m scripts.resolve "query" --providers-order "exa,jina,duckduckgo"
 ```
 
 ## Rust CLI (`do-wdr` binary)

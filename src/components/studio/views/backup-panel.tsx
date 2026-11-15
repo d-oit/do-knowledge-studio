@@ -108,6 +108,14 @@ export const BackupPanel = ({
   const handleFile = async (file: File | undefined) => {
     if (!file) return
     try {
+      const { checkImportSize } = await import('./export-helpers')
+      const { MAX_IMPORT_BYTES } = await import('@/lib/studio/constants')
+      if (file.size > MAX_IMPORT_BYTES) {
+        const message = checkImportSize(file.size) ?? 'File too large.'
+        setErrors([message])
+        toast.error(translate('backup.invalid'))
+        return
+      }
       const raw = await file.text()
       setRawArchive(raw)
       await verify(raw, restorePassphrase)

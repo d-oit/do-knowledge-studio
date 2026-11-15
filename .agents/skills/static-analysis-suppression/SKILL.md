@@ -1,12 +1,6 @@
 ---
 name: static-analysis-suppression
-description: >-
-  Suppress false positive or pre-existing issues from static analysis tools on PRs.
-  Use when Codacy, DeepSource, or ESLint blocks a PR with inline review comments
-  that are false positives, pre-existing (not introduced by the diff), or
-  config-level noise (e.g., Qwik-specific Biome rules in a React project).
-  Covers all suppression methods: code-level fixes, eslint-disable comments,
-  config changes (.codacy.yml, .deepsource.toml), and admin merge override.
+description: "Suppress false-positive or pre-existing static-analysis findings blocking a PR: Codacy, DeepSource, ESLint."
 category: quality
 version: "1.0"
 template_version: "1.0"

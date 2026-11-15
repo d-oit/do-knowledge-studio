@@ -10,10 +10,19 @@ set -euo pipefail
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$REPO_ROOT"
 
+# A dead .husky/ directory looks authoritative but is never installed
+# (no husky dependency; `prepare` runs install-hooks.sh). Fail if it
+# reappears so the two-hook drift (#1143) cannot return.
+if [ -e "$REPO_ROOT/.husky" ]; then
+  echo "✖ Stale .husky/ directory present: .githooks/ is the single hook source."
+  exit 1
+fi
 COMMITTED_HOOKS_DIR="$REPO_ROOT/.githooks"
 if [ ! -f "$COMMITTED_HOOKS_DIR/pre-commit" ] ||
-  ! grep -Fq './scripts/minimal_quality_gate.sh' "$COMMITTED_HOOKS_DIR/pre-commit"; then
-  echo "✖ Committed .githooks/pre-commit does not run the minimal quality gate."
+  ! grep -Fq 'quality_gate.sh --fast --changed' "$COMMITTED_HOOKS_DIR/pre-commit" ||
+  ! grep -Fq 'DOCS_ONLY' "$COMMITTED_HOOKS_DIR/pre-commit" ||
+  ! grep -Fq 'STAGED_COUNT=${#STAGED[@]}' "$COMMITTED_HOOKS_DIR/pre-commit"; then
+  echo "✖ Committed .githooks/pre-commit is not the staged-aware gate (#1143)."
   exit 1
 fi
 if [ ! -f "$COMMITTED_HOOKS_DIR/commit-msg" ] ||

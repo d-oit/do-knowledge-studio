@@ -27,7 +27,9 @@
     "bench:measure": "vitest bench --run --config vitest.bench.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:offline": "PLAYWRIGHT_PRODUCTION=1 playwright test e2e/offline-views.spec.ts --project=chromium",
-    "build:mcp": "pnpm --filter dks-mcp build"
+    "build:mcp": "pnpm --filter dks-mcp build",
+    "lessons:report": "node scripts/lessons-report.mjs",
+    "lessons:check": "node scripts/check-lint-config-wiring.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",

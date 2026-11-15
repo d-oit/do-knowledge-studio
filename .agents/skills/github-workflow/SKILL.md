@@ -1,6 +1,6 @@
 ---
 name: github-workflow
-description: Complete GitHub workflow automation - push, create branch/PR, monitor Actions with pre-existing issue detection, auto-merge/rebase when checks pass. Handles the full git→GitHub→merge lifecycle.
+description: "Entry skill for commit to PR to CI to merge: push, PR, Actions monitoring, auto-merge. Merge rules live in agents-docs/GIT-WORKFLOW.md."
 ---
 
 # GitHub Workflow Skill
@@ -118,6 +118,14 @@ Monitors:
 - Workflow runs for the branch
 - Individual job statuses
 - Step-level failures and warnings
+
+## Merge authority (single source)
+
+Merge rules live in exactly one place: `agents-docs/GIT-WORKFLOW.md`. This
+skill never restates them — it links here. In particular: always `--squash`
+(this repo), resolve every review thread including outdated ones via GraphQL,
+never `--admin`, and `Codacy Static Code Analysis` has zero tolerance. The
+method table below is mechanism only; policy comes from GIT-WORKFLOW.md.
 
 ## Auto-Merge Strategies
 

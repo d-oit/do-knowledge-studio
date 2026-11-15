@@ -1,8 +1,7 @@
 ---
 version: "1.0.0"
 name: reader-ui-ux
-description: >
-  Build localized, accessible reader/admin UI with responsive layouts, telemetry, and state management. Activate for React screens or UX polish. Generic pattern for any document reader application.
+description: "Build localized accessible reader/admin UI: responsive layouts, telemetry, state management for React screens."
 category: workflow
 ---
 

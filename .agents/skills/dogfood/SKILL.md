@@ -2,7 +2,7 @@
 name: dogfood
 version: "1.0.0"
 category: quality
-description: Systematically explore and test a web application to find bugs, UX issues, and other problems. Use when asked to "dogfood", "QA", "exploratory test", "find issues", "bug hunt", "test this app/site/platform", or review the quality of a web application. Produces a structured report with full reproduction evidence.
+description: "Exploratory QA of a web app with full reproduction evidence. Trigger on 'dogfood', 'bug hunt', 'exploratory test', 'find issues', app quality review."
 ---
 
 # Dogfood

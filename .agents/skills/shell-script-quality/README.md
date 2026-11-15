@@ -24,6 +24,7 @@ See **[SKILL.md](SKILL.md)** for the complete skill implementation with:
 ### 1. Lint a Script
 
 ```bash
+# example - not in this repo
 # Install ShellCheck
 brew install shellcheck         # macOS
 sudo apt-get install shellcheck # Linux
@@ -35,6 +36,7 @@ shellcheck scripts/example.sh
 ### 2. Write Tests
 
 ```bash
+# example - not in this repo
 # Install BATS
 brew install bats-core          # macOS
 sudo apt-get install bats       # Linux
@@ -144,6 +146,7 @@ project/
 ### Test JSON Output
 
 ```bash
+# example - not in this repo
 @test "script returns valid JSON" {
     run bash scripts/api.sh
     [ "$status" -eq 0 ]

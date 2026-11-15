@@ -84,8 +84,9 @@ export const findWikilinkTokens = (content: string): WikilinkToken[] => {
 
 /**
  * Resolves a wikilink name to an entity id: exact name match first
- * (case-insensitive), then exact tag match (case-insensitive). Returns
- * undefined when nothing matches. Deterministic in entity order.
+ * (case-insensitive), then exact alias match, then exact tag match
+ * (case-insensitive, legacy). Returns undefined when nothing matches.
+ * Deterministic in entity order.
  */
 export const resolveWikilinkTarget = (
   name: string,
@@ -97,6 +98,8 @@ export const resolveWikilinkTarget = (
   const eligible = excludeId === undefined ? entities : entities.filter((e) => e.id !== excludeId)
   const byName = eligible.find((e) => e.name.trim().toLowerCase() === wanted)
   if (byName) return byName.id
+  const byAlias = eligible.find((e) => (e.aliases ?? []).some((a) => a.trim().toLowerCase() === wanted))
+  if (byAlias) return byAlias.id
   const byTag = eligible.find((e) => e.tags.some((t) => t.trim().toLowerCase() === wanted))
   return byTag?.id
 }

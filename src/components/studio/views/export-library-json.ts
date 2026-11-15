@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
 import { buildJsonExport } from './export-helpers'
+import { translate as exportT } from '@/lib/i18n/messages/export'
 import { todayStamp, downloadFile, type LibraryPayload } from './export-types'
 
 /** Builds a human-readable summary of the records included in a JSON backup. */
@@ -25,7 +26,7 @@ export const exportLibraryJson = (payload: LibraryPayload): void => {
     tags: payload.tags,
   })
   downloadFile(`do-knowledge-studio-export-${todayStamp()}.json`, content, 'application/json')
-  toast.success('JSON export downloaded', {
-    description: buildExportSummary(payload),
+  toast.success(exportT('export.download.json'), {
+    description: exportT('export.download.jsonBody', buildExportSummary(payload)),
   })
 }

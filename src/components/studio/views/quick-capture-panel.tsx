@@ -1,5 +1,6 @@
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import { translate as synthesisT } from '@/lib/i18n/messages/synthesis';
 import { useStudioStore } from '@/lib/studio/store';
 import type { SharePayload } from '@/lib/capture/share-target';
 import { MAX_CAPTURE_TITLE_CHARS, buildCaptureBody } from '@/lib/capture/share-target';
@@ -36,7 +37,7 @@ export const QuickCapturePanel = memo(function QuickCapturePanel({ payload, onDo
         createdAt: now,
         updatedAt: now,
       });
-      toast.success('Saved to Inbox');
+      toast.success(synthesisT('synthesis.inbox.saved'));
       onDone();
     } catch (error) {
       console.error('Quick capture save failed', error);

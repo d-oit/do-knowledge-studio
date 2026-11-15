@@ -92,3 +92,33 @@ make_workflow() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"properly pinned"* ]]
 }
+
+@test "rejects gitleaks-action on v3 or later (paid licence, LESSON-024)" {
+  make_workflow "$BATS_TEST_TMPDIR/wf-v3" \
+    "- uses: gitleaks/gitleaks-action@$VALID_SHA  # v3.1.0"
+
+  run env WORKFLOWS_DIR="$BATS_TEST_TMPDIR/wf-v3" "$SCRIPT"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"LESSON-024"* ]]
+}
+
+@test "rejects a gitleaks-action pin without a version comment" {
+  make_workflow "$BATS_TEST_TMPDIR/wf-nov" \
+    "- uses: gitleaks/gitleaks-action@$VALID_SHA"
+
+  run env WORKFLOWS_DIR="$BATS_TEST_TMPDIR/wf-nov" "$SCRIPT"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"version comment"* ]]
+}
+
+@test "accepts the repo gitleaks pin on v2.x" {
+  make_workflow "$BATS_TEST_TMPDIR/wf-v2" \
+    "- uses: gitleaks/gitleaks-action@$VALID_SHA  # v2.3.9"
+
+  run env WORKFLOWS_DIR="$BATS_TEST_TMPDIR/wf-v2" "$SCRIPT"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"properly pinned"* ]]
+}

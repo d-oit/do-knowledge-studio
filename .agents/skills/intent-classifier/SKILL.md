@@ -1,6 +1,6 @@
 ---
 name: intent-classifier
-description: Classify user intents and route to appropriate skills, commands, or workflows. Use when determining which skill to invoke, routing requests to specialized agents, or building skill selection logic. Trigger on 'which skill should I use', 'route this to', 'classify this request', 'skill selection', or when multiple skills could handle a task.
+description: "Classify user intents and route to skills, commands, or workflows. Trigger on 'which skill should I use', 'route this to', 'classify this request', 'skill selection'."
 license: MIT
 ---
 

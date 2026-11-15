@@ -40,6 +40,7 @@ export interface Entity {
   content: string
   sourceUrl?: string
   tags: string[]
+  aliases?: string[]
   createdAt: string
   updatedAt: string
   links: { targetId: string; relation: string }[]

@@ -5,6 +5,7 @@ import {
   sendChatStream,
   fetchOllamaModels,
   validateOllamaUrl,
+  readStreamLines,
 } from './providers'
 import { OPENROUTER_ROUTERS, type ChatMessage } from './types'
 import { ErrorCode } from '@/lib/errors'
@@ -1170,5 +1171,99 @@ describe('provider payloads carry only protocol fields', () => {
     expect(body.messages).toEqual(expectedMessages)
     expect(body.messages[0]).not.toHaveProperty('id')
     expect(body.messages[1]).not.toHaveProperty('id')
+  })
+})
+
+// ─── streaming frame reader: final frame, split UTF-8, CRLF, malformed (#1128) ─
+
+describe('streaming frame reader flushes the final unterminated frame', () => {
+  const originalFetch = globalThis.fetch
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn()
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  const sseResponse = (chunks: Uint8Array[]): Response => {
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const c of chunks) controller.enqueue(c)
+        controller.close()
+      },
+    })
+    return { ok: true, body: stream } as unknown as Response
+  }
+
+  it('emits the final SSE frame without a trailing newline', async () => {
+    const enc = new TextEncoder()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      sseResponse([enc.encode('data: {"choices":[{"delta":{"content":"Hello"}}]}')]),
+    )
+    const onChunk = vi.fn()
+    const result = await getAdapter('openrouter').sendStream(
+      { provider: 'openrouter', model: 'openrouter/auto', apiKey: 'k', messages: [{ role: 'user', content: 'hi' }] },
+      onChunk,
+    )
+    expect(result.content).toBe('Hello')
+    expect(onChunk).toHaveBeenCalledWith('Hello')
+  })
+
+  it('emits the final NDJSON frame without a trailing newline', async () => {
+    const enc = new TextEncoder()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      sseResponse([enc.encode('{"message":{"content":"World"}}')]),
+    )
+    const onChunk = vi.fn()
+    const result = await getAdapter('ollama').sendStream(
+      { provider: 'ollama', model: 'llama3', apiKey: '', messages: [{ role: 'user', content: 'hi' }] },
+      onChunk,
+    )
+    expect(result.content).toBe('World')
+  })
+
+  it('handles CRLF framing and skips malformed frames', async () => {
+    const enc = new TextEncoder()
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      sseResponse([enc.encode('data: {"choices":[{"delta":{"content":"A"}}]}\r\ndata: not-json\r\ndata: {"choices":[{"delta":{"content":"B"}}]}\r\n')]),
+    )
+    const onChunk = vi.fn()
+    const result = await getAdapter('openrouter').sendStream(
+      { provider: 'openrouter', model: 'openrouter/auto', apiKey: 'k', messages: [{ role: 'user', content: 'hi' }] },
+      onChunk,
+    )
+    expect(result.content).toBe('AB')
+  })
+
+  it('decodes a multi-byte character split across chunks', async () => {
+    const enc = new TextEncoder()
+    const frame = 'data: {"choices":[{"delta":{"content":"caf\\u00e9"}}]}\n'
+    const bytes = enc.encode(frame)
+    const mid = bytes.length - 4
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      sseResponse([bytes.slice(0, mid), bytes.slice(mid)]),
+    )
+    const onChunk = vi.fn()
+    const result = await getAdapter('openrouter').sendStream(
+      { provider: 'openrouter', model: 'openrouter/auto', apiKey: 'k', messages: [{ role: 'user', content: 'hi' }] },
+      onChunk,
+    )
+    expect(result.content).toContain('caf')
+  })
+
+  it('readStreamLines flushes a trailing partial line', async () => {
+    const enc = new TextEncoder()
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(enc.encode('hello'))
+        controller.close()
+      },
+    })
+    const reader = stream.getReader()
+    const seen: string[] = []
+    await readStreamLines(reader, (line) => { seen.push(line) })
+    expect(seen).toEqual(['hello'])
   })
 })

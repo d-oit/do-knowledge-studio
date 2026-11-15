@@ -43,24 +43,18 @@ See [`AVAILABLE_SKILLS.md`](AVAILABLE_SKILLS.md) for authoring guide.
 | `architecture-diagram` | `.agents/skills/architecture-diagram` | Generate or update a project architecture SVG diagram by sca |
 | `atomic-commit` | `.agents/skills/atomic-commit` | Atomic git workflow - validates, commits, pushes, creates PR |
 | `cicd-pipeline` | `.agents/skills/cicd-pipeline` | Design and implement CI/CD pipelines with GitHub Actions, Gi |
-| `cloudflare-worker-api` | `.agents/skills/cloudflare-worker-api` | Structure Worker API routes and handlers. Activate for route |
 | `code-quality` | `.agents/skills/code-quality` | Review and improve code quality across any programming langu |
 | `code-review-assistant` | `.agents/skills/code-review-assistant` | Automated code review with PR analysis, change summaries, an |
-| `codeberg-api` | `.agents/skills/codeberg-api` | Interact with Forgejo/Codeberg repositories via the REST API |
-| `database-devops` | `.agents/skills/database-devops` | Database design, migration, and DevOps automation with safet |
-| `database-schema-migrations` | `.agents/skills/database-schema-migrations` | Design database schema and write migrations. Activate for ta |
 | `do-web-doc-resolver` | `.agents/skills/do-web-doc-resolver` | Python resolver for URLs and queries into compact, LLM-ready |
 | `docs-hook` | `.agents/skills/docs-hook` | Lightweight git hook integration for updating agents-docs wi |
 | `document-rendering-and-locators` | `.agents/skills/document-rendering-and-locators` | Implement resilient document rendering and annotation anchor |
 | `dogfood` | `.agents/skills/dogfood` | Systematically explore and test a web application to find bu |
-| `git-github-workflow` | `.agents/skills/git-github-workflow` | Unified atomic git workflow with GitHub integration - commit |
+| `git-github-workflow` | `.agents/skills/git-github-workflow` | Retired alias - use `github-workflow`. |
 | `github-readme` | `.agents/skills/github-readme` | Create human-focused GitHub README.md files with 2026 best p |
 | `github-workflow` | `.agents/skills/github-workflow` | Complete GitHub workflow automation - push, create branch/PR |
 | `goap-planning` | `.agents/skills/goap-planning` | Invoke for complex multi-step tasks requiring intelligent pl |
 | `intent-classifier` | `.agents/skills/intent-classifier` | Classify user intents and route to appropriate skills, comma |
 | `iterative-refinement` | `.agents/skills/iterative-refinement` | Execute iterative refinement workflows with validation loops |
-| `jules-implement` | `.agents/skills/jules-implement` | Repository-aware implementation agent that handles delta-bas |
-| `jules` | `.agents/skills/jules` | Autonomous Jules Delegator skill for delegating complex, mul |
 | `learn` | `.agents/skills/learn` | Extract non-obvious session learnings into scoped AGENTS.md  |
 | `local-chat-policy` | `.agents/skills/local-chat-policy` | Enforce the local-first chat contract: in-browser retrieval, entity citations, untrusted-content isolation, consent before egress |
 | `memory-context` | `.agents/skills/memory-context` | Retrieve semantically relevant past learnings and analysis o |
@@ -75,14 +69,12 @@ See [`AVAILABLE_SKILLS.md`](AVAILABLE_SKILLS.md) for authoring guide.
 | `shell-script-quality` | `.agents/skills/shell-script-quality` | Lint and test shell scripts using ShellCheck and BATS. Use w |
 | `skill-creator` | `.agents/skills/skill-creator` | Create new skills, modify and improve existing skills, and m |
 | `skill-evaluator` | `.agents/skills/skill-evaluator` | "Reusable skill for evaluating other skills with structure c |
-| `stitch-design` | `.agents/skills/stitch-design` | Headless Stitch CLI / MCP skill for automated UI/UX design a |
-| `task-decomposition` | `.agents/skills/task-decomposition` | Break down complex tasks into atomic, actionable goals with  |
+| `task-decomposition` | `.agents/skills/task-decomposition` | Retired alias - use `goap-planning`. |
 | `test-runner` | `.agents/skills/test-runner` | Execute tests, analyze results, and diagnose failures across |
 | `testdata-builders` | `.agents/skills/testdata-builders` | Maintain deterministic builders/factories for test entities. |
 | `testing-strategy` | `.agents/skills/testing-strategy` | Design comprehensive testing strategies with modern techniqu |
-| `triz-analysis` | `.agents/skills/triz-analysis` | Run a systematic TRIZ contradiction audit against a codebase |
+| `triz-analysis` | `.agents/skills/triz-analysis` | Retired alias - use `triz-solver` audit mode. |
 | `triz-solver` | `.agents/skills/triz-solver` | Systematic problem-solving using TRIZ (Theory of Inventive P |
-| `turso-db` | `.agents/skills/turso-db` | Use this skill for Turso (LibSQL/Limbo) database development |
 | `ui-ux-optimize` | `.agents/skills/ui-ux-optimize` | Swarm-powered UI/UX prompt optimizer with auto-research agen |
 | `validation-checklist` | `.agents/skills/validation-checklist` | Validate at the real boundaries (IndexedDB/localStorage rehydration, import, sync, provider responses) with Zod and referential integrity |
 | `web-search-researcher` | `.agents/skills/web-search-researcher` | Research topics using web search to find accurate, current i |

@@ -176,6 +176,7 @@ alias btv='bats -t tests/'
 
 **Dockerfile**:
 ```dockerfile
+# example - not in this repo
 FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y \
@@ -193,6 +194,7 @@ CMD ["bash", "scripts/check-quality.sh"]
 
 **docker-compose.yml**:
 ```yaml
+# example - not in this repo
 version: '3.8'
 services:
   quality-check:

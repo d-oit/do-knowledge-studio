@@ -168,7 +168,7 @@ export const useAiHarnessChat = ({
     const text = (overrideInput ?? input).trim()
     if (!text) return
     if (requiresKey && !apiKey) {
-      toast.error('Set an API key in settings to send messages.')
+      toast.error(translate('ai.chat.error.missingKey'))
       return
     }
 
@@ -200,11 +200,11 @@ export const useAiHarnessChat = ({
       if (allowWebResearch) {
         const urls = extractUrls(text)
         if (urls.length > 0) {
-          toast.info(`Fetching ${urls.length} URL(s)…`)
+          toast.info(translate('ai.chat.fetch.urls', String(urls.length)))
           researchResults = await fetchUrls(urls, controller.signal)
           const failed = researchResults.filter((r) => !r.success)
           if (failed.length > 0) {
-            toast.warning(`Failed to fetch ${failed.length} URL(s)`)
+            toast.warning(translate('ai.chat.fetch.urlsFailed', String(failed.length)))
           }
         }
       }

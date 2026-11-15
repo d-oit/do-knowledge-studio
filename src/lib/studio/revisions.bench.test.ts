@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import type { Entity } from './types'
 import {
   entitySnapshotSignature,
   planEvictions,
@@ -11,13 +10,14 @@ import {
 const LONG_BODY = 'saffron knowledge studio '.repeat(2_000)
 
 /** Entity fixture. */
-const makeEntity = (content: string): Entity => ({
+const makeEntity = (content: string): EntityRevision['entity'] => ({
   id: 'entity-1',
   name: 'Large note',
   type: 'note',
   description: 'A long note',
   content,
   tags: ['long', 'note'],
+  aliases: [],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   links: [],

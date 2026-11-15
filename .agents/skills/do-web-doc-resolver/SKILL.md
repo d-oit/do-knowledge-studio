@@ -1,6 +1,6 @@
 ---
 name: do-web-doc-resolver
-description: Python resolver for URLs and queries into compact, LLM-ready markdown. Uses progressive free-first cascade with quality scoring, circuit breakers, layered routing memory, trace-based evaluation, and agent-friendly docs validation. Use when fetching documentation, resolving web URLs, or building context from web sources.
+description: "Resolve URLs and queries into compact LLM-ready markdown: progressive free-first cascade, quality scoring, trace evaluation. Use for docs fetching and web-source context."
 license: MIT
 compatibility: Python 3.10+, async/await
 allowed-tools: Bash(python:*|do-wdr:*) Read

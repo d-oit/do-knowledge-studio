@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import {
   DRAG_PAN_SLOP_PX,
   getClientToViewBoxScale,
@@ -33,6 +33,10 @@ export const useGraphCanvasGestures = ({
   const pointerOriginRef = useRef<{ x: number; y: number } | null>(null)
   const isDraggingRef = useRef(false)
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const dragResetFrameRef = useRef<number>(0)
+  useEffect(() => () => {
+    if (dragResetFrameRef.current !== 0) cancelAnimationFrame(dragResetFrameRef.current)
+  }, [])
   const pinchStateRef = useRef<{
     initialDistance: number
     initialMidpoint: { x: number; y: number }
@@ -107,7 +111,11 @@ export const useGraphCanvasGestures = ({
     } else if (activePointersRef.current.size === 0) {
       pointerOriginRef.current = null
       pinchStateRef.current = null
-      setTimeout(() => { isDraggingRef.current = false }, 0)
+      if (dragResetFrameRef.current !== 0) cancelAnimationFrame(dragResetFrameRef.current)
+      dragResetFrameRef.current = requestAnimationFrame(() => {
+        isDraggingRef.current = false
+        dragResetFrameRef.current = 0
+      })
     }
   }, [])
 
