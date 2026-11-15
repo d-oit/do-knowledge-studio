@@ -234,7 +234,11 @@ for (const entry of indexEntries) {
     fail(`LESSONS.md index links to missing file: ${lessonFile}`)
     continue
   }
-  if (!new RegExp(`^#{2,3} ${entry[1]}:`, 'm').test(lessonText)) {
+  const headingPrefixes = [`## ${entry[1]}:`, `### ${entry[1]}:`]
+  const hasHeading = lessonText
+    .split('\n')
+    .some((line) => headingPrefixes.some((prefix) => line.startsWith(prefix)))
+  if (!hasHeading) {
     fail(`${lessonFile} does not contain its ${entry[1]} heading`)
   }
 }

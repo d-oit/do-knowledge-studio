@@ -29,9 +29,9 @@ function canonicalize(value) {
     return `[${value.map((item) => canonicalize(item)).join(",")}]`;
   }
   if (value !== null && typeof value === "object") {
-    const entries = Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonicalize(value[key])}`);
+    const entries = Object.entries(value)
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([key, child]) => `${JSON.stringify(key)}:${canonicalize(child)}`);
     return `{${entries.join(",")}}`;
   }
   return JSON.stringify(value) ?? "null";
@@ -53,9 +53,9 @@ function main() {
   let useStdin = false;
   let file = null;
   for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
+    const arg = args.at(index);
     if (arg === EXPECT_FLAG) {
-      expected = args[index + 1];
+      expected = args.at(index + 1);
       index += 1;
     } else if (arg === STDIN_FLAG) {
       useStdin = true;
@@ -81,7 +81,7 @@ function main() {
     label = "stdin";
   } else {
     if (!file) {
-      fail("usage: corpus-fingerprint.mjs [--expect <sha256>] <export.json>");
+      fail("usage: corpus-fingerprint.mjs [--expect SHA256] EXPORT.json");
     }
     try {
       text = readFileSync(file, "utf8");

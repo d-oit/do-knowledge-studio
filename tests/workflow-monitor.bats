@@ -5,23 +5,31 @@ bats_require_minimum_version 1.5.0
 
 setup() {
   export SCRIPT="$BATS_TEST_DIRNAME/../scripts/lib/workflow-monitor.sh"
-  export GH_SCRIPT="$BATS_TEST_DIRNAME/../.agents/skills/github-workflow/run.sh"
-  export GGH_SCRIPT="$BATS_TEST_DIRNAME/../.agents/skills/git-github-workflow/run.sh"
+  # plans/214 (#1151) consolidated git-github-workflow into github-workflow, so
+  # that skill is now a redirect stub with no runner of its own. Guard the
+  # surviving scripts explicitly: an empty glob would make these loops pass
+  # without checking anything. Add a path here when a skill ships a runner.
+  export SKILL_RUN_SCRIPTS=("$BATS_TEST_DIRNAME/../.agents/skills/github-workflow/run.sh")
 }
 
 # ---------------------------------------------------------------------------
-# Skill-script sync guards (plan 124 follow-up): both skill scripts must
-# consume the shared library rather than drifting into private copies.
+# Skill-script sync guards (plan 124 follow-up): every skill runner must
+# consume the shared library rather than drifting into a private copy.
 # ---------------------------------------------------------------------------
 
 @test "skill scripts source the shared monitor library" {
-  for script in "$GH_SCRIPT" "$GGH_SCRIPT"; do
+  [ "${#SKILL_RUN_SCRIPTS[@]}" -gt 0 ]
+  for script in "${SKILL_RUN_SCRIPTS[@]}"; do
+    [ -f "$script" ] || {
+      echo "missing skill runner $script" >&2
+      return 1
+    }
     grep -q 'source "$REPO_ROOT/scripts/lib/workflow-monitor.sh"' "$script"
   done
 }
 
 @test "skill scripts do not redefine shared monitor functions" {
-  for script in "$GH_SCRIPT" "$GGH_SCRIPT"; do
+  for script in "${SKILL_RUN_SCRIPTS[@]}"; do
     for fn in monitor_parse_checks monitor_collect_check_state monitor_log_progress monitor_handle_terminal_issue monitor_report_final_verdict monitor_poll_until_terminal; do
       if grep -qE "^[[:space:]]*${fn}\(\)" "$script"; then
         echo "$script redefines shared function $fn" >&2
@@ -32,7 +40,7 @@ setup() {
 }
 
 @test "every monitor function referenced by skill scripts is defined in the lib or locally" {
-  for script in "$GH_SCRIPT" "$GGH_SCRIPT"; do
+  for script in "${SKILL_RUN_SCRIPTS[@]}"; do
     local defined
     defined="$(grep -hoE '^[[:space:]]*monitor_[a-z_]+\(' "$SCRIPT" "$script" | sed -E 's/^[[:space:]]*//; s/\($//' | sort -u)"
     while read -r fn; do

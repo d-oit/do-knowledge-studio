@@ -2,10 +2,10 @@
 name: codacy
 description: "Tool reference under static-analysis-suppression: query Codacy PR analysis, triage issues, suppress false positives, run local analysis."
 category: quality
-version: 1.0.0
+version: 1.1.0
 template_version: 0.1.0
 license: MIT
-compatibility: Node.js 18+, npm global install. Requires Codacy project access for Cloud CLI. Python 3.x recommended for JSON parsing but not required.
+compatibility: Node.js 22.23.4+ (cloud CLI 1.15.x engines), npm global install. Requires Codacy repository access for the Cloud CLI. Python 3.x recommended for JSON parsing but not required.
 metadata:
   author: d-oit
 ---
@@ -23,20 +23,40 @@ Two CLIs for interacting with Codacy static analysis — local analysis and remo
 ## Setup
 
 ```bash
-npm i -g @codacy/analysis-cli
-npm i -g @codacy/codacy-cloud-cli
+# Always latest (2026-11-15: cloud-cli 1.15.0, analysis-cli 0.29.1)
+npm i -g @codacy/codacy-cloud-cli@latest @codacy/analysis-cli@latest
 
 # Authenticate (once, covers both CLIs)
 codacy login --token <your-api-token>
-# Token: Codacy > My Account > Access Management > Account API Tokens
+# Account token: Codacy > My Account > Access Management > API Tokens
+# Repository token: Codacy > Repository > Settings > Integrations > Project API token
+codacy info   # verify: prints the authenticated user
 ```
+
+If `npm i -g` fails with `EACCES` on the system prefix, install to a user
+prefix and call the binary by path — do not `sudo` an npm global install:
+
+```bash
+npm i -g --prefix "$HOME/.local" @codacy/codacy-cloud-cli@latest
+"$HOME/.local/bin/codacy" --version
+```
+
+**Two token types, different powers.** `codacy login` stores an *account*
+API token. A *repository* token is passed per command (`--repository-token`)
+or set as `CODACY_PROJECT_TOKEN`, and only authorizes a subset of commands:
+`tools`, `tool`, `patterns`, `pattern`, `issues` (including `--overview`),
+`repository`, `repository --reanalyze` work; `issues --ignore`, `issues
+--ignored`, `issue`, `pull-request(s)`, `findings`/`finding`, `images`, and
+`repository --add/--remove/--link-standard` need an account token. Precedence:
+`--repository-token` > `CODACY_PROJECT_TOKEN` > `CODACY_API_TOKEN` > stored
+credentials (docs.codacy.com/codacy-cloud-cli, 2026-10).
 
 ## When to Use Each CLI
 
 | Situation | CLI | Command |
 |-----------|-----|---------|
 | PR is blocked by Codacy | Cloud | `codacy pull-request ... --output json` |
-| Need to suppress false positives | Cloud | `codacy pull-request ... --ignore-issue` |
+| Need to suppress false positives | Cloud | `codacy issues ... --ignore -y` (branch bulk) or `--ignore-issue <resultDataId>` (PR, see limitations) |
 | Need to run analysis before push | Analysis | `codacy-analysis analyze --pr` |
 | Need coverage/quality gate data | Cloud | `codacy pull-request ... --output json` |
 | Trigger reanalysis | Cloud | `codacy pull-request ... --reanalyze` |
@@ -158,9 +178,44 @@ The Analysis CLI may show "0 issues" even when the Cloud CLI reports many — al
 
 ### Cloud CLI
 
-- `--ignore-issue` requires numeric `resultDataId`, NOT the hash-style issue ID
-- Suppressions take effect immediately; reanalysis may take a few minutes
-- Organization-level coding standards override repo-level tool/pattern settings
+- Every id is numeric (`resultDataId` in `--output json`); the hash-style
+  `issueId` field is rejected by every command
+- Ignoring only takes effect after the **next analysis** — follow with
+  `codacy pull-request <pr> --reanalyze-and-wait` (`-w`), which polls every
+  10 s up to 20 min and reports issue deltas
+- Data reflects the HEAD commit of a branch; there is no historical view
+- **PR-scoped ignore can 404** (`pull-request ... --ignore-issue <id>` →
+  `Resource not found (HTTP 404)`; `--reanalyze` → `Failed to request
+  reanalysis: Not Found`) while reads on the same PR succeed, on 1.0.0 and
+  1.15.0 alike. `codacy issue <id> --ignore` resolves ids against the
+  *default branch* HEAD and answers `Result data not found for id N and
+  commit C` for results that exist only on the PR commit. When this bites,
+  fall back to the branch-scoped bulk form (below) and record the reason.
+- Organization-level coding standards override repo-level tool/pattern
+  settings, and a pattern enforced by a standard refuses `--enable/--disable`
+
+### Branch-scoped bulk ignore (the reliable suppression path)
+
+```bash
+# Count first — the blast radius is the whole pattern on that branch
+codacy issues gh <org> <repo> -b <branch> \
+  -p <Pattern_Id> --output json | python3 -c "
+import json,sys,collections
+iss=json.load(sys.stdin)['issues']
+print(len(iss),'issues')
+[print(' ',c,f) for f,c in collections.Counter(i['filePath'] for i in iss).most_common()]
+"
+
+# Then ignore, with the reason recorded
+codacy issues gh <org> <repo> -b <branch> -p <Pattern_Id> \
+  --ignore --ignore-reason FalsePositive --ignore-comment "<why>" -y
+```
+
+Repo-level `issues` filters are `--branch`, `--patterns`, `--severities`,
+`--categories`, `--languages`, `--tools`, `--tags`, `--authors` — there is no
+file filter, so verify the file list is entirely tooling/test code before
+committing to a bulk ignore. `codacy issues -i` lists what is ignored and
+`codacy issue <id> --unignore` reverses it.
 
 ## Common Gotchas
 
@@ -170,8 +225,9 @@ The Analysis CLI may show "0 issues" even when the Cloud CLI reports many — al
 | `Issue #NNNNN not found in this pull request` | Wrong PR or stale analysis | Run `--reanalyze` first or check PR number |
 | Local analysis = 0 issues, Cloud = many | Cloud runs tools not available locally | Always use Cloud CLI for actual PR data |
 | Analysis CLI install fails | Missing Python/Ruby/Java runtime | Use only JS/TS tools locally; skip auto-install |
-| `.codacy.yml` disable_rules not taking effect | Using `ESLint8_` prefix instead of `ESLint9_` | Use `ESLint9_<rule-id>` format for ESLint 9+ |
+| `.codacy.yml` disable_rules not taking effect | The prefix does not match the engine that **emitted** the finding | Read `patternInfo.id` from `--output json` and suppress with that exact prefix, in that engine's section |
 | `.codacy/codacy.config.json` references `eslint.config.js` | Stale reference | Change to `eslint.config.mjs` |
+| Ignore/reanalyze 404s while reads work | Known PR-scoped write limitation (above) | Branch-scoped bulk ignore, or the Codacy UI |
 
 ## Codacy 2026 Configuration
 
@@ -201,12 +257,26 @@ engines:
     enabled: true
 ```
 
-**Key 2026 changes:**
-- Use `eslint-9` (NOT `eslint-8`) for ESLint 9+ flat config
+**Key 2026 facts (verified against cloud analysis output, not assumed):**
 - `.codacy.yml` is the primary config file (NOT `codacy.config.json`)
-- `disable_rules` uses `ESLint9_<rule-id>` format (NOT `ESLint8_<rule-id>`)
-- Codacy automatically picks up `.codacy.yml` from the default branch
-- If `.codacy.yml` exists, UI-defined ignore settings are overridden
+- Each `engines:` section is independent. A `disable_rules` entry only
+  applies to the engine section it sits in, and its prefix must match the
+  prefix Codacy actually emits. This repo's cloud analysis reports
+  `ESLint8_*` ids even though ESLint 9 config is committed — so an
+  FP suppression added only under `eslint-9:` is **inert**. Mirror every
+  suppression into `eslint-9:`, `eslint-8:`, and `opengrep:` as needed.
+- Prefixes you may see: `ESLint8_*` (legacy engine), `ESLint9_*`,
+  `SecurityJs_prod.*` (opengrep/ESLint security plugin),
+  `Semgrep_javascript_dos_rule-*` / `Semgrep_*` (opengrep), `Trivy_*`,
+  `Agentlinter_*`
+- Preview-class patterns are NOT auto-detected false positives, so
+  `--ignore-all-false-positives` will not clear them; only
+  `potentialIssues` are swept by that flag
+- Codacy automatically picks up `.codacy.yml` from the default branch; while
+  `.codacy.yml` exists, UI-defined ignore settings are overridden
+- In this repo `.codacy.yml` is an ignore/suppression config — AGENTS.md
+  forbids editing it without explicit maintainer approval. Suppressing a
+  known FP via the CLI does not need approval; editing the file does.
 
 ### Tool Names (2026)
 

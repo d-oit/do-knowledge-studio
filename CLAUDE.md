@@ -34,7 +34,7 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - `src/lib/ai` - AI provider adapters · `src/lib/search` - retrieval engine
 - `src/lib/export` - JSON, MD, HTML, encrypted export
 - `scripts/` - repository automation · `plans/` - GOAP plans, ADRs, audits
-- `agents-docs/` - harness, workflow, config, hooks (`HOOKS.md`), skill docs
+- `agents-docs/` - harness, workflow, config, hooks (`agents-docs/HOOKS.md`), skill docs
 
 ## Planning Workflow
 
