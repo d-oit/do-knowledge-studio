@@ -309,3 +309,43 @@ commit-mismatch message, not a blanket 404). Skill v1.1.0 now documents the
 zero-tolerance). Unblocking needs one of: a write-capable API token, the 8
 issues ignored in the Codacy UI, or approval for the `.codacy.yml`
 `eslint-8` `disable_rules` mirror.
+
+## Codacy code-validation pass (2026-11-15, commit f6691264)
+
+Per the "address, don't only skip" direction, the `.codacy.yml`
+`eslint-8` suppression was reverted uncommitted and all 8
+`ESLint8_security_detect-non-literal-fs-filename` findings were fixed in
+code instead — every non-literal fs path is now validated before use:
+
+- `corpus-fingerprint.mjs`: argv path must be NUL-free with a `.json`
+  extension; normalized + resolved before `readFileSync`.
+- `check-lint-config-wiring.mjs`: argv targets must be NUL-free `.sh`
+  paths; normalized + resolved before `readFileSync`.
+- `check-file-size.mjs`: traversal anchored at the repo root; readdir
+  entries with separators/NUL/dot-segments skipped; every joined path
+  containment-checked before `readdirSync`/`statSync`/`existsSync`/
+  `readFileSync` (absolute collection keeps `rel`-based ui/ exclusion and
+  allowlist behavior identical).
+- `check-doc-consistency.mjs`: lesson links allowlisted to
+  `agents-docs/lessons/*.md` and resolved inside `agents-docs/`; citing
+  files allowlist-checked (incl. the repo-root `AGENTS.md` exception).
+
+Self-found during verification: the first lesson-link pattern tested the
+`agents-docs/`-prefixed path against a bare `lessons/` pattern and
+rejected all 56 links — caught by running the script, fixed, re-verified
+exit 0. NUL rejection is defense-in-depth (execve/Node already refuse NUL
+in real argv; the check turns a runtime TypeError into a clean fail).
+
+Verified: bats `corpus-fingerprint` + `check-lint-config-wiring` 8/8,
+`eslint` clean on all four scripts, all three scripts exit 0, and the
+pre-commit gate passed (lint, typecheck/app+test+e2e, shellcheck,
+markdownlint, doc-consistency, skill validation).
+
+Reanalysis on f6691264 still reports the same 8 findings at the new
+(validated) lines: the rule is purely syntactic (any non-literal first
+argument fires, sanitization is not recognized), so no code shape can
+satisfy it for tools whose job is reading caller-specified files. The
+input-validation concern is addressed in code; clearing the check now
+requires per-finding UI triage (false positive with this note as
+evidence) by someone with a write-capable token. Not merging while the
+check reports `action_required` (AGENTS.md zero tolerance).
