@@ -191,6 +191,13 @@ The Analysis CLI may show "0 issues" even when the Cloud CLI reports many — al
   *default branch* HEAD and answers `Result data not found for id N and
   commit C` for results that exist only on the PR commit. When this bites,
   fall back to the branch-scoped bulk form (below) and record the reason.
+- **Diagnose a read-only token before chasing endpoint bugs.** If reads
+  succeed but *every* write 404s, the token has no write scope and no ignore
+  command will ever work. Cheap benign probe:
+  `codacy repository gh <org> <repo> --reanalyze` — `Failed to request
+  reanalysis: Not Found` alongside a successful `codacy repository` read means
+  read-only credentials, not a broken CLI. Confirm the problem is credentials
+  before patching config or filing a bug.
 - Organization-level coding standards override repo-level tool/pattern
   settings, and a pattern enforced by a standard refuses `--enable/--disable`
 
@@ -227,7 +234,7 @@ committing to a bulk ignore. `codacy issues -i` lists what is ignored and
 | Analysis CLI install fails | Missing Python/Ruby/Java runtime | Use only JS/TS tools locally; skip auto-install |
 | `.codacy.yml` disable_rules not taking effect | The prefix does not match the engine that **emitted** the finding | Read `patternInfo.id` from `--output json` and suppress with that exact prefix, in that engine's section |
 | `.codacy/codacy.config.json` references `eslint.config.js` | Stale reference | Change to `eslint.config.mjs` |
-| Ignore/reanalyze 404s while reads work | Known PR-scoped write limitation (above) | Branch-scoped bulk ignore, or the Codacy UI |
+| Ignore/reanalyze 404s while reads work | Read-only API token (all writes) or the PR-scoped write limitation | `--reanalyze` probe to tell them apart; then a write-capable token, branch-scoped bulk ignore, or the UI |
 
 ## Codacy 2026 Configuration
 

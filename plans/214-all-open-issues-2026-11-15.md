@@ -276,3 +276,36 @@ analysis emitted `ESLint8_*` ids. Now documents: prefix must match the
 emitting engine, both engine sections are independent, account vs repository
 token powers, `--reanalyze-and-wait`, and the PR-write 404 with the
 branch-scoped fallback.
+
+## Codacy gate state after the fix commit (0d0a084e)
+
+Code fixes removed 6 of the 14 findings (both object-injection sinks, the
+`xss_no-mixed-html` usage string, both `non-literal-regexp` reports) and both
+Agentlinter `potentialIssues` disappeared. **8 remain**, all one family:
+`ESLint8_security_detect-non-literal-fs-filename` in
+`check-file-size.mjs` (4), `check-doc-consistency.mjs` (2),
+`corpus-fingerprint.mjs` (1), `check-lint-config-wiring.mjs` (1) — i.e. every
+remaining hit is a source file whose job is reading a path it was handed.
+
+Suppression is impossible with the current credentials. Evidence, all on
+cloud-cli 1.15.0:
+
+| Command | Result |
+| --- | --- |
+| `pull-request ... --output json` | ✅ reads 8 newIssues |
+| `repository gh d-oit do-knowledge-studio` | ✅ reads dashboard |
+| `pull-request ... --ignore-issue <id>` | ❌ `Resource not found (HTTP 404)` |
+| `pull-request ... --reanalyze` | ❌ `Failed to request reanalysis: Not Found` |
+| `repository ... --reanalyze` | ❌ `Failed to request reanalysis: Not Found` |
+| `issues -b <branch> -p <pattern> --ignore -y` | ❌ `Resource not found (HTTP 404)` |
+| `issue <id> --ignore` | ❌ `Result data not found for id <id> and commit C` |
+
+Every write 404s while every read succeeds ⇒ the stored account token is
+read-only; this is not the CLI's PR-scoping bug (that one shows up as a
+commit-mismatch message, not a blanket 404). Skill v1.1.0 now documents the
+`--reanalyze` probe so this is diagnosed in one step next time.
+
+**Not merging while Codacy reports `action_required`** (AGENTS.md
+zero-tolerance). Unblocking needs one of: a write-capable API token, the 8
+issues ignored in the Codacy UI, or approval for the `.codacy.yml`
+`eslint-8` `disable_rules` mirror.
