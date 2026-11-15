@@ -235,6 +235,7 @@ committing to a bulk ignore. `codacy issues -i` lists what is ignored and
 | `.codacy.yml` disable_rules not taking effect | The prefix does not match the engine that **emitted** the finding | Read `patternInfo.id` from `--output json` and suppress with that exact prefix, in that engine's section |
 | `.codacy/codacy.config.json` references `eslint.config.js` | Stale reference | Change to `eslint.config.mjs` |
 | Ignore/reanalyze 404s while reads work | Read-only API token (all writes) or the PR-scoped write limitation | `--reanalyze` probe to tell them apart; then a write-capable token, branch-scoped bulk ignore, or the UI |
+| Finding re-fires at the validated lines after a genuine code fix | Syntactic rule (`security_detect-non-literal-fs-filename` flags any non-literal `fs` arg; sanitization unrecognized) — see LESSON-063 | Stop restructuring code; validate paths in code, verify behavior, record in `plans/`, triage per-finding in the UI as false positive |
 
 ## Codacy 2026 Configuration
 

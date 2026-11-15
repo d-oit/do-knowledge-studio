@@ -54,3 +54,4 @@
 {"id": "LESSON-060", "date": "2026-11-01", "component": "PWA", "title": "cache.put inside the fetch try block reports a Cache API storage rejection as a network outage; the synthesised 503 body and type:basic identify it", "severity": "High", "tags": ["service-worker", "offline", "search", "debugging"], "automated_by": null}
 {"id": "LESSON-061", "date": null, "component": null, "title": "A service worker needs a driving test, not a text assertion", "severity": null, "tags": [], "automated_by": null}
 {"id": "LESSON-062", "date": "2026-04-30", "component": "ESLint / Vite / Vitest / Playwright / Root Files", "title": "ESLint v9 + Vite 8 Rolldown Migration", "severity": "Medium", "tags": [], "automated_by": null}
+{"id": "LESSON-063", "date": "2026-11-15", "component": "Scripts / Codacy", "title": "Codacy security_detect-non-literal-fs-filename is syntactic, validated paths still flag", "severity": "Low", "tags": ["codacy", "scripts"], "automated_by": null}
