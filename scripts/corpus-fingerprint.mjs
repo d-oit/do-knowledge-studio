@@ -15,9 +15,11 @@
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { normalize, resolve } from "node:path";
 
 const EXPECT_FLAG = "--expect";
 const STDIN_FLAG = "--stdin";
+const CORPUS_EXTENSION = ".json";
 
 function fail(message) {
   process.stderr.write(`corpus-fingerprint: ${message}\n`);
@@ -83,8 +85,19 @@ function main() {
     if (!file) {
       fail("usage: corpus-fingerprint.mjs [--expect SHA256] EXPORT.json");
     }
+    // The export path comes from argv, so validate its shape before handing
+    // it to fs: reject NUL bytes and non-JSON targets, then normalize. The
+    // tool runs with the caller's own privileges, but failing fast on a
+    // malformed path beats an obscure fs throw or a silent misread.
+    if (file.includes("\0")) {
+      fail(`refusing to read path containing NUL bytes: ${file}`);
+    }
+    const resolvedFile = resolve(normalize(file));
+    if (!resolvedFile.endsWith(CORPUS_EXTENSION)) {
+      fail(`export must be a ${CORPUS_EXTENSION} file: ${file}`);
+    }
     try {
-      text = readFileSync(file, "utf8");
+      text = readFileSync(resolvedFile, "utf8");
     } catch {
       fail(`could not read ${file}`);
     }

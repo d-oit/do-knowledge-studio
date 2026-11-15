@@ -22,11 +22,30 @@
  * Exit 0 when consistent; non-zero with one line per drift.
  */
 import { readFileSync, readdirSync } from 'node:fs'
+import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 // Resolve repository-relative literals from this script's location, not the
 // caller's working directory.
 process.chdir(fileURLToPath(new URL('..', import.meta.url)))
+
+const REPO_ROOT = process.cwd()
+const DOCS_ROOT = resolve(REPO_ROOT, 'agents-docs')
+const LESSON_LINK_PATTERN = /^agents-docs\/lessons\/[A-Za-z0-9][A-Za-z0-9_.-]*\.md$/
+
+// Index-derived paths reach fs below, so validate their shape first: a
+// tampered index line (e.g. `lessons/../../x`) must fail the check instead
+// of pulling the reader outside agents-docs/.
+const isWithin = (base, candidate) => candidate === base || candidate.startsWith(base + sep)
+const AGENTS_FILE = resolve(REPO_ROOT, 'AGENTS.md')
+const resolveDocPath = (repoRelative, allowPattern) => {
+  if (typeof repoRelative !== 'string' || repoRelative.includes('\0')) return null
+  if (!allowPattern.test(repoRelative)) return null
+  const resolved = resolve(REPO_ROOT, repoRelative)
+  if (!isWithin(REPO_ROOT, resolved)) return null
+  if (resolved !== AGENTS_FILE && !isWithin(DOCS_ROOT, resolved)) return null
+  return resolved
+}
 
 const fail = (message) => {
   console.error(`✗ ${message}`)
@@ -227,9 +246,14 @@ const lessonHeadingIds = []
 for (const entry of indexEntries) {
   lessonHeadingIds.push(entry[1])
   const lessonFile = `agents-docs/${entry[2]}`
+  const resolvedLesson = resolveDocPath(lessonFile, LESSON_LINK_PATTERN)
+  if (resolvedLesson === null) {
+    fail(`LESSONS.md index has a malformed lesson link: ${lessonFile}`)
+    continue
+  }
   let lessonText = ''
   try {
-    lessonText = readFileSync(lessonFile, 'utf8')
+    lessonText = readFileSync(resolvedLesson, 'utf8')
   } catch {
     fail(`LESSONS.md index links to missing file: ${lessonFile}`)
     continue
@@ -272,7 +296,12 @@ if (jsonlIds.length !== jsonlSet.size) {
 const knownLessons = new Set([...lessonHeadingIds, ...jsonlIds])
 const citingFiles = ['AGENTS.md', ...readdirSync('agents-docs').filter((f) => f.endsWith('.md')).map((f) => `agents-docs/${f}`)]
 for (const file of citingFiles) {
-  const text = readFileSync(file, 'utf8')
+  const resolvedCiting = resolveDocPath(file, /^agents-docs\/[A-Za-z0-9][A-Za-z0-9_.-]*\.md$|^AGENTS\.md$/)
+  if (resolvedCiting === null) {
+    fail(`refusing to read unexpected doc path: ${file}`)
+    continue
+  }
+  const text = readFileSync(resolvedCiting, 'utf8')
   for (const match of text.matchAll(/LESSON-(\d{3})/g)) {
     if (!knownLessons.has(match[0])) {
       fail(`${file} cites unknown lesson ${match[0]}`)

@@ -13,6 +13,7 @@
  * Exit 0 when every call site is wired; non-zero with one line per drift.
  */
 import { readFileSync } from 'node:fs'
+import { normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 process.chdir(fileURLToPath(new URL('..', import.meta.url)))
@@ -27,10 +28,31 @@ const fail = (message) => {
   process.exitCode = 1
 }
 
+const SHELL_EXTENSION = '.sh'
+
+// Targets come from argv (fixture-testable), so validate each shape before
+// handing it to fs: reject NUL bytes and non-shell targets, then normalize.
+const resolveTarget = (raw) => {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.includes('\0')) {
+    fail('refusing to read an invalid target path')
+    return null
+  }
+  const resolved = resolve(normalize(raw))
+  if (!resolved.endsWith(SHELL_EXTENSION)) {
+    fail(`${raw} is not a shell library (${SHELL_EXTENSION} expected)`)
+    return null
+  }
+  return resolved
+}
+
 // Join backslash continuations so multi-line invocations parse as one.
 // Optional argv paths make the check fixture-testable; default is the repo's
 // language-checks library.
-const targets = process.argv.slice(2).length > 0 ? process.argv.slice(2) : ['scripts/lib/language-checks.sh']
+const rawTargets = process.argv.slice(2).length > 0 ? process.argv.slice(2) : ['scripts/lib/language-checks.sh']
+const targets = rawTargets.map(resolveTarget).filter((target) => target !== null)
+if (targets.length !== rawTargets.length) {
+  process.exit(1)
+}
 const sources = targets.map((path) => ({
   path,
   text: readFileSync(path, 'utf8').replace(/\\\n/g, ' '),
