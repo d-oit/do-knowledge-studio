@@ -1,6 +1,6 @@
 ---
 name: local-chat-policy
-description: Enforce the local-first chat contract in this knowledge studio - retrieval from the in-browser corpus, entity citations, untrusted-content isolation, and consent before any remote provider call. Trigger when changing chat, AI context building, retrieval wiring, provider selection, or anything that decides what corpus text leaves the browser.
+description: Enforce the local-first chat contract — in-browser corpus retrieval, entity citations, untrusted-content isolation, consent before any remote call. Trigger when changing chat, retrieval wiring, provider selection, or anything that moves corpus text.
 version: 1.0.0
 ---
 

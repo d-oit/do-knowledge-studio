@@ -32,7 +32,7 @@
 | `impeccable` | Design, critique, and polish frontend interfaces: UX review, visual hierarchy, accessibility, responsive behavior, theming, motion, UX copy. Not for backend-only tasks. |
 | `intent-classifier` | Classify user intents and route to skills, commands, or workflows. Trigger on 'which skill should I use', 'route this to', 'classify this request', 'skill selection'. |
 | `iterative-refinement` | Execute iterative refinement workflows with validation loops until quality criteria are met. Use for test-fix cycles, code quality improvement, performance optimization, or any task requiring repeated action-validate-improve cycles. |
-| `local-chat-policy` | Guidelines for ensuring chat functionality prioritizes local data and respects privacy. |
+| `local-chat-policy` | Enforce the local-first chat contract — in-browser corpus retrieval, entity citations, untrusted-content isolation, consent before any remote call. Trigger when changing chat, retrieval wiring, provider selection, or anything that moves corpus text. |
 | `memory-context` | Retrieve semantically relevant past learnings and analysis outputs using the csm CLI (HDC encoder with hybrid BM25 retrieval) |
 | `migration-refactoring` | Automate code migrations and refactorings with safety patterns: dependency upgrades, framework moves, breaking-change analysis, rollback strategies. |
 | `parallel-execution` | Reference for dependency-free fan-out under goap-planning: run independent tasks simultaneously and aggregate results. |
@@ -47,7 +47,7 @@
 | `testing-strategy` | Design comprehensive testing strategies with modern techniques. Use for test planning, property-based testing, visual regression, load testing, mutation testing, and E2E test generation. Includes coverage analysis, test maintenance strategies, and CI/CD integration. |
 | `triz-analysis` | Retired alias of triz-solver audit mode. Use triz-solver for contradiction audits and inventive solving. |
 | `ui-ux-optimize` | Optimize UI/UX prompts with auto-research agents, handoff coordination, and quality gates for screen products. |
-| `validation-checklist` | Maintain high data quality and schema adherence within the knowledge studio. |
+| `validation-checklist` | Validate data at this app's real boundaries — storage rehydration, file import, sync payloads, AI responses, MCP input — with Zod and referential integrity. Trigger when adding a persisted field, migration, import/export format, sync message, or parsing external JSON. |
 | `vercel-deployment` | Diagnose Vercel deployment failures: red previews/production, plan-limit errors (api-deployments-free-per-day), vercel.json or build-command changes. |
 | `web-search-researcher` | Research topics using web search to find accurate, current information. Use when you need modern information, official documentation, best practices, or technical solutions beyond training data. |
 
