@@ -1,6 +1,6 @@
 ---
 name: code-review-assistant
-description: Automated code review with PR analysis, change summaries, quality checks, and required adversarial probing. Use for reviewing pull requests, generating review comments, checking against best practices, and identifying potential issues. Includes style guide compliance, security issue detection, review automation, and the probing patterns that catch defects a read-through misses (unguarded index, swallowed exception, the fix that evicts a shared resource).
+description: "Entry skill for PR review: diff analysis, change summaries, adversarial probing for swallowed exceptions, unguarded indexes, evicted shared resources."
 license: MIT
 ---
 

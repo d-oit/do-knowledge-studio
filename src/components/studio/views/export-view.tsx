@@ -74,13 +74,13 @@ export const ExportView = () => {
     try {
       const deleted = await clearAppCaches()
       announce('Offline cache storage cleared')
-      toast.success('Offline cache cleared', {
+      toast.success(translate('export.cache.cleared'), {
         description: deleted.length > 0
-          ? `Cleared ${deleted.length} cache storage container(s).`
-          : 'No offline caches found.',
+          ? translate('export.cache.clearedBody', String(deleted.length))
+          : translate('export.cache.clearedEmpty'),
       })
     } catch {
-      toast.error('Failed to clear offline cache')
+      toast.error(translate('export.cache.clearFailed'))
     } finally {
       setShowCacheClearConfirm(false)
     }

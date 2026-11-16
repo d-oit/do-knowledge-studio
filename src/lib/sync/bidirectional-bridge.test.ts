@@ -24,6 +24,7 @@ const entity = (overrides: Partial<Entity> = {}): Entity => ({
   description: 'Valid entity used by sync regression coverage',
   content: 'Content',
   tags: [],
+  aliases: [],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   links: [],

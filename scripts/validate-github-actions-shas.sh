@@ -64,6 +64,20 @@ for file in "${WORKFLOW_FILES[@]}"; do
             echo "   All actions must be pinned to a full-length commit SHA (e.g. action@sha # v1)."
             FAILED=1
         fi
+        # LESSON-024: gitleaks-action v3+ requires a paid GITLEAKS_LICENSE,
+        # so the pinned ref must stay on the v2 major (read from the `# vN`
+        # trailing comment that records which tag the SHA was resolved from).
+        if [[ "$line" == *gitleaks/gitleaks-action@* ]]; then
+            if [[ "$line" =~ \#[[:space:]]*v([0-9]+) ]]; then
+                if [ "${BASH_REMATCH[1]}" -ge 3 ]; then
+                    echo -e "${RED}gitleaks-action must stay on v2.x in $file line $line_num (v3+ needs a paid licence; LESSON-024)${NC}"
+                    FAILED=1
+                fi
+            else
+                echo -e "${RED}gitleaks-action pin in $file line $line_num has no '# vN' version comment (LESSON-024)${NC}"
+                FAILED=1
+            fi
+        fi
     done < <(grep -n "uses:" "$file" || true)
 done
 

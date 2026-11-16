@@ -50,6 +50,7 @@ Apply fixes for common warnings:
 ### Step 3: Write BATS Tests
 
 ```bash
+# example - not in this repo
 #!/usr/bin/env bats
 
 setup() {
@@ -163,6 +164,7 @@ source-path=SCRIPTDIR
 
 **Test scripts using CLAUDE_PLUGIN_ROOT**:
 ```bash
+# example - not in this repo
 @test "plugin script works" {
     export CLAUDE_PLUGIN_ROOT="$BATS_TEST_DIRNAME/.."
     run bash "$CLAUDE_PLUGIN_ROOT/scripts/search.sh" "query"
@@ -220,9 +222,11 @@ For quality-critical operations:
 
 ## Quick Quality Check
 
-Run this command for complete validation:
+In this repo the equivalent real gate is `./scripts/quality_gate.sh`.
+Run this command for complete validation of your own project:
 
 ```bash
+# example - not in this repo
 # Check everything
 find scripts -name "*.sh" -exec shellcheck {} + && bats tests/
 

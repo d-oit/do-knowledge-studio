@@ -114,6 +114,39 @@ const messages = {
     'This browser refused to store a recovery copy, so your previous library cannot be restored from here. Export a JSON backup before your next import.',
   /** The import threw and the store rolled back. */
   'export.import.failedTitle': 'Import failed — state restored',
+  /** Export downloaded toasts. */
+  'export.download.markdown': 'Markdown export downloaded',
+  'export.download.markdownBody': (count: string) => `${count} entities concatenated into one .md file`,
+  'export.download.html': 'HTML export downloaded',
+  'export.download.htmlBody': 'Self-contained .html page — open in any browser.',
+  'export.download.pdf': 'PDF export downloaded',
+  'export.download.pdfBody': (count: string) => `${count} entities formatted in a print-ready PDF.`,
+  'export.download.pdfFailed': 'PDF export failed',
+  'export.download.okf': 'OKF v0.2 bundle exported',
+  'export.download.okfBody': (count: string) => `${count} files — consumable by any OKF-aware agent, no SDK required`,
+  'export.download.okfFailed': 'OKF export failed',
+  'export.download.docx': 'DOCX export downloaded',
+  'export.download.docxBody': (count: string) => `${count} entities in a Word document.`,
+  'export.download.docxFailed': 'DOCX export failed',
+  'export.download.json': 'JSON export downloaded',
+  'export.download.jsonBody': (count: string) => `${count} entities exported as JSON.`,
+  'export.download.encrypted': 'Encrypted export downloaded',
+  'export.download.encryptedBody': 'AES-256-GCM encrypted with PBKDF2 key derivation.',
+  'export.download.encryptedFailed': 'Encrypted export failed',
+  'export.download.passwordMismatch': 'Password fields must match and not be empty.',
+  /** Import toasts. */
+  'export.import.failed': 'Import failed',
+  'export.import.unreadable': 'Could not read the file.',
+  'export.import.unzipFailed': 'Could not unzip the archive.',
+  'export.import.partial': 'Partial import',
+  'export.import.partialBody': (count: string, detail: string) => `${count} file(s) skipped — ${detail}`,
+  'export.import.restoredDemo': 'Restored to demo data',
+  'export.import.restoredDemoBody': 'All entities and claims have been reset to the seed dataset.',
+  /** Offline cache toasts. */
+  'export.cache.cleared': 'Offline cache cleared',
+  'export.cache.clearedBody': (count: string) => `Cleared ${count} cache storage container(s).`,
+  'export.cache.clearedEmpty': 'No offline caches found.',
+  'export.cache.clearFailed': 'Failed to clear offline cache',
 } as const
 
 /** Typed `translate` helper bound to the export view message scope. */

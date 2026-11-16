@@ -5,6 +5,7 @@ import {
   buildJsonExport,
   buildMarkdownExport,
   buildHtmlExport,
+  checkImportSize,
 } from './export-helpers'
 import { todayStamp } from './export-types'
 import { buildPdfExport, buildDocxExport } from './export-documents'
@@ -299,7 +300,33 @@ describe('buildHtmlExport', () => {
   })
 })
 
+describe('checkImportSize', () => {
+  it('accepts small files', () => {
+    expect(checkImportSize(1024)).toBeNull()
+  })
+
+  it('rejects oversized files before reading', () => {
+    expect(checkImportSize(11 * 1024 * 1024)).toContain('MiB')
+  })
+})
+
 describe('parseImportFile', () => {
+  it('rejects a payload with no version field', () => {
+    const result = parseImportFile('{"entities":[],"claims":[]}')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.errors[0].path).toBe('version')
+    }
+  })
+
+  it('rejects a newer unsupported version', () => {
+    const result = parseImportFile('{"version":99,"entities":[],"claims":[]}')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.errors[0].path).toBe('version')
+    }
+  })
+
   it('parses valid JSON export', () => {
     const json = buildJsonExport(SAMPLE_ENTITIES, SAMPLE_CLAIMS)
     const result = parseImportFile(json)
@@ -319,7 +346,7 @@ describe('parseImportFile', () => {
   })
 
   it('returns error on missing entities array', () => {
-    const result = parseImportFile('{"claims":[]}')
+    const result = parseImportFile('{"version":1,"claims":[]}')
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.errors.some((e) => e.message.includes('entities') || e.path.includes('entities'))).toBe(true)
@@ -327,7 +354,7 @@ describe('parseImportFile', () => {
   })
 
   it('returns error on empty entities', () => {
-    const result = parseImportFile('{"entities":[],"claims":[]}')
+    const result = parseImportFile('{"version":1,"entities":[],"claims":[]}')
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.errors[0].message).toContain('No valid entities')
@@ -336,6 +363,7 @@ describe('parseImportFile', () => {
 
   it('rejects invalid entities via Zod validation', () => {
     const data = {
+      version: 1,
       entities: [SAMPLE_ENTITIES[0], { invalid: true }],
       claims: [],
     }

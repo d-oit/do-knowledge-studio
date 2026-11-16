@@ -1,0 +1,35 @@
+{
+  "skill_name": "verify-before-asserting",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The bug is a stale closure in the editor. Add a regression test and fix it.",
+      "files": [],
+      "assertions": [
+        "The output requires writing the test first and watching it fail for the stated reason",
+        "The output does not claim the fix works before the test goes red-then-green",
+        "The output cites LESSON-041 or the red-then-green discipline"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Codacy posted a finding on my PR but I already fixed that code. Can I dismiss it as a false positive?",
+      "files": [],
+      "assertions": [
+        "The output requires reading toolInfo.name from the Codacy API, not guessing from comment syntax",
+        "The output warns that Codacy re-posts stale findings as NEW threads that still block",
+        "The output requires fix, reply, resolve — then stop pushing"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The plan says the migration is complete. The tests pass. Ship it?",
+      "files": [],
+      "assertions": [
+        "The output does not accept the plan as evidence",
+        "The output requires an independent check (test, command output, or observed behavior)",
+        "The output treats passing tests as necessary but not sufficient without a failing-first demonstration for bug fixes"
+      ]
+    }
+  ]
+}

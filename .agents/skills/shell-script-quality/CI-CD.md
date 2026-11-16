@@ -116,7 +116,7 @@ Make executable: `chmod +x .git/hooks/pre-commit`
 
 ## Quality Check Script
 
-**scripts/check-quality.sh**:
+**Example quality-check script** — save it under your project’s `scripts/` directory as `check-quality.sh`, then run it:
 
 ```bash
 #!/bin/bash
@@ -197,9 +197,9 @@ quality-gate:
 
 ## VS Code Devcontainer
 
-**.devcontainer/devcontainer.json**:
+**.devcontainer/devcontainer.json** (example — adapt paths to your project):
 
-```json
+```json example
 {
   "features": {
     "ghcr.io/devcontainers/features/shellcheck:1": {},

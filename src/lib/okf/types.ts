@@ -37,7 +37,6 @@ export const OkfConceptFrontmatterSchema = z
     title: z.string().optional(),
     /** One-line summary of the item. */
     description: z.string().optional(),
-    /** The resource. */
     resource: z.string().optional(),
     /** Optional tags payload carried through the operation. */
     tags: z.array(z.string()).optional(),
@@ -45,12 +44,9 @@ export const OkfConceptFrontmatterSchema = z
     sources: z.array(OkfSourceSchema).optional(),
     /** The usage_window. */
     usage_window: z.object({ from: OkfIsoDateSchema, to: OkfIsoDateSchema }).optional(),
-    /** The generated. */
     generated: OkfActorEventSchema.optional(),
     // §5.2: a bare mapping MUST be accepted as a one-element list
-    /** The verified. */
     verified: z.union([OkfActorEventSchema, z.array(OkfActorEventSchema)]).optional(),
-    /** The status. */
     status: OkfStatusSchema.optional(),
     /** The stale_after. */
     stale_after: OkfIsoDateSchema.optional(),

@@ -68,6 +68,7 @@ const makeEntity = (id: string, name: string, content: string) => ({
   description: `${name} description`,
   content,
   tags: ['sync-e2e'],
+  aliases: [],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   links: [],

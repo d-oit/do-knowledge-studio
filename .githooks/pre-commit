@@ -1,6 +1,80 @@
 #!/usr/bin/env bash
-# Pre-commit quality gate. Committed so the check travels with the repo
-# (Plan 131 G7): core.hooksPath points here via scripts/install-hooks.sh,
-# and CI validates these files instead of skipping the check.
-echo "Running pre-commit quality gate..."
-./scripts/minimal_quality_gate.sh
+# Staged-aware pre-commit gate (#1143).
+#
+# - Always: refuse staged node_modules entries (LESSON-042: `git add -A`
+#   stages the symlinked node_modules in worktrees) and ad-hoc root files
+#   (tmp-*/debug-*/analyze-*/notes-*) that belong in plans/ or /tmp.
+# - Docs-only commits (*.md): markdownlint on the staged files plus the link
+#   validator — seconds, no typecheck/tests.
+# - Anything else: `quality_gate.sh --fast --changed` (scoped lint/typecheck;
+#   heavy tests skipped). CI still runs the full gate, so scoping locally
+#   loses nothing.
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT" || exit 1
+
+mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+STAGED_COUNT=${#STAGED[@]}
+if [ "$STAGED_COUNT" -eq 0 ]; then
+  echo "No staged files to check. Skipping."
+  exit 0
+fi
+echo "Checking $STAGED_COUNT staged file(s)..."
+
+FAILED=0
+for file in "${STAGED[@]}"; do
+  # LESSON-042: a symlinked node_modules staged via `git add -A`.
+  if [[ "$file" == node_modules/* || "$file" == node_modules ]]; then
+    echo "✖ Refusing commit: staged node_modules entry '$file' (see LESSON-042)." >&2
+    echo "  Unstage it: git reset '$file' (check worktree symlinks)." >&2
+    FAILED=1
+  fi
+  # File placement rules: ad-hoc analysis files do not live in the root.
+  if [[ "$file" =~ ^(tmp-|debug-|analyze-|notes-)[^/]*$ ]]; then
+    echo "✖ Refusing commit: root file '$file' violates placement rules." >&2
+    echo "  Move persistent analysis to plans/, ephemeral output to /tmp." >&2
+    FAILED=1
+  fi
+done
+if [ "$FAILED" -ne 0 ]; then
+  exit 1
+fi
+
+DOCS_ONLY=true
+for file in "${STAGED[@]}"; do
+  if [[ "$file" != *.md ]]; then
+    DOCS_ONLY=false
+    break
+  fi
+done
+
+if [ "$DOCS_ONLY" = true ]; then
+  echo "Docs-only commit: running markdownlint + link check..."
+  MARKDOWNLINT_CMD=""
+  if command -v markdownlint &>/dev/null; then
+    MARKDOWNLINT_CMD="markdownlint"
+  elif [ -x "$REPO_ROOT/node_modules/.bin/markdownlint" ]; then
+    MARKDOWNLINT_CMD="$REPO_ROOT/node_modules/.bin/markdownlint"
+  fi
+  if [ -n "$MARKDOWNLINT_CMD" ]; then
+    for file in "${STAGED[@]}"; do
+      if ! "$MARKDOWNLINT_CMD" --config markdownlint.toml "$file"; then
+        FAILED=1
+      fi
+    done
+  else
+    echo "⚠ markdownlint not installed - skipping markdown checks"
+  fi
+  if ! ./scripts/validate-links.sh; then
+    FAILED=1
+  fi
+  if [ "$FAILED" -ne 0 ]; then
+    echo "✖ Docs checks failed."
+    exit 1
+  fi
+  echo "✓ Docs checks passed."
+  exit 0
+fi
+
+exec ./scripts/quality_gate.sh --fast --changed

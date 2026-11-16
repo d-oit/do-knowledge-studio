@@ -10,6 +10,7 @@ import { useAnnouncer } from '@/lib/a11y/announcer'
 import { translate as announceT } from '@/lib/i18n/messages/announce'
 import { translate as confirmT } from '@/lib/i18n/messages/confirm'
 import { translate as mentionsT } from '@/lib/i18n/messages/mentions'
+import { translate as libraryT } from '@/lib/i18n/messages/library'
 import { ConfirmDialog } from '@/components/studio/ui/shared-primitives'
 import { EditorToolbar } from './editor-toolbar'
 const CursorTracker = lazy(() => import('../remote-cursors').then((module) => ({ default: module.CursorTracker })))
@@ -278,7 +279,7 @@ export const EditorView = () => {
 
   const handleSave = useCallback(() => {
     if (!name.trim()) {
-      toast.error('Entity name cannot be empty')
+      toast.error(libraryT('library.entity.emptyName'))
       return
     }
     // Renaming offers to refresh visible link text across the corpus: tokens

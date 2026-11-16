@@ -64,3 +64,87 @@ run_validate() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"REPO=$WORK"* ]]
 }
+
+@test "rejects block-scalar and over-long descriptions (fixture, #1150)" {
+  local root="$BATS_TEST_TMPDIR/desc-fixture"
+  mkdir -p "$root/.agents/skills/folded" "$root/.agents/skills/toolong" "$root/.agents/skills/fine"
+  printf -- '---\nname: folded\ndescription: >\n  Folded text here.\n---\n' > "$root/.agents/skills/folded/SKILL.md"
+  python3 -c "print('---\nname: toolong\ndescription: \"' + 'x' * 301 + '\"\n---\n')" > "$root/.agents/skills/toolong/SKILL.md"
+  printf -- '---\nname: fine\ndescription: "Short and fine."\n---\n' > "$root/.agents/skills/fine/SKILL.md"
+
+  run python3 - "$root" <<'PYEOF'
+import importlib.util
+import sys
+from pathlib import Path
+sys.path.insert(0, "scripts")
+spec = importlib.util.spec_from_file_location("agent_surface", "scripts/agent-surface.py")
+agent_surface = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(agent_surface)
+validate_skill_frontmatter = agent_surface.validate_skill_frontmatter
+errors = validate_skill_frontmatter(Path(sys.argv[1]))
+print("\n".join(errors))
+assert any("block scalar" in e for e in errors), "folded description not flagged"
+assert any("300-char budget" in e for e in errors), "long description not flagged"
+assert not any("/fine/" in e for e in errors), "valid skill flagged"
+print("DESCRIPTION_RULES_OK")
+PYEOF
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"DESCRIPTION_RULES_OK"* ]]
+}
+
+@test "flags dead script refs, passes marked examples and local scripts (fixture, #1148)" {
+  local root="$BATS_TEST_TMPDIR/deadref-fixture"
+  rm -rf "$root"
+  mkdir -p "$root/.agents/skills/demo/scripts" "$root/.agents/skills/demo/references" "$root/scripts"
+  touch "$root/.agents/skills/demo/scripts/real.sh"
+  touch "$root/.agents/skills/demo/references/guide.md"
+  touch "$root/scripts/real-root.sh"
+  cat > "$root/.agents/skills/demo/SKILL.md" <<'EOF'
+---
+name: demo
+description: "Demo skill."
+---
+
+Run `scripts/missing.sh` now.
+
+Run `scripts/real.sh` and `scripts/real-root.sh` too.
+
+See `references/guide.md` and `references/nope.md`.
+
+```bash
+# example - not in this repo
+run bash scripts/illustrative.sh
+```
+
+```bash example
+run bash scripts/also-illustrative.sh
+```
+EOF
+
+  run python3 - "$root" <<'PYEOF'
+import importlib.util
+import sys
+from pathlib import Path
+sys.path.insert(0, "scripts")
+spec = importlib.util.spec_from_file_location("agent_surface", "scripts/agent-surface.py")
+agent_surface = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(agent_surface)
+errors = agent_surface.validate_dead_skill_refs(Path(sys.argv[1]))
+for e in errors:
+    print(e)
+joined = "\n".join(errors)
+assert any("scripts/missing.sh" in e for e in errors), "dead skill-local ref not flagged"
+assert any("references/nope.md" in e for e in errors), "dead references/ ref not flagged"
+assert not any("real.sh" in e for e in errors), "resolving ref flagged"
+assert not any("guide.md" in e for e in errors), "resolving references/ flagged"
+assert not any("illustrative" in e for e in errors), "marked example flagged"
+print("DEADREF_RULES_OK")
+PYEOF
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"DEADREF_RULES_OK"* ]]
+}
+
+@test "no advertised skill uses a block-scalar description" {
+  run grep -rn --include=SKILL.md -e '^description: *>' -e '^description: *|' .agents/skills/
+  [ "$status" -ne 0 ]
+}

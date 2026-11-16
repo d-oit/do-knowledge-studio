@@ -133,6 +133,7 @@ See `references/optimization-patterns.md` for caching configuration.
 
 ### Pattern 4: Conditional Jobs
 ```yaml
+# example - not in this repo
 jobs:
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -164,6 +165,7 @@ See `references/security-scanning.md` for:
 
 ### Environment Protection
 ```yaml
+# example - not in this repo
 # Require approvals for production
 jobs:
   deploy-staging:

@@ -1,9 +1,6 @@
 ---
 name: deepsource
-description: >
-  Retrieve code review results from DeepSource — issues, vulnerabilities, report cards,
-  and analysis runs. Use when asked about code quality, security findings, dependency
-  CVEs, coverage metrics, or analysis status.
+description: "Read DeepSource review results: issues, vulnerabilities, report cards, CVEs, coverage, analysis runs."
 ---
 
 # DeepSource CLI

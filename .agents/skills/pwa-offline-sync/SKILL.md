@@ -1,8 +1,7 @@
 ---
 version: "1.0.0"
 name: pwa-offline-sync
-description: >
-  Design Cache Storage + IndexedDB strategy and sync queue. Activate for service worker, cache, or offline bug investigation. Generic pattern for any offline-first application.
+description: "Design Cache Storage plus IndexedDB strategy and sync queue for offline-first apps and service-worker bugs."
 category: workflow
 ---
 

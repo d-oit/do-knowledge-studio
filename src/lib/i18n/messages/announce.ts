@@ -18,7 +18,6 @@ const messages = {
   'announce.entityCreated': (name: string) => `Created ${name}`,
   /** An entity was removed along with its claims. */
   'announce.entityDeleted': (name: string) => `Deleted ${name}`,
-  /** The active view changed. */
   'announce.viewSwitched': (view: string) => `Switched to ${view}`,
   /** Accessible name of the chat transcript log region. */
   'announce.chatTranscript': 'AI chat transcript',

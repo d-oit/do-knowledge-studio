@@ -22,11 +22,39 @@
  * Exit 0 when consistent; non-zero with one line per drift.
  */
 import { readFileSync, readdirSync } from 'node:fs'
+import { basename, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { readTextFile } from './lib/read-text.mjs'
 
 // Resolve repository-relative literals from this script's location, not the
 // caller's working directory.
 process.chdir(fileURLToPath(new URL('..', import.meta.url)))
+
+const REPO_ROOT = process.cwd()
+const DOCS_ROOT = resolve(REPO_ROOT, 'agents-docs')
+const LESSON_LINK_PATTERN = /^agents-docs\/lessons\/[A-Za-z0-9][A-Za-z0-9_.-]*\.md$/
+
+// Index-derived paths reach fs below, so validate their shape first: a
+// tampered index line (e.g. `lessons/../../x`) must fail the check instead
+// of pulling the reader outside agents-docs/. Symbolic links are refused
+// separately, from the directory entries the index was matched against.
+const isWithin = (base, candidate) => candidate === base || candidate.startsWith(base + sep)
+const AGENTS_FILE = resolve(REPO_ROOT, 'AGENTS.md')
+const resolveDocPath = (repoRelative, allowPattern) => {
+  if (typeof repoRelative !== 'string' || repoRelative.includes('\0')) return null
+  if (!allowPattern.test(repoRelative)) return null
+  const resolved = resolve(REPO_ROOT, repoRelative)
+  if (!isWithin(REPO_ROOT, resolved)) return null
+  if (resolved !== AGENTS_FILE && !isWithin(DOCS_ROOT, resolved)) return null
+  return resolved
+}
+
+/** Directory entries by name, so symlinked files can be refused before a read. */
+const entriesByName = (entries) => new Map(entries.map((entry) => [entry.name, entry]))
+const isRegularFile = (entries, name) => {
+  const entry = entries.get(name)
+  return entry !== undefined && entry.isFile() && !entry.isSymbolicLink()
+}
 
 const fail = (message) => {
   console.error(`✗ ${message}`)
@@ -208,6 +236,100 @@ for (const [name, text] of [
 ]) {
   if (/AI Agent Template Contributors/.test(text)) {
     fail(`${name} still names the template copyright holder`)
+  }
+}
+
+// --- Lesson index consistency (#1141, #1142) ---------------------------------
+// The LESSONS.md index (one `- [LESSON-NNN: …](lessons/NNN-slug.md)` line per
+// lesson), the agents-docs/lessons/ files, and lessons.jsonl rows must carry
+// the same id set; index lines must be unique; the index stays under a 400
+// line budget; every LESSON-NNN cited in AGENTS.md/agents-docs must exist.
+const lessonsMd = readFileSync('agents-docs/LESSONS.md', 'utf8')
+const LESSON_INDEX_BUDGET_LINES = 400
+const indexLineCount = lessonsMd.split('\n').length
+if (indexLineCount > LESSON_INDEX_BUDGET_LINES) {
+  fail(`agents-docs/LESSONS.md index is ${indexLineCount} lines, over the ${LESSON_INDEX_BUDGET_LINES}-line budget (#1142)`)
+}
+const indexEntries = [...lessonsMd.matchAll(/^- \[(LESSON-\d+): [^\]]+\]\((lessons\/[^)]+)\)/gm)]
+const repoEntries = entriesByName(readdirSync(REPO_ROOT, { withFileTypes: true }))
+const docsEntries = entriesByName(readdirSync('agents-docs', { withFileTypes: true }))
+const lessonEntries = entriesByName(readdirSync('agents-docs/lessons', { withFileTypes: true }))
+if (repoEntries.get('agents-docs')?.isSymbolicLink() || docsEntries.get('lessons')?.isSymbolicLink()) {
+  fail('agents-docs/ or agents-docs/lessons/ is a symbolic link; refusing to follow it')
+}
+const lessonHeadingIds = []
+for (const entry of indexEntries) {
+  lessonHeadingIds.push(entry[1])
+  const lessonFile = `agents-docs/${entry[2]}`
+  const resolvedLesson = resolveDocPath(lessonFile, LESSON_LINK_PATTERN)
+  if (resolvedLesson === null) {
+    fail(`LESSONS.md index has a malformed lesson link: ${lessonFile}`)
+    continue
+  }
+  if (!isRegularFile(lessonEntries, basename(resolvedLesson))) {
+    fail(`LESSONS.md index links to a missing or symlinked lesson file: ${lessonFile}`)
+    continue
+  }
+  let lessonText = ''
+  try {
+    lessonText = await readTextFile(resolvedLesson)
+  } catch {
+    fail(`LESSONS.md index links to missing file: ${lessonFile}`)
+    continue
+  }
+  const headingPrefixes = [`## ${entry[1]}:`, `### ${entry[1]}:`]
+  const hasHeading = lessonText
+    .split('\n')
+    .some((line) => headingPrefixes.some((prefix) => line.startsWith(prefix)))
+  if (!hasHeading) {
+    fail(`${lessonFile} does not contain its ${entry[1]} heading`)
+  }
+}
+const duplicateHeadings = lessonHeadingIds.filter((id, i) => lessonHeadingIds.indexOf(id) !== i)
+for (const id of [...new Set(duplicateHeadings)]) {
+  fail(`agents-docs/LESSONS.md has a duplicate heading: ${id}`)
+}
+const jsonlIds = readFileSync('agents-docs/lessons.jsonl', 'utf8')
+  .split('\n')
+  .filter((line) => line.trim() !== '')
+  .map((line, i) => {
+    try {
+      return JSON.parse(line).id
+    } catch {
+      fail(`agents-docs/lessons.jsonl line ${i + 1} is not valid JSON`)
+      return undefined
+    }
+  })
+  .filter(Boolean)
+const headingSet = new Set(lessonHeadingIds)
+const jsonlSet = new Set(jsonlIds)
+for (const id of lessonHeadingIds) {
+  if (!jsonlSet.has(id)) fail(`LESSONS.md ${id} has no lessons.jsonl row`)
+}
+for (const id of jsonlIds) {
+  if (!headingSet.has(id)) fail(`lessons.jsonl ${id} has no LESSONS.md heading`)
+}
+if (jsonlIds.length !== jsonlSet.size) {
+  fail('agents-docs/lessons.jsonl has duplicate ids')
+}
+const knownLessons = new Set([...lessonHeadingIds, ...jsonlIds])
+const citingFiles = ['AGENTS.md', ...[...docsEntries.keys()].filter((f) => f.endsWith('.md')).map((f) => `agents-docs/${f}`)]
+for (const file of citingFiles) {
+  const resolvedCiting = resolveDocPath(file, /^agents-docs\/[A-Za-z0-9][A-Za-z0-9_.-]*\.md$|^AGENTS\.md$/)
+  if (resolvedCiting === null) {
+    fail(`refusing to read unexpected doc path: ${file}`)
+    continue
+  }
+  const entriesForFile = file === 'AGENTS.md' ? repoEntries : docsEntries
+  if (!isRegularFile(entriesForFile, basename(resolvedCiting))) {
+    fail(`refusing to read a missing or symlinked doc file: ${file}`)
+    continue
+  }
+  const text = await readTextFile(resolvedCiting)
+  for (const match of text.matchAll(/LESSON-(\d{3})/g)) {
+    if (!knownLessons.has(match[0])) {
+      fail(`${file} cites unknown lesson ${match[0]}`)
+    }
   }
 }
 

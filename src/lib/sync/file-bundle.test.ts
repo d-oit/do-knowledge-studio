@@ -16,8 +16,8 @@ const PASSWORD = 'shared passphrase'
 
 const corpus = () => ({
   entities: [
-    makeEntity({ id: 'e-1', name: 'Alpha', updatedAt: '2026-01-01T00:00:00.000Z' }),
-    makeEntity({ id: 'e-2', name: 'Beta', updatedAt: '2026-01-02T00:00:00.000Z' }),
+    makeEntity({ id: 'e-1', name: 'Alpha', updatedAt: '2026-01-01T00:00:00.000Z', aliases: [] }),
+    makeEntity({ id: 'e-2', name: 'Beta', updatedAt: '2026-01-02T00:00:00.000Z', aliases: [] }),
   ],
   claims: [
     makeClaim({ id: 'c-1', entityId: 'e-1', statement: 'Alpha is first' }),

@@ -86,6 +86,7 @@ cargo test test_name               # Rust
 
 ### Step 3: Check Environment
 ```bash
+# example - not in this repo
 pip list | grep pytest            # Python
 npm list jest                      # Node
 ./scripts/setup-test-db.sh        # Test data

@@ -1,9 +1,6 @@
 ---
 name: ui-ux-optimize
-description: >
-  Swarm-powered UI/UX prompt optimizer with auto-research agents, handoff coordination,
-  confidence-scored autoresearch loops, and backpressure quality gates. Use for web apps,
-  mobile apps, games, dashboards, SaaS, e-commerce, kiosks, and any screen-based product.
+description: "Optimize UI/UX prompts with auto-research agents, handoff coordination, and quality gates for screen products."
 ---
 
 # UI/UX Prompt Optimizer

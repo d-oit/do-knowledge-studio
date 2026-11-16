@@ -1,59 +1,29 @@
-# Hooks - Verification and Automation
+# Agent Hooks
 
-> Reference doc - not loaded by default.
+`scripts/agent-guard.sh` enforces the hard AGENTS.md rules mechanically, so a
+session that never loads the right paragraph is still stopped before it:
 
-Hooks are agent lifecycle commands that enforce deterministic control flow.
-Supported by: Claude Code, OpenCode.
+- edits to `biome.json`, `eslint.config.*`, `.eslintrc*`, or any new
+  lint-suppression comment (`eslint-disable`, `biome-ignore`, …);
+- `gh release create`, `gh pr merge --admin`, pushing to `main`;
+- `npm`/`yarn` installs (pnpm only);
+- new `tmp-*`/`debug-*`/`analyze-*`/`notes-*` files in the repository root.
 
-## Golden Rules
+## Registration
 
-- **Success = silent** (exit 0, nothing enters context)
-- **Failure = explicit** (exit 2, errors surfaced to agent for remediation)
-- **Context-efficient** - swallow passing output; stream only failures
+`.claude/settings.json` wires the guard as a `PreToolUse` hook for
+`Write|Edit|Bash`. `agent-surface.py validate` fails when the settings file
+and the guard script disagree (missing hook entry, missing script, or the
+script not being executable).
 
-## Common Use Cases
+## Human override
 
-| Hook type | Purpose |
-|---|---|
-| Stop hook | Typecheck + lint + format after every agent action |
-| Pre-tool hook | Approve/deny specific tool calls (e.g. block destructive ops) |
-| Post-tool hook | Send notification, create PR, set up preview env |
+The maintainer is never blocked: set `DKS_AGENT_GUARD_OFF=1` for the session
+to bypass the guard. The bypass is per-process and explicit — never commit
+it, never put it in a shell profile.
 
-## Stop Hook Template
+## The `.example` files
 
-```bash
-#!/bin/bash
-cd "$CLAUDE_PROJECT_DIR"
-
-OUTPUT=$(your-lint-cmd && your-typecheck-cmd 2>&1)
-
-if [ $? -ne 0 ]; then
-  echo "$OUTPUT" >&2
-  exit 2
-fi
-# success: exit 0 silently
-```
-
-## Validate Skills Hook
-
-Add to your stop hook to always verify symlinks are intact:
-
-```bash
-./scripts/validate-skills.sh || exit 2
-```
-
-## What Did NOT Work (lessons)
-
-- Running the full test suite on every stop (floods context; use targeted subsets)
-- Hooks that produce verbose output on success (pollutes context window)
-- Micro-optimizing which sub-agents can access which tools (tool thrash)
-
-## Back-Pressure Priority (implement top-down)
-
-1. Typechecks / build - fast, deterministic
-2. Unit tests - validates logic
-3. Integration tests - validates system behavior
-4. Lint / format - enforces style
-5. Coverage reporting - surface drops via hook
-
-See `agents-docs/CONTEXT.md` for full back-pressure patterns.
+`.claude/hooks/*.example` are kept as documentation for other surfaces. They
+add nothing the guard does not already enforce on Claude Code; remove one
+only when its surface gains a native hook that calls `agent-guard.sh`.

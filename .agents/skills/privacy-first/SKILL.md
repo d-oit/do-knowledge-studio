@@ -1,9 +1,6 @@
 ---
 name: privacy-first
-description: >
-  Prevent email addresses and personal data from entering the codebase.
-  Use when user asks to "prevent emails", "remove personal data", "privacy check",
-  "no email", or when writing/ editing any code, config, or documentation files.
+description: "Keep emails and personal data out of the codebase. Use for privacy checks when writing code, config, or docs."
 license: MIT
 compatibility: Works with Claude Code, OpenCode, and similar agents. No external dependencies.
 metadata:

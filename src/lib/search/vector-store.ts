@@ -116,10 +116,26 @@ export type VectorIndexResult =
   | { ok: true; count: number }
   | { ok: false; error: string }
 
-/** Yield to the event loop between bounded embedding batches. */
-const yieldToMainThread = (): Promise<void> => {
+/** Yield to the main thread between bounded embedding batches. */
+export const yieldToMainThread = (): Promise<void> => {
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler
+  if (scheduler?.yield) return scheduler.yield()
   const { promise, resolve } = Promise.withResolvers<void>()
-  setTimeout(resolve, 0)
+  if (typeof MessageChannel !== 'undefined') {
+    const channel = new MessageChannel()
+    channel.port1.onmessage = (): void => {
+      channel.port1.close()
+      channel.port2.close()
+      resolve()
+    }
+    channel.port2.postMessage(undefined)
+    return promise
+  }
+  if (typeof requestAnimationFrame !== 'undefined') {
+    requestAnimationFrame(() => resolve())
+    return promise
+  }
+  queueMicrotask(resolve)
   return promise
 }
 

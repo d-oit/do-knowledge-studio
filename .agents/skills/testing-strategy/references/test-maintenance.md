@@ -898,6 +898,7 @@ class AIFlakyDiagnosis:
 ### Automated Maintenance Bot
 
 ```yaml
+# example - not in this repo
 # .github/workflows/test-maintenance.yml
 name: Test Maintenance Bot
 

@@ -1,6 +1,6 @@
 ---
 name: code-quality
-description: Review and improve code quality across any programming language. Use when conducting code reviews, refactoring for best practices, identifying code smells, or improving maintainability.
+description: "General code cleanup reference (refactoring, smells, maintainability). For PR review with adversarial probing, use code-review-assistant."
 license: MIT
 ---
 
@@ -119,4 +119,4 @@ if timeout > TIMEOUT_MS { /* ... */ }
 
 ## References
 
-- `agents-docs/SKILL.md` - Skill authoring guide
+- `skill-creator/references/guide.md` - Skill authoring guide (templates and examples)

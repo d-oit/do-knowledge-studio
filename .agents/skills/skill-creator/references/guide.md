@@ -8,7 +8,7 @@ Complete templates and examples for creating Claude Code skills.
 
 For skills that define step-by-step workflows:
 
-```markdown
+````markdown
 ---
 name: skill-name
 description: [Action verb] [what it does]. Use this skill when [specific scenarios].
@@ -69,13 +69,13 @@ Brief overview of skill purpose and scope.
 ## Integration
 
 How this skill works with other skills and agents.
-```
+````
 
 ### Template 2: Knowledge Skill
 
 For skills that provide domain expertise:
 
-```markdown
+````markdown
 ---
 name: skill-name
 description: [Domain] expertise and guidance. Use when [specific need for this knowledge].
@@ -134,13 +134,13 @@ Overview of the domain and why this knowledge matters.
 ## Related Skills
 
 - **[skill-name](path)** - How it connects
-```
+````
 
 ### Template 3: Tool Skill
 
 For skills about tool usage:
 
-```markdown
+````markdown
 ---
 name: skill-name
 description: [Tool name] usage and best practices. Use when [tool operation needed].
@@ -212,13 +212,13 @@ Overview of the tool and its purpose.
 ## Integration
 
 How this tool integrates with other skills and workflows.
-```
+````
 
 ## Complete Creation Examples
 
 ### Example: Episode Management Skill
 
-```markdown
+````markdown example
 ---
 name: episode-management
 description: Manage learning episodes with start, log, and complete operations. Use when tracking self-learning sessions, recording patterns, or managing episode lifecycle.
@@ -243,6 +243,7 @@ START → LOG (multiple times) → COMPLETE
 ### Start Episode
 
 ```bash
+# example - not in this repo
 python scripts/episode.py start "Learning about async Rust"
 ```
 
@@ -254,6 +255,7 @@ python scripts/episode.py start "Learning about async Rust"
 ### Log Pattern
 
 ```bash
+# example - not in this repo
 python scripts/episode.py log EPISODE_ID "Pattern: Use tokio::spawn for independent tasks"
 ```
 
@@ -265,6 +267,7 @@ python scripts/episode.py log EPISODE_ID "Pattern: Use tokio::spawn for independ
 ### Complete Episode
 
 ```bash
+# example - not in this repo
 python scripts/episode.py complete EPISODE_ID "Summary of learnings"
 ```
 
@@ -290,11 +293,11 @@ python scripts/episode.py complete EPISODE_ID "Summary of learnings"
 - **pattern-extraction**: Extracts patterns from logged content
 - **memory-storage**: Stores completed episodes
 - **skill-creator**: This skill format
-```
+````
 
 ### Example: Test Debugging Skill
 
-```markdown
+````markdown
 ---
 name: test-debugging
 description: Debug and fix failing tests in Rust projects. Use when tests fail and you need to diagnose root causes, fix async/await issues, or handle race conditions.
@@ -371,7 +374,7 @@ cargo test -- --test-threads=1
 ✗ Ignore intermittent failures
 ✗ Assume test is correct (it might not be)
 ✗ Fix without understanding root cause
-```
+````
 
 ## Naming Examples
 

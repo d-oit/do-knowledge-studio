@@ -22,6 +22,7 @@ vi.mock('./export-helpers', () => ({
   buildMarkdownExport: vi.fn(() => '# Markdown'),
   buildHtmlExport: vi.fn(() => '<html></html>'),
   parseImportFile: vi.fn(),
+  checkImportSize: vi.fn(() => null),
 }))
 
 vi.mock('@/lib/export/encrypt', () => ({
@@ -43,7 +44,7 @@ import { downloadFile, downloadBlob } from './export-types'
 import { buildPdfExport, buildDocxExport } from './export-documents'
 import {
   buildJsonExport, buildMarkdownExport, buildHtmlExport,
-  parseImportFile,
+  parseImportFile, checkImportSize,
 } from './export-helpers'
 import { encryptData, buildEncryptedReaderHtml } from '@/lib/export/encrypt'
 
@@ -366,7 +367,7 @@ describe('useExportHandlers', () => {
     ]
     vi.mocked(parseImportFile).mockReturnValue({
       /** Whether the operation succeeded. */
-      success: true, entities: importedEntities, claims: importedClaims,
+      success: true, entities: importedEntities, claims: importedClaims, version: 1,
     })
 
     withStubFileReader('file-content', () => {
@@ -375,6 +376,7 @@ describe('useExportHandlers', () => {
         result.current.handleFileChange(makeFileChangeEvent('import.json', 'content'))
       })
 
+      expect(checkImportSize).toHaveBeenCalledWith(expect.any(Number))
       expect(parseImportFile).toHaveBeenCalledWith('file-content')
       expect(setImportPreview).toHaveBeenCalledWith(expect.objectContaining({
         /** Entities to serialize. */
@@ -422,7 +424,7 @@ describe('useExportHandlers', () => {
     ]
     vi.mocked(parseImportFile).mockReturnValue({
       /** Whether the operation succeeded. */
-      success: true, entities: importedEntities, claims: [],
+      success: true, entities: importedEntities, claims: [], version: 1,
     })
 
     withStubFileReader('file-content', () => {

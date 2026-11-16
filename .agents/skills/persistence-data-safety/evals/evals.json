@@ -1,0 +1,35 @@
+{
+  "skill_name": "persistence-data-safety",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a `subtitle` field to Entity. It is optional and shown under the title.",
+      "files": ["src/lib/studio/schema.ts"],
+      "assertions": [
+        "The output requires a schema version bump plus a migration, not just the new field",
+        "The output requires a property or round-trip test for the migration",
+        "The output requires a real-browser reload check against a corpus, not only unit tests"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Users report notes disappearing after a reload. The hydration code looks fine. Fix it.",
+      "files": ["src/lib/studio/hydration.ts"],
+      "assertions": [
+        "The output reproduces the loss first against production-shaped data before proposing a fix",
+        "The output routes unknown or corrupt snapshot data through quarantine, not silent coercion",
+        "The output verifies the fix with a reload and an export/import round trip"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Two tabs open, same entity edited in both. What must the merge guarantee, and how do you prove it?",
+      "files": ["src/lib/studio/cross-tab-merge.ts"],
+      "assertions": [
+        "The output states tombstones win and nothing resurrects",
+        "The output requires a two-tab interleaving scenario in a real browser",
+        "The output requires shadow fingerprints recorded in plans/"
+      ]
+    }
+  ]
+}

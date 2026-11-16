@@ -16,6 +16,7 @@ function makeEntity(overrides: Partial<Entity> = {}): Entity {
     description: 'A test entity',
     content: 'Some content',
     tags: ['tag1', 'tag2'],
+    aliases: [],
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-02T00:00:00Z',
     links: [{ targetId: 'entity-2', relation: 'related_to' }],
@@ -67,6 +68,12 @@ describe('entityToYMap / ymapToEntity', () => {
     const map = entityToYMap(entity)
     const result = ymapToEntity(map)
     expect(result.sourceUrl).toBe('https://example.com')
+  })
+
+  it('preserves aliases across the round trip', () => {
+    const entity = makeEntity({ aliases: ['Petit Prince', 'Little Prince'] })
+    const result = ymapToEntity(entityToYMap(entity))
+    expect(result.aliases).toEqual(['Petit Prince', 'Little Prince'])
   })
 })
 

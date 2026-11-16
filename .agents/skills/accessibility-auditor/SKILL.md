@@ -1,6 +1,6 @@
 ---
 name: accessibility-auditor
-description: Audit web applications for WCAG 2.2 compliance, screen reader compatibility, keyboard navigation, and color contrast. Triggers on "accessibility audit", "a11y check", "WCAG compliance", "screen reader test", "keyboard navigation", "color contrast check", "ARIA validation", "wcag", " Section 508", "ADA compliance".
+description: "Audit WCAG 2.2 compliance: screen readers, keyboard navigation, color contrast. Trigger on 'a11y check', 'WCAG compliance', 'ARIA validation'."
 license: MIT
 ---
 

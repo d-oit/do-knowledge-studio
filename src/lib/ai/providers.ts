@@ -45,46 +45,78 @@ const OllamaTagsSchema = z.object({
   models: z.array(z.object({ name: z.string() })).optional(),
 })
 
+const SseDeltaSchema = z.object({
+  choices: z.array(z.object({ delta: z.object({ content: z.string() }).optional() })).optional(),
+})
+
+const NdjsonChunkSchema = z.object({
+  message: z.object({ content: z.string() }).optional(),
+})
+
+/** Split buffer into lines, handling both LF and CRLF framings. */
+const splitStreamLines = (buffer: string): { lines: string[]; rest: string } => {
+  const normalized = buffer.split('\n')
+  const rest = normalized.pop() ?? ''
+  const lines = normalized.map((line) => (line.endsWith('\r') ? line.slice(0, -1) : line))
+  return { lines, rest }
+}
+
+/** Read all text lines from a byte reader, flushing decoder + trailing buffer. */
+export const readStreamLines = async (
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  onLine: (line: string) => void,
+): Promise<void> => {
+  const decoder = new TextDecoder()
+  let buffer = ''
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const split = splitStreamLines(buffer)
+      buffer = split.rest
+      for (const line of split.lines) onLine(line)
+    }
+    buffer += decoder.decode()
+    if (buffer.length > 0) {
+      const split = splitStreamLines(`${buffer}\n`)
+      for (const line of split.lines) onLine(line)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
 async function consumeSSE(
   response: Response,
   onChunk: (chunk: string) => void,
 ): Promise<string> {
   const reader = response.body?.getReader()
   if (!reader) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'Provider returned no response body')
-  const decoder = new TextDecoder()
-  let buffer = ''
   let fullContent = ''
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const data = line.slice(6).trim()
-        if (data === '[DONE]') continue
-        try {
-          const parsed = JSON.parse(data) as {
-            choices?: { delta?: { content?: string } }[]
-          }
-          const content = parsed.choices?.[0]?.delta?.content
-          if (content) {
-            fullContent += content
-            onChunk(content)
-          }
-        } catch {
-          log.warn('Skipping malformed SSE frame during streaming')
-        }
-      }
+  const handleLine = (line: string): void => {
+    if (!line.startsWith('data:')) return
+    const data = line.slice(5).trim()
+    if (data === '' || data === '[DONE]') return
+    let raw: unknown
+    try {
+      raw = JSON.parse(data)
+    } catch {
+      log.warn('Skipping malformed SSE frame during streaming')
+      return
     }
-  } finally {
-    reader.releaseLock()
+    const parsed = SseDeltaSchema.safeParse(raw)
+    if (!parsed.success) {
+      log.warn('Skipping malformed SSE frame during streaming')
+      return
+    }
+    const content = parsed.data.choices?.[0]?.delta?.content
+    if (content) {
+      fullContent += content
+      onChunk(content)
+    }
   }
-
+  await readStreamLines(reader, handleLine)
   return fullContent
 }
 
@@ -94,38 +126,28 @@ async function consumeNDJSON(
 ): Promise<string> {
   const reader = response.body?.getReader()
   if (!reader) throw new AppError(ErrorCode.AI_PROVIDER_ERROR, 'Provider returned no response body')
-  const decoder = new TextDecoder()
-  let buffer = ''
   let fullContent = ''
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-
-      for (const line of lines) {
-        if (!line.trim()) continue
-        try {
-          const parsed = JSON.parse(line) as {
-            message?: { content?: string }
-          }
-          const content = parsed.message?.content
-          if (content) {
-            fullContent += content
-            onChunk(content)
-          }
-        } catch {
-          log.warn('Skipping malformed NDJSON frame during streaming')
-        }
-      }
+  const handleLine = (line: string): void => {
+    if (!line.trim()) return
+    let raw: unknown
+    try {
+      raw = JSON.parse(line)
+    } catch {
+      log.warn('Skipping malformed NDJSON frame during streaming')
+      return
     }
-  } finally {
-    reader.releaseLock()
+    const parsed = NdjsonChunkSchema.safeParse(raw)
+    if (!parsed.success) {
+      log.warn('Skipping malformed NDJSON frame during streaming')
+      return
+    }
+    const content = parsed.data.message?.content
+    if (content) {
+      fullContent += content
+      onChunk(content)
+    }
   }
-
+  await readStreamLines(reader, handleLine)
   return fullContent
 }
 

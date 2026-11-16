@@ -30,6 +30,7 @@ the scope from changed paths and requires a resolvable base ref.
 | `check-dependency-downgrades.mjs` | Fail on lower/unparseable ranges; allow only the exact `@types/node` range matching the runtime floor | `node scripts/check-dependency-downgrades.mjs <base-ref>` |
 | `check-stale-base-deletions.mjs` | Fail when target-branch additions are missing from the PR head | `node scripts/check-stale-base-deletions.mjs <base-ref>` |
 | `check-workflow-hygiene.sh` | Fail on unannotated `continue-on-error`, missing `concurrency` on push/PR workflows, or missing top-level `permissions` | `./scripts/check-workflow-hygiene.sh [workflowDir]` |
+| `corpus-fingerprint.mjs` | Stable sha256 of a JSON corpus export for shadow comparisons (key order and whitespace ignored) | `node scripts/corpus-fingerprint.mjs [--expect <sha256>] <export.json>` |
 
 ## Automation Scripts
 
@@ -52,6 +53,7 @@ the scope from changed paths and requires a resolvable base ref.
 | `lib/lint_cache.sh` | Lint-result caching for the quality gate |
 | `lib/run-check.sh` | Shared check runner used by verify.sh |
 | `lib/workflow-monitor.sh` | Shared check-state parser used by GitHub workflow skills |
+| `lib/read-text.mjs` | UTF-8 text read for validated dynamic paths (the one place `scripts/` reads computed paths) |
 
 ## Environment Variables
 

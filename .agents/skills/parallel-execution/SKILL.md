@@ -1,6 +1,6 @@
 ---
 name: parallel-execution
-description: Execute multiple independent tasks simultaneously using parallel agent coordination to maximize throughput and minimize execution time. Use when tasks have no dependencies, results can be aggregated, and agents are available for concurrent work.
+description: "Reference for dependency-free fan-out under goap-planning: run independent tasks simultaneously and aggregate results."
 ---
 
 # Parallel Execution

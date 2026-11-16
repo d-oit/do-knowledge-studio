@@ -41,6 +41,25 @@
         "The output does not mention an API server or database boundary",
         "The output mentions validating before merging into the store"
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "A user pastes an export archive from an untrusted source. What do you validate before importing?",
+      "files": [],
+      "assertions": [
+        "The output requires schema validation with Zod before trusting any field",
+        "The output requires a size guard before reading the payload",
+        "The output requires explicit version acceptance, never silent coercion"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "The rehydrated store has a field the current schema does not know. Keep it or drop it?",
+      "files": [],
+      "assertions": [
+        "The output routes unknown data through the hydration guard and quarantine path",
+        "The output does not silently merge unvalidated data into the canonical corpus"
+      ]
     }
   ]
 }

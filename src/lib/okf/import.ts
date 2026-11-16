@@ -18,12 +18,10 @@ const uuid = (): string => {
   // RFC 4122 v4 fallback using the cryptographically secure getRandomValues
   // (available in all modern browsers and Node ≥ 15 via globalThis.crypto).
   if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-    /** The random bytes. */
     const bytes = new Uint8Array(16)
     crypto.getRandomValues(bytes)
     bytes[6] = (bytes[6] & 0x0f) | 0x40 // version 4
     bytes[8] = (bytes[8] & 0x3f) | 0x80 // variant 10
-    /** The hex string. */
     const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
   }
@@ -38,7 +36,6 @@ export interface OkfImportResult {
   entities: Entity[]
   /** The library claims being processed. */
   claims: Claim[]
-  /** The errors. */
   errors: string[]
 }
 
@@ -70,7 +67,6 @@ const buildEntity = (
 ): Entity => {
   /** Unique identifier. */
   const id = path.replace(/\.md$/, '') // Concept ID = path minus .md (§2)
-  /** The file name. */
   const fileName = path.split('/').pop() ?? ''
   return {
     id,
@@ -112,7 +108,6 @@ const parseClaims = (
   fm: z.infer<typeof OkfConceptFrontmatterSchema>,
   nowIso: string,
 ): Claim[] => {
-  /** The source by id. */
   const sourceById = new Map<string, { resource: string; title?: string }>()
   for (const s of fm.sources ?? []) {
     if (s.id) sourceById.set(s.id, s)
@@ -120,25 +115,21 @@ const parseClaims = (
   /** Claim verification status. */
   const verification = trustTier(fm.verified) === 'human-reviewed' ? 'verified' : 'unverified'
 
-  /** The claim regex. */
   const claimRegex = /^- ([^\n]+?)(?:\[\^([\w-]+)\])?$/gm
   /** The library claims being processed. */
   const claims: Claim[] = []
   for (const m of bodyContent.matchAll(claimRegex)) {
-    /** The claim text. */
     const claimText = m[1].trim()
     // Skip footnote definitions and structural headings themselves
     if (claimText.startsWith('[^') || claimText.includes('Related') || claimText.includes('# Claims')) {
       continue
     }
-    /** The source obj. */
     const sourceObj = m[2] ? sourceById.get(m[2]) : undefined
     claims.push({
       /** Unique identifier. */
       id: uuid(),
       /** Owning entity id. */
       entityId: entity.id,
-      /** The claim statement text. */
       statement: claimText,
       /** Claim confidence score. */
       confidence: 1.0,
@@ -170,7 +161,6 @@ const parseClaims = (
  * @returns True when the file contributed a new entity.
  */
 const parseOkfFile = (path: string, content: string, result: OkfImportResult): boolean => {
-  /** The match. */
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
   if (!match) {
     result.errors.push(`${path}: missing or unparseable frontmatter`) // §11 conformance rule 1
@@ -185,18 +175,14 @@ const parseOkfFile = (path: string, content: string, result: OkfImportResult): b
     return false
   }
 
-  /** The parsed. */
   const parsed = OkfConceptFrontmatterSchema.safeParse(fmParsed)
   if (!parsed.success) {
     result.errors.push(`${path}: ${parsed.error.issues[0]?.message ?? 'invalid frontmatter'}`)
     return false
   }
 
-  /** The fm. */
   const fm = parsed.data // passthrough preserves unknown keys for round-trip (§4.1)
-  /** The now iso. */
   const nowIso = new Date().toISOString()
-  /** The entity. */
   const entity = buildEntity(fm, path, match[2], nowIso)
   result.entities.push(entity)
   result.claims.push(...parseClaims(match[2], entity, fm, nowIso))
@@ -209,11 +195,9 @@ const parseOkfFile = (path: string, content: string, result: OkfImportResult): b
  * @returns The declared version string, or null when absent/unparseable.
  */
 const parseIndexVersion = (content: string): string | null => {
-  /** The frontmatter match. */
   const match = content.match(/^---\n([\s\S]*?)\n---\n?/)
   if (!match) return null
   try {
-    /** The parsed frontmatter. */
     const fm = yaml.parse(match[1]) as Record<string, unknown> | null
     const version = fm?.okf_version
     return typeof version === 'string' ? version : null
@@ -232,7 +216,6 @@ const parseIndexVersion = (content: string): string | null => {
  * @returns Entities, claims, and any non-fatal parse errors.
  */
 export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
-  /** The result. */
   const result: OkfImportResult = { entities: [], claims: [], errors: [] }
 
   for (const [path, content] of files) {
@@ -251,7 +234,6 @@ export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
       continue
     }
     if (/(^|\/)index\.md$/.test(path)) {
-      /** The declared bundle version. */
       const declared = parseIndexVersion(content)
       if (!declared) {
         result.errors.push('index.md: missing okf_version — not a valid OKF bundle') // §8 requires it on the index only

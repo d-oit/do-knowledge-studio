@@ -19,6 +19,8 @@ import { PROVIDERS } from './ai-harness-settings'
 import { useAiHarnessChat } from './use-ai-harness-chat'
 import { buildContextSuggestions } from './ai-harness-suggestions'
 import { ViewHeader, VIEW_CONTAINER_CLASS } from '../ui/shared-primitives'
+import { translate as aiT } from '@/lib/i18n/messages/ai'
+import { translate as settingsT } from '@/lib/i18n/messages/settings'
 import { logger } from '@/lib/logging/logger'
 
 /** Subsystem tag for AI-harness view logs. */
@@ -105,7 +107,7 @@ const useAIHarnessViewState = () => {
 
   const handleSettingsSaveError = useCallback((err: unknown) => {
     log.error('Failed to save AI settings', { error: err })
-    toast.error('Failed to save settings. Your changes may not persist.')
+    toast.error(settingsT('settings.save.failed'))
   }, [])
 
   useDebouncedSettingsSave(
@@ -127,10 +129,10 @@ const useAIHarnessViewState = () => {
     try {
       const models = await fetchOllamaModels(ollamaBaseUrl)
       setOllamaModels(models.length > 0 ? models : OLLAMA_DEFAULT_MODELS)
-      toast.success(`Found ${models.length} Ollama models`)
+      toast.success(aiT('ai.harness.models.found', String(models.length)))
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
-      toast.error(`Failed to fetch Ollama models: ${msg}`)
+      toast.error(aiT('ai.harness.models.fetchFailed', msg))
     }
   }, [ollamaBaseUrl])
 

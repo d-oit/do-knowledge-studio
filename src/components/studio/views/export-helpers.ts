@@ -4,7 +4,16 @@ import type { Entity, Claim } from '@/lib/studio/types'
 import { validateImportPayload } from '@/lib/studio/schema'
 import { escapeHtml, sanitizeUrl } from '@/lib/security'
 import { EXPORT_COLORS, tint } from '@/lib/export/export-theme'
+import { EXPORT_SCHEMA_VERSION, MAX_IMPORT_BYTES } from '@/lib/studio/constants'
 import { buildClaimsByEntityId, type ExportOptions, type ImportResult } from './export-types'
+
+/** Reject oversized import payloads before parsing. Returns an error message or null. */
+export const checkImportSize = (sizeBytes: number): string | null => {
+  if (sizeBytes > MAX_IMPORT_BYTES) {
+    return `File is ${(sizeBytes / (1024 * 1024)).toFixed(1)} MiB; limit is ${(MAX_IMPORT_BYTES / (1024 * 1024)).toFixed(0)} MiB.`
+  }
+  return null
+}
 
 /**
  * Sanitizes a URL for embedding inside exported *markup* (Markdown/HTML text).
@@ -45,12 +54,18 @@ export const buildJsonExport = (
   return JSON.stringify(payload, null, 2)
 }
 
+/** Shared locale-sensitive export timestamp formatter. */
+export const EXPORT_DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
+
 /** Builds a Markdown export string with every entity and its claims. */
 export const buildMarkdownExport = (entities: Entity[], claims: Claim[]): string => {
   const claimsByEntity = buildClaimsByEntityId(claims)
   const parts: string[] = []
   parts.push('# DO Knowledge Studio — export\n')
-  parts.push(`Exported ${new Date().toLocaleString()}. ${entities.length} entities, ${claims.length} claims.\n`)
+  parts.push(`Exported ${EXPORT_DATE_FORMAT.format(new Date())}. ${entities.length} entities, ${claims.length} claims.\n`)
   for (const e of entities) {
     const tags = e.tags.length ? e.tags.map((t) => `#${t}`).join('  ') : '—'
     const created = e.createdAt ? new Date(e.createdAt).toISOString().slice(0, 10) : '—'
@@ -166,7 +181,7 @@ export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => 
 </head>
 <body>
   <h1>DO Knowledge Studio — export</h1>
-  <p class="meta">Exported ${new Date().toLocaleString()}. ${entities.length} entities, ${claims.length} claims.</p>
+  <p class="meta">Exported ${EXPORT_DATE_FORMAT.format(new Date())}. ${entities.length} entities, ${claims.length} claims.</p>
   ${rows}
 </body>
 </html>`
@@ -185,8 +200,14 @@ export const parseImportFile = (text: string): ImportResult => {
   }
 
   const root = data as Record<string, unknown>
+  if (typeof root.version !== 'number') {
+    return { success: false, errors: [{ path: 'version', message: 'Missing version: file has no version field (legacy v1 files must be re-exported).' }] }
+  }
+  if (root.version !== EXPORT_SCHEMA_VERSION) {
+    return { success: false, errors: [{ path: 'version', message: `Unsupported version ${String(root.version)}: this app reads version ${String(EXPORT_SCHEMA_VERSION)}.` }] }
+  }
   const payload = {
-    version: typeof root.version === 'number' ? root.version : 1,
+    version: root.version,
     exportedAt: typeof root.exportedAt === 'string' ? root.exportedAt : new Date().toISOString(),
     entities: root.entities ?? [],
     claims: root.claims ?? [],
@@ -218,5 +239,5 @@ export const parseImportFile = (text: string): ImportResult => {
     }
   }
 
-  return { success: true, entities, claims, graph, mindMap, links, tags }
+  return { success: true, entities, claims, version: root.version, graph, mindMap, links, tags }
 }

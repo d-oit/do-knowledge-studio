@@ -1,6 +1,6 @@
 ---
 name: validation-checklist
-description: Validate data at this app's real boundaries - IndexedDB and localStorage rehydration, file import, sync payloads, AI provider responses, and MCP input - with Zod, meaningful errors, and referential integrity. Trigger when adding a persisted field, a migration, an import/export format, a sync message, or any code that parses external or stored JSON.
+description: Validate data at this app's real boundaries — storage rehydration, file import, sync payloads, AI responses, MCP input — with Zod and referential integrity. Trigger when adding a persisted field, migration, import/export format, sync message, or parsing external JSON.
 version: 1.0.0
 ---
 

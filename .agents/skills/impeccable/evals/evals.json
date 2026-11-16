@@ -1,0 +1,25 @@
+{
+  "skill_name": "impeccable",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this landing page: it uses the same hero, three cards, and gradient button as every other AI site. What do you do?",
+      "files": [],
+      "assertions": [
+        "The output identifies the generic AI-slop pattern rather than praising the layout",
+        "The output proposes a distinctive direction, not another gradient button",
+        "The output checks mobile, tablet, and desktop views"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The settings form is functional but bland. Make it delightful without breaking the design tokens.",
+      "files": [],
+      "assertions": [
+        "The output keeps the src/app/globals.css theme tokens as the source of truth",
+        "The output does not hardcode hex values in components",
+        "The output preserves 44px touch targets and responsive behavior"
+      ]
+    }
+  ]
+}

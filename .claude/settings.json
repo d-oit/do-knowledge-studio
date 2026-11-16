@@ -1,0 +1,16 @@
+{
+  "$schema": "https://claude.ai/code/settings.schema.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/agent-guard.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

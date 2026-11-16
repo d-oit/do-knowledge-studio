@@ -58,6 +58,8 @@ export interface StudioState {
   finishEditing: () => void
   navigateToView: (v: ViewId) => void
   deleteEntity: (id: string) => void
+  /** Merges loser into survivor: moves claims/links/refs, keeps loser name as alias (undoable, #1134). */
+  mergeEntities: (survivorId: string, loserId: string) => boolean
 
   // History (undo/redo). Each entry carries the entity AND claim corpus so a
   // single step restores a complete, consistent state (Plan 157, D1.6).

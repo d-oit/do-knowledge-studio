@@ -16,7 +16,6 @@ export const trustTier = (
   if (!verified) {
     return 'unverified'
   }
-  /** The list. */
   const list = Array.isArray(verified) ? verified : [verified]
   if (list.length === 0) {
     return 'unverified'

@@ -179,6 +179,77 @@ const findPathTool: ToolHandler = (args, index) =>
 const listTagsTool: ToolHandler = (args, index) =>
   validated(z.object({}), args, index, (_parsed, idx) => ok({ tags: idx.tags() }))
 
+/** Opt-in bridge flag: `DKS_MCP_BRIDGE=propose` exposes propose_* tools. Default off. */
+export const isBridgeEnabled = (): boolean => process.env.DKS_MCP_BRIDGE === 'propose'
+
+/** Zod schema for the `propose_claim` bridge tool. */
+const ProposeClaimSchema = z.object({
+  entityRef: z.string().min(1).max(500),
+  statement: z.string().min(1).max(2000),
+  confidence: z.number().min(0).max(1).optional(),
+  source: z.string().max(500).optional(),
+})
+
+/** Zod schema for the `propose_entity` bridge tool. */
+const ProposeEntitySchema = z.object({
+  name: z.string().min(1).max(200),
+  type: z.enum(['note', 'concept', 'person', 'project']).optional(),
+  description: z.string().max(2000).optional(),
+  content: z.string().max(50_000).optional(),
+  tags: z.array(z.string().max(80)).max(50).optional(),
+})
+
+/** Zod schema for the `propose_link` bridge tool. */
+const ProposeLinkSchema = z.object({
+  from: z.string().min(1).max(500),
+  to: z.string().min(1).max(500),
+  relation: z.string().min(1).max(80),
+})
+
+/** Proposal envelope: append-only, studio-side review required before import. */
+const proposal = (kind: string, payload: Record<string, unknown>): ToolResult =>
+  ok({ kind, requiresReview: true, proposedAt: new Date().toISOString(), proposal: payload })
+
+/** `propose_claim`: build a claim proposal anchored to a bundle concept. */
+const proposeClaimTool: ToolHandler = (args, index) =>
+  validated(ProposeClaimSchema, args, index, (parsed, idx) => {
+    const resolved = idx.resolve(parsed.entityRef)
+    if ('error' in resolved) return fail(resolved.error)
+    return proposal('claim', {
+      entityId: resolved.concept.id,
+      entityName: resolved.concept.name,
+      statement: parsed.statement,
+      ...(parsed.confidence !== undefined ? { confidence: parsed.confidence } : {}),
+      ...(parsed.source !== undefined ? { source: parsed.source } : {}),
+    })
+  })
+
+/** `propose_entity`: build a new-entity proposal (no bundle write). */
+const proposeEntityTool: ToolHandler = (args, index) =>
+  validated(ProposeEntitySchema, args, index, (parsed) =>
+    proposal('entity', {
+      name: parsed.name,
+      ...(parsed.type !== undefined ? { type: parsed.type } : {}),
+      ...(parsed.description !== undefined ? { description: parsed.description } : {}),
+      ...(parsed.content !== undefined ? { content: parsed.content } : {}),
+      ...(parsed.tags !== undefined ? { tags: parsed.tags } : {}),
+    }),
+  )
+
+/** `propose_link`: build a relation proposal between two bundle concepts. */
+const proposeLinkTool: ToolHandler = (args, index) =>
+  validated(ProposeLinkSchema, args, index, (parsed, idx) => {
+    const from = idx.resolve(parsed.from)
+    if ('error' in from) return fail(from.error)
+    const to = idx.resolve(parsed.to)
+    if ('error' in to) return fail(to.error)
+    return proposal('link', {
+      sourceId: from.concept.id,
+      targetId: to.concept.id,
+      relation: parsed.relation,
+    })
+  })
+
 /**
  * Dispatches a tool call by name with an explicit, static switch.
  * @param name - Requested tool name.
@@ -200,6 +271,15 @@ export const callTool = (name: string, args: unknown, index: LibraryIndex): Tool
       return findPathTool(args, index)
     case 'list_tags':
       return listTagsTool(args, index)
+    case 'propose_claim':
+      if (!isBridgeEnabled()) return fail('Bridge tools are disabled. Set DKS_MCP_BRIDGE=propose to enable.')
+      return proposeClaimTool(args, index)
+    case 'propose_entity':
+      if (!isBridgeEnabled()) return fail('Bridge tools are disabled. Set DKS_MCP_BRIDGE=propose to enable.')
+      return proposeEntityTool(args, index)
+    case 'propose_link':
+      if (!isBridgeEnabled()) return fail('Bridge tools are disabled. Set DKS_MCP_BRIDGE=propose to enable.')
+      return proposeLinkTool(args, index)
     default:
       return fail(`Unknown tool "${name}".`)
   }
@@ -276,4 +356,55 @@ export const toolDefinitions = [
       properties: {},
     },
   },
+  ...bridgeToolDefinitions(),
 ]
+
+/** Bridge `tools/list` entries: only advertised when the bridge is enabled. */
+export function bridgeToolDefinitions(): Array<Record<string, unknown>> {
+  if (!isBridgeEnabled()) return []
+  return [
+    {
+      name: 'propose_claim',
+      description:
+        'Propose a new claim anchored to a bundle concept. Returns an append-only proposal for studio-side review; never writes to the bundle.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          entityRef: { type: 'string', description: 'Concept id or unique name.' },
+          statement: { type: 'string', description: 'Claim statement.' },
+          confidence: { type: 'number', description: 'Confidence 0-1.' },
+          source: { type: 'string', description: 'Provenance note.' },
+        },
+        required: ['entityRef', 'statement'],
+      },
+    },
+    {
+      name: 'propose_entity',
+      description: 'Propose a new entity for studio-side review; never writes to the bundle.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          name: { type: 'string', description: 'Entity name.' },
+          type: { type: 'string', description: 'note | concept | person | project.' },
+          description: { type: 'string', description: 'Short description.' },
+          content: { type: 'string', description: 'Markdown content.' },
+          tags: { type: 'array', description: 'Tags.' },
+        },
+        required: ['name'],
+      },
+    },
+    {
+      name: 'propose_link',
+      description: 'Propose a relation between two bundle concepts for studio-side review.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          from: { type: 'string', description: 'Source concept id or unique name.' },
+          to: { type: 'string', description: 'Target concept id or unique name.' },
+          relation: { type: 'string', description: 'Relation label.' },
+        },
+        required: ['from', 'to', 'relation'],
+      },
+    },
+  ]
+}

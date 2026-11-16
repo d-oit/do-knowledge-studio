@@ -15,7 +15,9 @@ setup() {
 write_valid_hooks() {
   cat > "$REPO/.githooks/pre-commit" <<'HOOK'
 #!/usr/bin/env bash
-./scripts/minimal_quality_gate.sh
+STAGED_COUNT=${#STAGED[@]}
+DOCS_ONLY=true
+./scripts/quality_gate.sh --fast --changed
 HOOK
   cat > "$REPO/.githooks/commit-msg" <<'HOOK'
 #!/usr/bin/env bash
@@ -41,7 +43,7 @@ run_validator() {
 
   run_validator
   [ "$status" -ne 0 ]
-  [[ "$output" == *"does not run the minimal quality gate"* ]]
+  [[ "$output" == *"staged-aware gate"* ]]
 }
 
 @test "rejects a committed commit-msg hook that omits required validation" {
@@ -51,4 +53,13 @@ run_validator() {
   run_validator
   [ "$status" -ne 0 ]
   [[ "$output" == *"missing required commit-message validation"* ]]
+}
+
+@test "rejects a stale .husky directory" {
+  mkdir -p "$REPO/.husky"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$REPO/.husky/pre-commit"
+
+  run_validator
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".husky"* ]]
 }

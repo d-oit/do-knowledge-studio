@@ -35,7 +35,7 @@ Activate after completing a non-trivial task to capture insights that would othe
 
 Place learnings in the most specific location:
 - **Project-wide**: Root `AGENTS.md`.
-- **Script-specific**: `agents-docs/LESSONS.md` (there is no `scripts/AGENTS.md`).
+- **Script-specific**: `agents-docs/LESSONS.md` (no per-script AGENTS.md file exists).
 - **Skill-specific**: `.agents/skills/<name>/references/`.
 
 ### Dual-Write Requirement

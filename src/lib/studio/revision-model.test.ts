@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import type { Entity } from './types'
 import {
   MAX_REVISION_BYTES,
   MAX_REVISIONS_PER_ENTITY,
@@ -14,13 +13,14 @@ import {
 } from './revision-model'
 
 /** Entity fixture with a distinctive body. */
-const makeEntity = (id: string, content = 'body'): Entity => ({
+const makeEntity = (id: string, content = 'body'): EntityRevision['entity'] => ({
   id,
   name: `Entity ${id}`,
   type: 'note',
   description: '',
   content,
   tags: [],
+  aliases: [],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   links: [],

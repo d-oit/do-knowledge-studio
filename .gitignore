@@ -65,8 +65,10 @@ test.db
 
 # Agent scratch / taste
 .commandcode/
-# Keep Claude-local state ignored, but track manifest-managed skill links.
+# Keep Claude-local state ignored, but track manifest-managed skill links
+# and the team-shared guard hook registration (#1144).
 .claude/*
+!.claude/settings.json
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/*

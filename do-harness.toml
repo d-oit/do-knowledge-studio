@@ -47,7 +47,7 @@ paths = [
 command = "pnpm run build && pnpm run test:e2e:offline"
 
 [sensors."schema/data"]
-description = "Targeted validation and unit tests for schema, migrations, persistence, hydration, and sync modules"
+description = "Targeted validation and unit tests for schema, migrations, persistence, hydration, and sync modules (skill: persistence-data-safety)"
 paths = [
   "src/lib/studio/schema.ts",
   "src/lib/studio/migrations.ts",
@@ -60,6 +60,17 @@ paths = [
   "src/lib/okf/**"
 ]
 command = "pnpm test src/lib/studio/schema.test.ts src/lib/studio/migrations.test.ts src/lib/studio/hydration.test.ts src/lib/studio/hydration-quarantine.test.ts src/lib/studio/store.test.ts src/lib/studio/seed-data.test.ts src/lib/studio/seed-state.test.ts src/lib/sync/ src/lib/okf/"
+
+[sensors.coverage]
+description = "Coverage ratchet for persistence and sync modules (Plan 214 #1132)"
+paths = [
+  "src/lib/studio/recovery-helpers.ts",
+  "src/lib/studio/canonical-storage-idb.ts",
+  "src/lib/studio/hydration-guard.ts",
+  "src/lib/search/vector-index.ts",
+  "src/lib/sync/**"
+]
+command = "pnpm run test:coverage && node scripts/check-coverage-ratchet.mjs"
 
 [sensors.release]
 description = "Full production build and preflight verification"

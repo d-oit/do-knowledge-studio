@@ -30,6 +30,7 @@ const makeEntities = (count: number): ValidatedEntity[] =>
     description: `Seeded entity ${i} for virtualization coverage`,
     content: '',
     tags: ['seed'],
+    aliases: [],
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-06-15T00:00:00Z',
     links: [],

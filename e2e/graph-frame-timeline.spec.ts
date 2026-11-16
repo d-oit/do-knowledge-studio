@@ -171,6 +171,7 @@ const buildSeededEntities = (): PersistedStudioState['entities'] =>
     description: `Seeded node ${index} for the frame-timeline guard`,
     content: '',
     tags: ['frame-timeline'],
+    aliases: [],
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-06-15T00:00:00Z',
     links: Array.from({ length: LINKS_PER_NODE }, (_, linkIndex) => ({

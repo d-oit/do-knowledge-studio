@@ -1,0 +1,34 @@
+{
+  "skill_name": "deepsource",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "DeepSource flagged JS-0067 on my helper. The comment says `nosemgrep`. How do I handle it?",
+      "files": [],
+      "assertions": [
+        "The output reads toolInfo.name from the DeepSource API instead of guessing the engine from comment syntax",
+        "The output prefers the arrow-function const form for module-scope helpers",
+        "The output treats .deepsource.toml suppression as fallback, not the primary fix"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "DeepSource reports a vulnerability in a dependency. The PR is blocked. What is the workflow?",
+      "files": [],
+      "assertions": [
+        "The output queries the analysis run for issue details before changing code",
+        "The output distinguishes true positives from pre-existing or config-level noise",
+        "The output requires re-verification after the fix rather than assuming resolution"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "DeepSource shows 0 issues locally but the dashboard shows dozens. Which result do I trust?",
+      "files": [],
+      "assertions": [
+        "The output explains the CLI runs a limited tool subset",
+        "The output recommends the dashboard/API as the source of truth for PR data"
+      ]
+    }
+  ]
+}

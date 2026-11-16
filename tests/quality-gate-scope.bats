@@ -29,6 +29,9 @@ make_repo() {
   cp "$SCRIPT" "$dir/scripts/quality_gate.sh"
   cp "$LIB_DIR/lint_cache.sh" "$dir/scripts/lib/lint_cache.sh"
   cp "$LIB_DIR/language-checks.sh" "$dir/scripts/lib/language-checks.sh"
+  # The markdown section runs `markdownlint --config markdownlint.toml`; without
+  # the file the run fails on the config path instead of on scope detection.
+  cp "$BATS_TEST_DIRNAME/../markdownlint.toml" "$dir/markdownlint.toml"
   for stub in validate-git-hooks validate-skills validate-links \
     validate-github-actions-shas validate-package-manager; do
     printf '#!/usr/bin/env bash\nexit 0\n' >"$dir/scripts/$stub.sh"

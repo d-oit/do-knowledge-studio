@@ -129,8 +129,11 @@ run_install() {
   [ -x "$HOOKS_SRC/commit-msg" ]
 }
 
-@test "committed pre-commit hook runs minimal_quality_gate.sh" {
-  grep -q "minimal_quality_gate.sh" "$HOOKS_SRC/pre-commit"
+@test "committed pre-commit hook runs the scoped quality gate" {
+  # plans/214 (#1143) replaced the unconditional minimal gate with the scoped
+  # `quality_gate.sh --fast --changed`, so a commit only re-checks what it
+  # touched. Assert that contract, not the retired script name.
+  grep -q "quality_gate.sh --fast --changed" "$HOOKS_SRC/pre-commit"
 }
 
 @test "committed commit-msg hook accepts a conventional message" {

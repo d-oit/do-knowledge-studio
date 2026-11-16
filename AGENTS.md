@@ -9,43 +9,20 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 ## Hard Rules
 
 - Local-first only. Do not introduce a required backend.
-- Zustand + IndexedDB is the persistence layer: the canonical corpus lives in IndexedDB, and localStorage carries only schema metadata, recovery snapshots and quarantine copies. Do not grow the localStorage envelope into a second corpus.
+- Zustand + IndexedDB is the persistence layer; localStorage carries only schema metadata, recovery snapshots and quarantine copies — never a second corpus.
 - Markdown is import/export, not canonical truth.
-- Use strict TypeScript. Do not use `any`.
 - No magic numbers; extract descriptive named constants.
 - No hardcoded project-level settings outside config, constants, or env layers.
-- Max 500 LOC per source file; refactor before extending oversized files. Exception: shadcn-generated primitives (e.g., `sidebar.tsx`) may exceed this limit — document the exception in `plans/` rather than splitting vendor scaffolding.
-- Prefer small, composable modules over mixed-responsibility files.
-- Reuse existing abstractions before introducing new patterns.
-- Keep changes scoped; avoid unrelated refactors in the same commit.
-- **Never create a GitHub release without explicit human instruction.** Releases are coordinated manually by the maintainer — the `version-propagation.yml` workflow was retired in Plan 073. Do NOT run `gh release create` unless the user explicitly asks you to cut a release. You may prepare draft release notes in `plans/` on request, but never publish a release autonomously.
-- Never modify `biome.json`, any `eslint` configuration file, or lint suppressions/ignore settings unless I explicitly request that change. If such a change seems necessary, stop, explain why, and ask for approval before editing.
-- Escape JSX text content — use `&apos;` for apostrophes, `&quot;` for quotes in JSX text nodes. Do not rely on raw punctuation in JSX strings.
-- All `catch` blocks must handle errors meaningfully — log, toast, or rethrow. Never use empty `catch {}` blocks.
-- Use `try/catch` with `finally` for resource cleanup (AbortController, timers, subscriptions, file handles).
-- Clean up side effects in `useEffect` return functions — abort fetches, clear timers, remove listeners.
-- Use `AbortController` for all `fetch` calls to prevent stale responses and memory leaks.
-- Prefer `const` assertions and `satisfies` over type assertions for type narrowing.
-- Use `React.memo` for pure components that receive stable props to prevent unnecessary re-renders.
-- Use `useCallback` for event handlers passed to child components, `useMemo` for expensive computations.
-- Never hardcode user-facing strings — extract to constants or i18n-ready string maps for future localization.
-- Use `Intl.DateTimeFormat`, `Intl.NumberFormat`, and `Intl.RelativeTimeFormat` for locale-sensitive formatting.
-- Validate all external input at boundaries (API responses, user input, localStorage rehydration) with Zod schemas.
-- Never log secrets, API keys, or sensitive data. Use `console.error` for errors, not `console.log` in production.
-- Prefer `structuredClone` over JSON parse/stringify for deep copies.
-- Use `crypto.randomUUID()` for generating IDs, not `Math.random()`.
-- Prefer native `AbortController` over custom cancellation patterns.
-- Use `queueMicrotask` or `requestAnimationFrame` for batching DOM updates, not `setTimeout(fn, 0)`.
-- Prefer `Intl.Segmenter` over manual string splitting for i18n-safe text processing.
-- **Always use named exports.** Never use `export default`. Named exports enable better tree-shaking, safer refactoring (find-all-references works), and consistent import style across the codebase. **Exception**: Next.js App Router files (`src/app/page.tsx`, `src/app/layout.tsx`) require `export default` by framework convention — this is the only acceptable case.
-- **Prefer `const fn = () => {}` over `function fn() {}` for module-scope helper functions (especially in test files).** DeepSource's JS-0067 rule flags top-level `function` declarations as "global scope" (a false positive for ES modules, but it fails the check). Arrow-function expressions avoid this. This applies to test helpers (`makeEntity`, `resetStore`, etc.) and non-exported internal helpers in `src/`. The `.deepsource.toml` `issue_patterns` suppression for JS-0067 is a belt-and-suspenders fallback, not the primary fix.
-- **Never ignore pre-existing issues or warnings.** Every warning, lint error, or failing check must be fixed or documented as a follow-up task in `plans/`. Ignoring issues compounds technical debt and erodes trust in the pipeline.
-- Test filenames should describe the behavior or subsystem under test, not coverage chasing. Rename historical files only when a consumer or naming collision requires it.
-- **Treat warnings as errors in quality gates.** When running `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, or `pnpm run build`, any output containing `⚠`, `warning`, `Warning`, or non-zero exit code must be addressed immediately — do not proceed to the next task until the warning is fixed or explicitly documented as a follow-up. Build warnings (e.g., deprecation notices, lockfile conflicts) are not informational — they are defects.
-- **Always run code review before merge.** After CI passes and before requesting merge, invoke the `code-review-assistant` skill to perform a structured review of all changed files. Address all P1/P2 findings. No PR merges without a completed review pass.
-- **Never merge with Codacy issues.** If Codacy reports `ACTION_REQUIRED`, `FAILED`, or any new issues on a PR, the PR must not be merged until all issues are resolved or explicitly suppressed with a documented reason. Zero tolerance: no warnings, no failures, no "action required" status.
-
-When Codacy reports new issues on a PR, invoke the `codacy` skill to query findings via `codacy pull-request ... --output json`, identify whether each is a true or false positive using `toolInfo.name` and `resultDataId`, and suppress false positives with `--ignore-issue`. Do not guess the analysis engine from suppression comment syntax — read `toolInfo.name` from the API.
+- Max 500 LOC per source file (shadcn primitives excepted — document in `plans/`).
+- Prefer small, composable modules; reuse existing abstractions; keep changes scoped.
+- **Never cut a release autonomously** (`gh release create` needs an explicit human ask; guard-enforced).
+- Never modify `biome.json`, eslint configs, or lint suppressions without explicit approval (guard-enforced).
+- **Code review is mandatory after CI passes** (`code-review-assistant`); address all P1/P2.
+- **Codacy zero tolerance:** never merge with `ACTION_REQUIRED`/`FAILED`/new issues.
+- **Never use `gh pr merge --admin`** (guard-enforced).
+- Generic TS/React/i18n conventions: `agents-docs/CODING-STANDARDS.md`.
+- **Warnings are errors:** any `⚠`/`warning` in lint, typecheck, test, or build output is a defect — fix or record in `plans/` before proceeding.
+- **Never ignore pre-existing issues.** Fix or file them as `plans/` follow-ups.
 
 ## Repository Shape
 
@@ -55,26 +32,16 @@ When Codacy reports new issues on a PR, invoke the `codacy` skill to query findi
 - `src/lib/ai` - AI provider adapters · `src/lib/search` - retrieval engine
 - `src/lib/export` - JSON, MD, HTML, encrypted export
 - `scripts/` - repository automation · `plans/` - GOAP plans, ADRs, audits
-- `agents-docs/` - harness, workflow, config, hooks, skill docs
+- `agents-docs/` - harness, workflow, config, hooks (`agents-docs/HOOKS.md`), skill docs
 
 ## Planning Workflow
 
-- For every non-trivial task, create or update planning artifacts in `plans/`.
-- Use `plans/` for GOAP decomposition, task plans, audits, benchmarks, and implementation notes.
-- Use `plans/ADRs/` for architecture decision records.
-- If a task changes architecture, storage, search behavior, export behavior, agent workflow, or cross-cutting infrastructure, add or update an ADR.
-- Follow the existing `plans/` naming style: numbered plans for implementation tracks, descriptive names for audits and benchmarks, and dedicated ADR files in `plans/ADRs/`.
-- Do not write planning, audit, or analysis markdown in the repository root.
+- Non-trivial task → GOAP decomposition in `plans/`; ADRs in `plans/ADRs/` for architecture, storage, search, export, or workflow changes.
+- Follow the numbered-plan / descriptive-audit naming style; never write planning markdown in the repo root.
 
 ## File Placement Rules
 
-- Never create temp, debug, scratch, analysis, or one-off script files in the repository root.
-- Never leave ad-hoc `tmp-*`, `debug-*`, `analyze-*`, `notes-*`, or throwaway files in the root.
-- Use `plans/` for persistent analysis and planning artifacts.
-- Use `scripts/` only for reusable repository automation that belongs in version control.
-- Use system temp locations such as `/tmp` or `mktemp` for ephemeral files.
-- If an output is only needed during execution, keep it out of the repository.
-- Root-level files must remain intentional project manifests, configs, or primary documentation only.
+- No temp/debug/scratch/analysis files in the root (`tmp-*`, `debug-*`, `analyze-*`, `notes-*`); persistent analysis → `plans/`, ephemeral output → `/tmp`, automation → `scripts/`.
 
 ## Setup
 
@@ -103,141 +70,56 @@ pnpm run test
 pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build
 ```
 
-- Fast loop: `./scripts/minimal_quality_gate.sh` (lint + typecheck + test), or pick a command from the `do-harness.toml` sensor map (`feedback`, `verification`, `offline`, `schema/data`, `release`; see `agents-docs/HARNESS.md`).
-- Also run `pnpm run test:e2e` for UI, editor, graph, mind map, search, export,
-  or any critical workflow change — a unit test proves the function, not the app.
-- Before commit: `./scripts/quality_gate.sh`. After CI passes: the
-  `code-review-assistant` skill, addressing all P1/P2 findings.
-- CI repair: `./scripts/self-fix-loop.sh`.
-
-Warnings are errors — a deprecation notice or lockfile conflict is a defect,
-not progress. Full script catalog: `agents-docs/SCRIPTS.md`.
+- Fast loop: `./scripts/minimal_quality_gate.sh`, or a `do-harness.toml` sensor (`feedback`, `verification`, `offline`, `schema/data`, `release`; see `agents-docs/HARNESS.md`).
+- UI/editor/graph/search/export changes also need `pnpm run test:e2e` — a unit test proves the function, not the app.
+- Before commit: `./scripts/quality_gate.sh`. CI repair: `./scripts/self-fix-loop.sh`.
+- Script catalog: `agents-docs/SCRIPTS.md`.
 
 ## Delivery Lifecycle
-
-A change is not done when it builds — it is done when it survives production.
 
 ```text
 production → failure → reproduce → candidate fix → evaluate
            → adversarial → shadow → canary → promote | rollback
 ```
 
-Each stage needs a falsifiable exit criterion: a test that fails for the
-*stated* reason, a green gate, an attempt to break it that failed, a
-comparison recorded in `plans/`. "Looks good" is not a criterion.
+Every stage needs a falsifiable exit criterion recorded in `plans/`. Depth by blast radius: docs → Evaluate; bug fix → reproduce → evaluate → adversarial; persistence/hydration/undo/redo/sync → plus shadow and canary. **Data-loss bugs start at production** — drive persistence changes against a real corpus in a real browser. Details: `agents-docs/DELIVERY-LIFECYCLE.md`.
 
-Stage-by-stage exit criteria and tooling: `agents-docs/DELIVERY-LIFECYCLE.md`.
-Pick depth by blast radius: docs need only Evaluate; a bug fix runs
-reproduce → evaluate → adversarial; persistence, hydration, undo/redo, and
-sync additionally need shadow and canary. **Data-loss bugs start at
-production** — never ship a persistence change that was not driven against a
-real corpus in a real browser.
-
-This repo is local-first with **no** flag library, **no** error telemetry, and
-a single global Vercel deployment. A flag is a store field or `localStorage`
-read, default-off. Shadow means both paths reachable, compared on the same
-input, recorded in `plans/` — skip it for a pure refactor rather than fake one.
-Never add machinery that needs a server to work offline.
-
-Stage mechanics, harness guardrails, and the per-stage skill map:
-`agents-docs/DELIVERY-LIFECYCLE.md`.
+This repo has **no** flag library, **no** error telemetry, one global Vercel deployment. A flag is a store field or `localStorage` read, default-off, and must work offline.
 
 ## Testing Expectations
 
-- Use Vitest for unit and integration coverage.
-- Keep critical flows covered: entity CRUD, claim creation, local search/chat flows, graph interaction, and mind map editing.
-- When touching database, validation, NLP/search, queueing, or export behavior, add or update tests close to the changed logic.
-- Run `pnpm run test:coverage` for core data-model, search, export, or infrastructure changes.
+- Vitest for unit/integration; keep entity CRUD, claims, search/chat, graph, and mind map flows covered.
+- Touching data-model, validation, NLP/search, queueing, or export → add/extend tests by the changed logic; `pnpm run test:coverage` for core changes.
 
 ## UI / UX Guardrails
 
-- Use design tokens from `src/app/globals.css` `@theme` block (source of truth).
-- Two themes: `light` and `dark` via the `.dark` class on `<html>` (next-themes `attribute="class"`).
-- Accent color: Saffron (`#9a5c2a` light, `#e5944a` dark).
-- Font: Geist Sans (body) + Newsreader (serif headings).
-- Build mobile-first; keep interactive targets at least 44x44px.
-- Preserve responsive behavior across editor, graph, search, and mind map views.
-- Never hardcode hex values in components — use tokens.
+- Tokens: `src/app/globals.css` `@theme` is the source of truth; `light`/`dark` via `.dark` on `<html>`; Saffron accent (`#9a5c2a`/`#e5944a`); Geist Sans + Newsreader.
+- Mobile-first, 44x44px targets, no hardcoded hex in components, preserve responsive behavior.
 
 ## Git Workflow
 
-- Branch from up to date, never commit to `main`, use conventional commits.
-- Code review (`code-review-assistant`) is mandatory after CI passes; address
-  all P1/P2 findings before requesting merge.
-- `Codacy Static Code Analysis` is the only ruleset-required check on `main` and
-  has a zero-tolerance rule. A **missing** check is a transient delay, not a
-  defect — diagnose via `commits/{sha}/check-runs`, then nudge with an
-  empty-commit push. Never merge with it failing.
-- Unresolved review threads block merges, **including outdated ones**. Resolve
-  every thread via GraphQL `resolveReviewThread`.
-- `required_linear_history` is set: always `--squash`, never a merge commit.
-- Never use `gh pr merge --admin` without explicit human approval.
-- `BLOCKED` with all-green `gh pr checks` is usually staleness, not a real
-  failure — `pr-merge-state-diagnoser.yml` automates that diagnosis.
-
-### Standing merge authorization — do not ask
-
-**When a PR is fully clean, merge it. Do not ask.** The maintainer has
-pre-authorized this; a redundant confirmation prompt is a defect, not caution.
-
-Merge when ALL hold: every check passes (including Codacy and e2e), every
-review thread is resolved (outdated ones count), the `code-review-assistant`
-pass is complete with no unaddressed P1/P2, and the local gate is green. Then
-`gh pr merge <PR> --auto --squash --delete-branch` and report the outcome.
-`--auto` lands it when CI clears, without holding a session open.
-
-Ask ONLY for: a suspected-genuine Codacy false positive, a declined P1/P2, a
-release/migration/auth or otherwise irreversible change, a branch-protection
-edit, or an explicit "hold" in the thread. Never use `--admin` to clear a gate.
-
-Full criteria, rationale, and the worked example:
-`agents-docs/GIT-WORKFLOW.md`.
-
-Full procedure, staleness ladder, and the Codacy false-positive playbook:
-`agents-docs/GIT-WORKFLOW.md`. Lessons: `agents-docs/LESSONS.md`.
+- Branch from up to date, never commit to `main`, conventional commits, `--squash` only.
+- Unresolved review threads block merges, **including outdated ones** — resolve every thread via GraphQL.
+- `Codacy Static Code Analysis` is the only ruleset-required check; a **missing** check is transient delay (diagnose via `check-runs`, nudge with empty commit).
+- `BLOCKED` with all-green checks is usually staleness — `pr-merge-state-diagnoser.yml` automates that.
+- **Standing merge authorization:** when fully clean (all checks, all threads resolved, review pass complete, local gate green), merge with `gh pr merge <PR> --auto --squash --delete-branch` and report. Ask ONLY for: suspected-genuine Codacy false positives, declined P1/P2, irreversible changes, branch-protection edits, or an explicit hold.
+- Procedure, staleness ladder, Codacy playbook (`toolInfo.name`, never guess from comments): `agents-docs/GIT-WORKFLOW.md`.
 
 ## Learnings (session-distilled)
 
-Non-obvious toolchain facts; full detail in `agents-docs/LESSONS.md`
-(LESSON-001..049) and `lessons.jsonl`.
+Non-obvious toolchain facts; full detail in `agents-docs/LESSONS.md` (same id set as `lessons.jsonl` — see doc-consistency check).
 
-- **gitleaks-action v3+ needs a paid licence** (pin v2.x); yamllint enforces
-  `line-length` 120 and a trailing newline inside `run: |` blocks.
-- **DeepSource `.deepsource.toml` suppressions do not reliably fail-proof a check**
-  — `const fn = () => {}` for module-scope helpers; exported complexity under 6.
-- **A test you have not seen fail is not evidence** (LESSON-041): re-inject the
-  defect, watch it fail, restore it. Codacy/DeepSource re-post stale findings as
-  NEW blocking threads — fix, reply, resolve, stop pushing (LESSON-034). Vitest
-  typecheck misses `*.test.ts` source errors (LESSON-035).
-- **A check that cannot fail is worse than none** (LESSON-046, LESSON-047):
-  `markdownlint.toml` was inert (rules under `[tool.markdownlint]`, ignored by the
-  CLI; unknown ids are accepted *silently*) and `quality_gate.sh` passed its config
-  only as `lint_if_changed`'s cache key, so the command ran without `--config`.
-  `MD018`'s `--fix` rewrites wrapped prose beginning `#865` into a real `<h1>`.
-- **Vercel Hobby allows 100 deployments per 24 h, owner-scoped, and production
-  shares previews' budget** (LESSON-048, LESSON-049): every deployment — the live
-  site included — failed 2026-10-03..13 while the non-required `Vercel` check
-  blocked nothing. One push is one deployment; never skip `scripts/` (`pnpm run
-  build` writes the served precache manifest); fail **closed** on unknown state.
-- **Worktrees:** `git add -A` stages a symlinked `node_modules` (`HUSKY=0` does not
-  skip `.githooks`); commit before any rebase or `reset --hard` (LESSON-042). Bless
-  a head before merging — stale-base automation arrives with `main`-reverting trees
-  (LESSON-043); dependency ranges can move backwards silently (LESSON-044).
-- **Feature-detecting two APIs hides a missing feature** — an `AbortSignal.any`
-  fallback dropped a timeout; a bare `stop` binds `window.stop` (LESSON-045).
-- **CI dispatch** — push and dispatch runs on `main` cancel each other; rerun the cancelled workflow (LESSON-050/051).
+- **gitleaks-action v3+ needs a paid licence** (pin v2.x); yamllint enforces `line-length` 120 and a trailing newline inside `run: |` blocks.
+- **DeepSource suppressions do not fail-proof a check** — `const fn = () => {}` for module-scope helpers; exported complexity under 6.
+- **A test you have not seen fail is not evidence** (LESSON-041): re-inject the defect, watch it fail, restore it. Codacy/DeepSource re-post stale findings as NEW threads — fix, reply, resolve, stop pushing (LESSON-034).
+- **A check that cannot fail is worse than none** (LESSON-046/047): an inert `markdownlint.toml` and a config-arg that was only a cache key both passed while checking nothing.
+- **Vercel Hobby: 100 deployments/24h, owner-scoped, production shares previews** (LESSON-048/049). One push is one deployment; never skip `scripts/`; fail **closed** on unknown state.
+- **Worktrees:** `git add -A` stages symlinked `node_modules` (LESSON-042); commit before rebase/reset (LESSON-042). Bless heads; dependency ranges can move backwards (LESSON-043/044).
+- **Two-API feature detection hides missing features** (LESSON-045); **CI dispatch** runs cancel each other (LESSON-050/051).
 
 ## Skills
 
-Canonical skills live in `.agents/skills/`; refresh symlinks with
-`./scripts/setup-skills.sh`. **Load only what the stage needs** — every
-always-loaded skill is a tax. Prefer existing skills and `agents-docs/`
-guidance over inventing a workflow, and add a skill only after a real failure
-(`agents-docs/HARNESS.md`).
-
-Catalog: `agents-docs/AVAILABLE_SKILLS.md` (regenerate with
-`./scripts/generate-skills-docs.py`); per-stage map:
-`agents-docs/DELIVERY-LIFECYCLE.md`.
+Canonical skills live in `.agents/skills/`; refresh with `./scripts/setup-skills.sh`. **Load only what the stage needs** — every always-loaded skill is a tax. Catalog: `agents-docs/AVAILABLE_SKILLS.md`; per-stage map: `agents-docs/DELIVERY-LIFECYCLE.md`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
