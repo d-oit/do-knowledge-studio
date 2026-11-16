@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /** Fail when a non-test source file exceeds 500 lines (AGENTS.md limit). */
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 
 const MAX_LOC = 500
@@ -36,35 +36,35 @@ const collectFiles = (dir, rootBase, out) => {
   if (!isWithin(rootBase, resolvedDir)) return out
   let entries
   try {
-    entries = readdirSync(resolvedDir)
+    entries = readdirSync(resolvedDir, { withFileTypes: true })
   } catch {
     return out
   }
   for (const entry of entries) {
-    if (!isSafeEntry(entry)) continue
-    const full = join(resolvedDir, entry)
-    if (!isWithin(rootBase, full)) continue
-    let stat
-    try {
-      stat = statSync(full)
-    } catch {
-      continue
-    }
-    if (stat.isDirectory()) {
-      if (entry === 'node_modules' || entry === '.next') continue
+    const name = entry.name
+    if (!isSafeEntry(name)) continue
+    const full = join(resolvedDir, name)
+    if (!isWithin(rootBase, full) || entry.isSymbolicLink()) continue
+    if (entry.isDirectory()) {
+      if (name === 'node_modules' || name === '.next') continue
       collectFiles(full, rootBase, out)
-    } else if (/\.(ts|tsx|js|jsx|mjs|cjs)$/.test(entry)) {
+    } else if (entry.isFile() && /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(name)) {
       out.push(full)
     }
   }
   return out
 }
 
+const rootEntries = new Map(
+  readdirSync(REPO_ROOT, { withFileTypes: true }).map((entry) => [entry.name, entry]),
+)
 const failures = []
 const warnings = []
 for (const root of ROOTS) {
+  const rootEntry = rootEntries.get(root)
+  if (!rootEntry?.isDirectory() || rootEntry.isSymbolicLink()) continue
   const rootBase = resolve(REPO_ROOT, root)
-  if (!isWithin(REPO_ROOT, rootBase) || !existsSync(rootBase)) continue
+  if (!isWithin(REPO_ROOT, rootBase)) continue
   for (const file of collectFiles(rootBase, rootBase, [])) {
     if (TEST_PATTERN.test(file)) continue
     const rel = relative(REPO_ROOT, file)

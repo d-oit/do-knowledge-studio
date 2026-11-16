@@ -24,6 +24,12 @@ do not merge while the check reports `action_required` (zero tolerance).
   syntactic rule on a tool's core input is a scanner limitation, not a
   defect. One reanalysis proving persistence is enough evidence — stop
   restructuring code to please the scanner.
+- `resolve()` containment is lexical: a symlink inside the walk root still
+  reads its outside target. Walk with
+  `readdirSync(dir, { withFileTypes: true })` and skip
+  `Dirent.isSymbolicLink()` (the Dirent also replaces the `statSync` call),
+  and canonicalize before containment checks where a path comes from an
+  index or listing (`realpathSync` + compare against the canonical root).
 - NUL-byte rejection in Node CLIs is defense-in-depth (execve and
   `child_process` already refuse NUL in real argv); its value is turning
   a runtime `TypeError` into a clean failure, not exploit prevention.

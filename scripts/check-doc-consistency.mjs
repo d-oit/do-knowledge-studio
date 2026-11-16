@@ -21,7 +21,7 @@
  *
  * Exit 0 when consistent; non-zero with one line per drift.
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, realpathSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -31,11 +31,12 @@ process.chdir(fileURLToPath(new URL('..', import.meta.url)))
 
 const REPO_ROOT = process.cwd()
 const DOCS_ROOT = resolve(REPO_ROOT, 'agents-docs')
+const REAL_REPO_ROOT = realpathSync('.')
+const REAL_DOCS_ROOT = realpathSync('agents-docs')
 const LESSON_LINK_PATTERN = /^agents-docs\/lessons\/[A-Za-z0-9][A-Za-z0-9_.-]*\.md$/
 
-// Index-derived paths reach fs below, so validate their shape first: a
-// tampered index line (e.g. `lessons/../../x`) must fail the check instead
-// of pulling the reader outside agents-docs/.
+// Index-derived paths reach fs below, so validate their shape and canonical
+// target first: a tampered index line or symlink must stay inside the docs tree.
 const isWithin = (base, candidate) => candidate === base || candidate.startsWith(base + sep)
 const AGENTS_FILE = resolve(REPO_ROOT, 'AGENTS.md')
 const resolveDocPath = (repoRelative, allowPattern) => {
@@ -44,7 +45,15 @@ const resolveDocPath = (repoRelative, allowPattern) => {
   const resolved = resolve(REPO_ROOT, repoRelative)
   if (!isWithin(REPO_ROOT, resolved)) return null
   if (resolved !== AGENTS_FILE && !isWithin(DOCS_ROOT, resolved)) return null
-  return resolved
+  let realPath
+  try {
+    realPath = realpathSync(resolved)
+  } catch {
+    return null
+  }
+  if (!isWithin(REAL_REPO_ROOT, realPath)) return null
+  if (resolved !== AGENTS_FILE && !isWithin(REAL_DOCS_ROOT, realPath)) return null
+  return realPath
 }
 
 const fail = (message) => {

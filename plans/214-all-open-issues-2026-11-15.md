@@ -349,3 +349,49 @@ input-validation concern is addressed in code; clearing the check now
 requires per-finding UI triage (false positive with this note as
 evidence) by someone with a write-capable token. Not merging while the
 check reports `action_required` (AGENTS.md zero tolerance).
+
+## Codacy retry (2026-11-16, PR #1154)
+
+Maintainer decision: keep `ESLint8_security_detect-non-literal-fs-filename`
+enabled — no `.codacy.yml` pattern mirror, no inline suppressions. All
+write paths were retried from scratch and fail identically:
+
+| Command | Result |
+| --- | --- |
+| `pull-request ... --ignore-issue 131570240031` | ❌ `Resource not found (HTTP 404)` |
+| `repository ... --reanalyze` | ❌ `Failed to request reanalysis: Not Found` |
+| `issue 131570243351 --ignore` | ❌ `Result data not found for id ... and commit ...` |
+| Reads on the same token | `pull-request`, `repository`, `issues` all succeed |
+
+Every write 404s while every read succeeds ⇒ the stored token is
+read-only; clearing the check needs Codacy UI triage by someone with
+write access.
+
+Two of the four flagged scripts were genuinely improved instead of
+suppressed:
+
+- `scripts/check-file-size.mjs` — traversal followed symlinks. A repo-local
+  symlink to an outside directory made the gate read and report files
+  outside the walk root (reproduced with a temp fixture: `outside/oversized.ts`
+  surfaced as `src/external/oversized.ts`). The walker now uses
+  `readdirSync(..., { withFileTypes: true })` and skips
+  `Dirent.isSymbolicLink()` entries, including symlinked roots; the extra
+  `statSync` calls are gone because the Dirent already carries the type.
+  `tests/check-file-size.bats` proves the escape is closed and that a real
+  oversized file still fails the gate.
+- `scripts/check-doc-consistency.mjs` — lesson links and citing files were
+  containment-checked lexically only. Both now resolve through
+  `realpathSync` and must stay inside the canonical repo/docs roots, so a
+  symlinked lesson file cannot pull a read outside `agents-docs/`.
+
+`corpus-fingerprint.mjs` and `check-lint-config-wiring.mjs` keep their
+existing argv validation (NUL, extension, normalize + resolve): a local CLI
+reading the path the caller named is the feature, not a vulnerability.
+
+Verified after the change: `tests/check-file-size.bats` fails before the
+traversal fix and passes after; `corpus-fingerprint` +
+`check-lint-config-wiring` 8/8; `node scripts/check-file-size.mjs` and
+`node scripts/check-doc-consistency.mjs` exit 0; `eslint` clean on all four
+scripts; Codacy's own ESLint 8 engine
+(`codacy-analysis analyze --tool ESLint8 --install-dependencies`) reports 0
+issues on the four files.
