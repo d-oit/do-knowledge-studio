@@ -53,6 +53,7 @@ the scope from changed paths and requires a resolvable base ref.
 | `lib/lint_cache.sh` | Lint-result caching for the quality gate |
 | `lib/run-check.sh` | Shared check runner used by verify.sh |
 | `lib/workflow-monitor.sh` | Shared check-state parser used by GitHub workflow skills |
+| `lib/read-text.mjs` | UTF-8 text read for validated dynamic paths (the one place `scripts/` reads computed paths) |
 
 ## Environment Variables
 

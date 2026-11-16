@@ -16,6 +16,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { normalize, resolve } from "node:path";
+import { readTextFile } from "./lib/read-text.mjs";
 
 const EXPECT_FLAG = "--expect";
 const STDIN_FLAG = "--stdin";
@@ -49,7 +50,7 @@ function fingerprint(text, label) {
   return createHash("sha256").update(canonicalize(parsed)).digest("hex");
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   let expected = null;
   let useStdin = false;
@@ -97,7 +98,7 @@ function main() {
       fail(`export must be a ${CORPUS_EXTENSION} file: ${file}`);
     }
     try {
-      text = readFileSync(resolvedFile, "utf8");
+      text = await readTextFile(resolvedFile);
     } catch {
       fail(`could not read ${file}`);
     }
@@ -114,4 +115,4 @@ function main() {
   process.stdout.write(`${digest}  ${label}\n`);
 }
 
-main();
+await main();

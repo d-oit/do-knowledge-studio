@@ -11,6 +11,7 @@ write_oversized_source() {
   local fixture="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$fixture/scripts" "$fixture/src" "$fixture/outside"
   cp "$BATS_TEST_DIRNAME/../scripts/check-file-size.mjs" "$fixture/scripts/check-file-size.mjs"
+  cp -r "$BATS_TEST_DIRNAME/../scripts/lib" "$fixture/scripts/lib"
   write_oversized_source "$fixture/outside/external.ts"
   ln -s "$fixture/outside" "$fixture/src/external-directory"
   ln -s "$fixture/outside/external.ts" "$fixture/src/external-file.ts"

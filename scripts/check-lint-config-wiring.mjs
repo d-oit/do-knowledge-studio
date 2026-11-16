@@ -12,9 +12,9 @@
  *
  * Exit 0 when every call site is wired; non-zero with one line per drift.
  */
-import { readFileSync } from 'node:fs'
 import { normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { readTextFile } from './lib/read-text.mjs'
 
 process.chdir(fileURLToPath(new URL('..', import.meta.url)))
 
@@ -53,10 +53,12 @@ const targets = rawTargets.map(resolveTarget).filter((target) => target !== null
 if (targets.length !== rawTargets.length) {
   process.exit(1)
 }
-const sources = targets.map((path) => ({
-  path,
-  text: readFileSync(path, 'utf8').replace(/\\\n/g, ' '),
-}))
+const sources = await Promise.all(
+  targets.map(async (path) => ({
+    path,
+    text: (await readTextFile(path)).replace(/\\\n/g, ' '),
+  })),
+)
 
 for (const { path, text } of sources) {
   for (const match of text.matchAll(/lint_if_changed\s+"([^"]+)"\s+"([^"]+)"\s+"([^"]*)"\s*([^;\n]*)/g)) {

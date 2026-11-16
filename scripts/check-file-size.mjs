@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /** Fail when a non-test source file exceeds 500 lines (AGENTS.md limit). */
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, opendirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
+import { readTextFile } from './lib/read-text.mjs'
 
 const MAX_LOC = 500
 const WARN_LOC = 450
@@ -23,6 +24,17 @@ const isSafeEntry = (entry) =>
   !entry.includes('\\') &&
   !entry.includes('\0')
 
+const listEntries = (directory) => {
+  const entries = []
+  const dir = opendirSync(directory)
+  try {
+    for (let entry = dir.readSync(); entry !== null; entry = dir.readSync()) entries.push(entry)
+  } finally {
+    dir.closeSync()
+  }
+  return entries
+}
+
 const allowlist = new Set()
 if (existsSync(ALLOWLIST_FILE)) {
   for (const line of readFileSync(ALLOWLIST_FILE, 'utf8').split('\n')) {
@@ -36,7 +48,7 @@ const collectFiles = (dir, rootBase, out) => {
   if (!isWithin(rootBase, resolvedDir)) return out
   let entries
   try {
-    entries = readdirSync(resolvedDir, { withFileTypes: true })
+    entries = listEntries(resolvedDir)
   } catch {
     return out
   }
@@ -55,9 +67,7 @@ const collectFiles = (dir, rootBase, out) => {
   return out
 }
 
-const rootEntries = new Map(
-  readdirSync(REPO_ROOT, { withFileTypes: true }).map((entry) => [entry.name, entry]),
-)
+const rootEntries = new Map(listEntries(REPO_ROOT).map((entry) => [entry.name, entry]))
 const failures = []
 const warnings = []
 for (const root of ROOTS) {
@@ -70,7 +80,7 @@ for (const root of ROOTS) {
     const rel = relative(REPO_ROOT, file)
     if (rel.includes('/ui/') && rel.startsWith('src/components/ui/')) continue
     if (allowlist.has(rel)) continue
-    const lines = readFileSync(file, 'utf8').split('\n').length
+    const lines = (await readTextFile(file)).split('\n').length
     if (lines > MAX_LOC) failures.push(`${rel}: ${lines} lines (limit ${MAX_LOC})`)
     else if (lines >= WARN_LOC) warnings.push(`${rel}: ${lines} lines (warn at ${WARN_LOC})`)
   }

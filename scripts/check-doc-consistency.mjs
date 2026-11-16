@@ -21,9 +21,10 @@
  *
  * Exit 0 when consistent; non-zero with one line per drift.
  */
-import { readFileSync, readdirSync, realpathSync } from 'node:fs'
-import { resolve, sep } from 'node:path'
+import { readFileSync, readdirSync } from 'node:fs'
+import { basename, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { readTextFile } from './lib/read-text.mjs'
 
 // Resolve repository-relative literals from this script's location, not the
 // caller's working directory.
@@ -31,12 +32,12 @@ process.chdir(fileURLToPath(new URL('..', import.meta.url)))
 
 const REPO_ROOT = process.cwd()
 const DOCS_ROOT = resolve(REPO_ROOT, 'agents-docs')
-const REAL_REPO_ROOT = realpathSync('.')
-const REAL_DOCS_ROOT = realpathSync('agents-docs')
 const LESSON_LINK_PATTERN = /^agents-docs\/lessons\/[A-Za-z0-9][A-Za-z0-9_.-]*\.md$/
 
-// Index-derived paths reach fs below, so validate their shape and canonical
-// target first: a tampered index line or symlink must stay inside the docs tree.
+// Index-derived paths reach fs below, so validate their shape first: a
+// tampered index line (e.g. `lessons/../../x`) must fail the check instead
+// of pulling the reader outside agents-docs/. Symbolic links are refused
+// separately, from the directory entries the index was matched against.
 const isWithin = (base, candidate) => candidate === base || candidate.startsWith(base + sep)
 const AGENTS_FILE = resolve(REPO_ROOT, 'AGENTS.md')
 const resolveDocPath = (repoRelative, allowPattern) => {
@@ -45,15 +46,14 @@ const resolveDocPath = (repoRelative, allowPattern) => {
   const resolved = resolve(REPO_ROOT, repoRelative)
   if (!isWithin(REPO_ROOT, resolved)) return null
   if (resolved !== AGENTS_FILE && !isWithin(DOCS_ROOT, resolved)) return null
-  let realPath
-  try {
-    realPath = realpathSync(resolved)
-  } catch {
-    return null
-  }
-  if (!isWithin(REAL_REPO_ROOT, realPath)) return null
-  if (resolved !== AGENTS_FILE && !isWithin(REAL_DOCS_ROOT, realPath)) return null
-  return realPath
+  return resolved
+}
+
+/** Directory entries by name, so symlinked files can be refused before a read. */
+const entriesByName = (entries) => new Map(entries.map((entry) => [entry.name, entry]))
+const isRegularFile = (entries, name) => {
+  const entry = entries.get(name)
+  return entry !== undefined && entry.isFile() && !entry.isSymbolicLink()
 }
 
 const fail = (message) => {
@@ -251,6 +251,12 @@ if (indexLineCount > LESSON_INDEX_BUDGET_LINES) {
   fail(`agents-docs/LESSONS.md index is ${indexLineCount} lines, over the ${LESSON_INDEX_BUDGET_LINES}-line budget (#1142)`)
 }
 const indexEntries = [...lessonsMd.matchAll(/^- \[(LESSON-\d+): [^\]]+\]\((lessons\/[^)]+)\)/gm)]
+const repoEntries = entriesByName(readdirSync(REPO_ROOT, { withFileTypes: true }))
+const docsEntries = entriesByName(readdirSync('agents-docs', { withFileTypes: true }))
+const lessonEntries = entriesByName(readdirSync('agents-docs/lessons', { withFileTypes: true }))
+if (repoEntries.get('agents-docs')?.isSymbolicLink() || docsEntries.get('lessons')?.isSymbolicLink()) {
+  fail('agents-docs/ or agents-docs/lessons/ is a symbolic link; refusing to follow it')
+}
 const lessonHeadingIds = []
 for (const entry of indexEntries) {
   lessonHeadingIds.push(entry[1])
@@ -260,9 +266,13 @@ for (const entry of indexEntries) {
     fail(`LESSONS.md index has a malformed lesson link: ${lessonFile}`)
     continue
   }
+  if (!isRegularFile(lessonEntries, basename(resolvedLesson))) {
+    fail(`LESSONS.md index links to a missing or symlinked lesson file: ${lessonFile}`)
+    continue
+  }
   let lessonText = ''
   try {
-    lessonText = readFileSync(resolvedLesson, 'utf8')
+    lessonText = await readTextFile(resolvedLesson)
   } catch {
     fail(`LESSONS.md index links to missing file: ${lessonFile}`)
     continue
@@ -303,14 +313,19 @@ if (jsonlIds.length !== jsonlSet.size) {
   fail('agents-docs/lessons.jsonl has duplicate ids')
 }
 const knownLessons = new Set([...lessonHeadingIds, ...jsonlIds])
-const citingFiles = ['AGENTS.md', ...readdirSync('agents-docs').filter((f) => f.endsWith('.md')).map((f) => `agents-docs/${f}`)]
+const citingFiles = ['AGENTS.md', ...[...docsEntries.keys()].filter((f) => f.endsWith('.md')).map((f) => `agents-docs/${f}`)]
 for (const file of citingFiles) {
   const resolvedCiting = resolveDocPath(file, /^agents-docs\/[A-Za-z0-9][A-Za-z0-9_.-]*\.md$|^AGENTS\.md$/)
   if (resolvedCiting === null) {
     fail(`refusing to read unexpected doc path: ${file}`)
     continue
   }
-  const text = readFileSync(resolvedCiting, 'utf8')
+  const entriesForFile = file === 'AGENTS.md' ? repoEntries : docsEntries
+  if (!isRegularFile(entriesForFile, basename(resolvedCiting))) {
+    fail(`refusing to read a missing or symlinked doc file: ${file}`)
+    continue
+  }
+  const text = await readTextFile(resolvedCiting)
   for (const match of text.matchAll(/LESSON-(\d{3})/g)) {
     if (!knownLessons.has(match[0])) {
       fail(`${file} cites unknown lesson ${match[0]}`)

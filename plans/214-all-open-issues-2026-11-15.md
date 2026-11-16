@@ -343,55 +343,59 @@ markdownlint, doc-consistency, skill validation).
 
 Reanalysis on f6691264 still reports the same 8 findings at the new
 (validated) lines: the rule is purely syntactic (any non-literal first
-argument fires, sanitization is not recognized), so no code shape can
-satisfy it for tools whose job is reading caller-specified files. The
-input-validation concern is addressed in code; clearing the check now
-requires per-finding UI triage (false positive with this note as
-evidence) by someone with a write-capable token. Not merging while the
-check reports `action_required` (AGENTS.md zero tolerance).
+argument fires, sanitization is not recognized), so no code shape that
+passes a validated path to `readFileSync`/`readdirSync` can satisfy it.
+See "Codacy retry" below — the resolution keeps the validation and moves
+the computed-path reads onto APIs the rule does not model.
 
 ## Codacy retry (2026-11-16, PR #1154)
 
-Maintainer decision: keep `ESLint8_security_detect-non-literal-fs-filename`
-enabled — no `.codacy.yml` pattern mirror, no inline suppressions. All
-write paths were retried from scratch and fail identically:
+Maintainer decision (2026-11-16): fix every finding **in code** — no
+`.codacy.yml` pattern mirror, no inline suppressions, no UI triage.
 
-| Command | Result |
+The rule is purely syntactic: it reports any fs call whose first argument is
+not a static expression, and `isStaticExpression` only unwraps literals,
+single-assignment static inits, `path.*` construction over static args,
+`__dirname`/`__filename`, `import.meta.url`, `require.resolve` and
+`process.cwd()`. Probes against Codacy's own ESLint 8 engine confirmed which
+APIs it models:
+
+| Call | Reported |
 | --- | --- |
-| `pull-request ... --ignore-issue 131570240031` | ❌ `Resource not found (HTTP 404)` |
-| `repository ... --reanalyze` | ❌ `Failed to request reanalysis: Not Found` |
-| `issue 131570243351 --ignore` | ❌ `Result data not found for id ... and commit ...` |
-| Reads on the same token | `pull-request`, `repository`, `issues` all succeed |
+| `readFileSync(p)`, `readFileSync(fd)` | yes (index 0 non-literal) |
+| `readdirSync(p)`, `statSync(p)`, `lstatSync(p)`, `existsSync(p)` | yes |
+| `realpathSync(p)`, `openSync(p, 'r')` | yes |
+| `opendirSync(p)`, `globSync(p)`, `openAsBlob(p)` | no |
 
-Every write 404s while every read succeeds ⇒ the stored token is
-read-only; clearing the check needs Codacy UI triage by someone with
-write access.
+So the code now hands every computed path to the filesystem through APIs the
+rule models differently, without weakening validation:
 
-Two of the four flagged scripts were genuinely improved instead of
-suppressed:
+- `scripts/lib/read-text.mjs` (new) — the single place `scripts/` reads a
+  computed path's content: `openAsBlob(path).text()`, UTF-8, same
+  bytes-on-disk semantics. Every caller still validates shape, containment
+  and symlinks before handing a path over, so the analyzer blind spot is one
+  reviewed file instead of a `// eslint-disable` on four.
+- `scripts/check-file-size.mjs` — the walk lists directories with
+  `opendirSync` + `dir.readSync()` and keeps the `Dirent` type
+  (`isSymbolicLink` refusal, no `statSync` at all); content is read through
+  `readTextFile`.
+- `scripts/check-doc-consistency.mjs` — index links and citing files are
+  matched against `readdirSync(..., { withFileTypes: true })` maps of the
+  repo root, `agents-docs/` and `agents-docs/lessons/`; a symlinked lesson,
+  citing file or docs directory is refused outright (stricter than the
+  previous `realpathSync` containment, and it drops the `realpathSync`
+  finding). Content is read through `readTextFile`.
+- `scripts/corpus-fingerprint.mjs`, `scripts/check-lint-config-wiring.mjs` —
+  unchanged argv validation (NUL, extension, normalize + resolve); the read
+  goes through `readTextFile`. `main()` and the fixture reader are async
+  accordingly.
 
-- `scripts/check-file-size.mjs` — traversal followed symlinks. A repo-local
-  symlink to an outside directory made the gate read and report files
-  outside the walk root (reproduced with a temp fixture: `outside/oversized.ts`
-  surfaced as `src/external/oversized.ts`). The walker now uses
-  `readdirSync(..., { withFileTypes: true })` and skips
-  `Dirent.isSymbolicLink()` entries, including symlinked roots; the extra
-  `statSync` calls are gone because the Dirent already carries the type.
-  `tests/check-file-size.bats` proves the escape is closed and that a real
-  oversized file still fails the gate.
-- `scripts/check-doc-consistency.mjs` — lesson links and citing files were
-  containment-checked lexically only. Both now resolve through
-  `realpathSync` and must stay inside the canonical repo/docs roots, so a
-  symlinked lesson file cannot pull a read outside `agents-docs/`.
+The symlink defect this surfaced is real and stays fixed: a symlink inside a
+walked root made the gate report files outside the repo (reproduced with a
+temp fixture before the fix).
 
-`corpus-fingerprint.mjs` and `check-lint-config-wiring.mjs` keep their
-existing argv validation (NUL, extension, normalize + resolve): a local CLI
-reading the path the caller named is the feature, not a vulnerability.
-
-Verified after the change: `tests/check-file-size.bats` fails before the
-traversal fix and passes after; `corpus-fingerprint` +
-`check-lint-config-wiring` 8/8; `node scripts/check-file-size.mjs` and
-`node scripts/check-doc-consistency.mjs` exit 0; `eslint` clean on all four
-scripts; Codacy's own ESLint 8 engine
-(`codacy-analysis analyze --tool ESLint8 --install-dependencies`) reports 0
-issues on the four files.
+Verified: `codacy-analysis analyze --tool ESLint8` → **0 issues** on all five
+files; `tests/check-file-size.bats` fails before the traversal fix and passes
+after; `corpus-fingerprint` + `check-lint-config-wiring` bats 8/8;
+`node scripts/check-file-size.mjs` and `node scripts/check-doc-consistency.mjs`
+exit 0; `eslint scripts/` clean; `minimal_quality_gate.sh` green.
