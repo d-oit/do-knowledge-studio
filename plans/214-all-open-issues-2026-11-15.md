@@ -398,4 +398,27 @@ Verified: `codacy-analysis analyze --tool ESLint8` → **0 issues** on all five
 files; `tests/check-file-size.bats` fails before the traversal fix and passes
 after; `corpus-fingerprint` + `check-lint-config-wiring` bats 8/8;
 `node scripts/check-file-size.mjs` and `node scripts/check-doc-consistency.mjs`
-exit 0; `eslint scripts/` clean; `minimal_quality_gate.sh` green.
+exit 0; `eslint scripts/` clean; `minimal_quality_gate.sh` green; Codacy gate
+on head `843ba795` is `isUpToStandards: true` with 0 new and 0 potential
+issues.
+
+### Code review (self, 2026-11-16 — reviewer agent provider unavailable)
+
+Probes on the increment, no blocking findings:
+
+- Symlinked lesson refused in practice: with a lesson file replaced by a
+  symlink, `check-doc-consistency` exits 1 with "missing or symlinked lesson
+  file"; restoring the real file returns exit 0. A symlinked
+  `agents-docs/` or `agents-docs/lessons/` is refused from the repo-root and
+  docs Dirent maps.
+- Walker: `Dirent.isDirectory()`/`isFile()` already exclude symlinks, so the
+  explicit `isSymbolicLink()` check is defence in depth; the bats test asserts
+  the behavior (no outside file reported), not the mechanism.
+- `openAsBlob` failures differ in type (`TypeError: Unable to open file as
+  blob`, `NotReadableError`) but every caller keeps its own message and exit
+  path; `check-file-size` already treated an unreadable walked file as fatal.
+- `listEntries` closes the dir handle in `finally`; `collectFiles` still
+  swallows a listing failure and returns what it has.
+- P3, unchanged in kind: the Dirent check and the read are separate syscalls,
+  so a concurrent swap could still race. Dev-time gate over repo-controlled
+  files; a hostile local writer already owns the checkout.
