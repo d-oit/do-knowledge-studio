@@ -190,6 +190,23 @@ if [[ " ${DETECTED_LANGUAGES[*]} " =~ " typescript " ]] && [[ "$SCOPE" == "all" 
 
             if [ "$should_run_e2e" = "true" ] && [ "${SKIP_E2E:-false}" != "true" ]; then
                 echo -e "${BLUE}  Structural change detected — running E2E...${NC}"
+                # Never rely on a warm browser cache: a cancelled CI job left
+                # `~/.cache/ms-playwright` without the pinned headless shell and
+                # every spec failed in 2ms with "browserType.launch: Executable
+                # doesn't exist". Installing is idempotent — a no-op when the
+                # locked builds are already present. Both engines are needed:
+                # the `mobile`/`tablet` projects are WebKit device descriptors,
+                # and on GitHub runners the OS libraries come with --with-deps.
+                if [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+                    PLAYWRIGHT_INSTALL=(pnpm exec playwright install --with-deps chromium webkit)
+                else
+                    PLAYWRIGHT_INSTALL=(pnpm exec playwright install chromium webkit)
+                fi
+                if ! OUTPUT=$("${PLAYWRIGHT_INSTALL[@]}" 2>&1); then
+                    echo -e "${RED}  ✗ playwright install chromium webkit failed${NC}"
+                    echo "$OUTPUT" >&2
+                    CHECKS_FAILED=1
+                fi
                 if ! OUTPUT=$(pnpm run test:e2e 2>&1); then
                     echo -e "${RED}  ✗ pnpm run test:e2e failed${NC}"
                     echo "$OUTPUT" >&2
