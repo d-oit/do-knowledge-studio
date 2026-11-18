@@ -6,6 +6,7 @@
  */
 
 import { parseFrontmatter, splitFrontmatter } from './frontmatter.js'
+import { findMachineSection, scanRelativeLinks } from './markdown-scan.js'
 import type {
   BundleClaim,
   BundleConcept,
@@ -140,13 +141,16 @@ const parseClaims = (
  * @returns Target ids (path minus leading slash and `.md`).
  */
 const parseRelatedIds = (body: string): string[] => {
-  const section = /# Related\n([\s\S]*?)(?:\n# |$)/.exec(body)
-  const [, block = ''] = section ?? []
+  // Linear scanner equivalent of `/# Related\n([\s\S]*?)(?:\n# |$)/`; the
+  // differential tests in markdown-scan.test.ts pin the scanners to the
+  // reference regexes they replaced (CodeQL polynomial-regex findings).
+  const section = findMachineSection(body, 'Related', false)
   const ids: string[] = []
-  for (const m of block.matchAll(/\[[^\]]*\]\(([^)\s]+)\)/g)) {
-    const [, linked = ''] = m
-    const target = linked.replace(/^\/+/, '').replace(/\.md$/, '')
-    if (target && !ids.includes(target)) ids.push(target)
+  if (section) {
+    for (const span of scanRelativeLinks(section.content)) {
+      const target = span.rawTarget.replace(/^\/+/, '').replace(/\.md$/, '')
+      if (target && !ids.includes(target)) ids.push(target)
+    }
   }
   return ids
 }
@@ -156,12 +160,17 @@ const parseRelatedIds = (body: string): string[] => {
  * @param body - Concept markdown body.
  * @returns The body without machine sections.
  */
-const stripMachineSections = (body: string): string =>
-  body
-    // `(?:^|\n)` keeps a section heading that opens the body strippable too.
-    .replace(/(?:^|\n)# Claims\n[\s\S]*?(?=\n# |$)/, '')
-    .replace(/(?:^|\n)# Related\n[\s\S]*?(?=\n# |$)/, '')
-    .trim()
+const stripMachineSections = (body: string): string => {
+  // Linear scanner equivalents of the
+  // `(?:^|\n)# <title>\n[\s\S]*?(?=\n# |$)` replaces (CodeQL
+  // polynomial-regex findings; differential-tested against them).
+  const stripSection = (text: string, title: string): string => {
+    const section = findMachineSection(text, title, true)
+    return section === null ? text : text.slice(0, section.start) + text.slice(section.end)
+  }
+  // `(?:^|\n)` keeps a section heading that opens the body strippable too.
+  return stripSection(stripSection(body, 'Claims'), 'Related').trim()
+}
 
 /**
  * Parses one concept file into a BundleConcept.

@@ -11,6 +11,7 @@
  */
 
 import { parseFrontmatter, splitFrontmatter } from './frontmatter.js'
+import { scanRelativeLinks, scanWikilinks } from './markdown-scan.js'
 import type { CoreEntity } from './types.js'
 
 /** Maximum `.md` files accepted in one import batch. */
@@ -40,14 +41,10 @@ const VAULT_TYPE_MAP: Record<string, string> = {
   project: 'project',
 }
 
-/** Matches a `[[Wikilink]]` token (optionally with an alias after `|`). */
-const WIKILINK_PATTERN = /\[\[([^[\]|]+)(?:\|([^[\]]+))?\]\]/g
 /** Matches `#tag` tokens (unicode-aware); headings are filtered by caller. */
 const HASHTAG_PATTERN = /(^|\s)#([\p{L}\p{N}_][\p{L}\p{N}_-]*)/gu
 /** A Markdown heading line — `#tag` on such a line is a heading, not a tag. */
 const HEADING_LINE_PATTERN = /^\s*#{1,6}(?:\s|$)/
-/** Matches a relative Markdown link `[text](target)`; images are filtered by caller. */
-const RELATIVE_LINK_PATTERN = /\[([^\]]*)\]\(([^)\s]+)\)/g
 
 /** Result of parsing a Markdown / vault batch (CLI shape). */
 export type MarkdownImportResult =
@@ -173,30 +170,27 @@ const decodeTarget = (target: string): string => {
 
 /** Scans a body for wikilink and relative-link spans. */
 export const scanMarkdownLinks = (body: string): MarkdownLinkSpans => {
+  // Linear scanners (markdown-scan.ts) replace the global regexes CodeQL
+  // flagged as polynomial on adversarial input; behavior is pinned equal by
+  // the differential property tests in markdown-scan.test.ts.
   const wikilinks: WikiLinkSpan[] = []
-  WIKILINK_PATTERN.lastIndex = 0
-  let m = WIKILINK_PATTERN.exec(body)
-  while (m !== null) {
-    const name = (m[1] ?? '').trim()
+  for (const span of scanWikilinks(body)) {
+    const name = span.name.trim()
     if (name !== '') {
-      const display = (m[2] ?? '').trim()
-      wikilinks.push(display !== '' ? { start: m.index, end: m.index + m[0].length, name, display } : { start: m.index, end: m.index + m[0].length, name })
+      const display = (span.display ?? '').trim()
+      wikilinks.push(display !== '' ? { start: span.start, end: span.end, name, display } : { start: span.start, end: span.end, name })
     }
-    m = WIKILINK_PATTERN.exec(body)
   }
   const relativeLinks: RelativeLinkSpan[] = []
-  RELATIVE_LINK_PATTERN.lastIndex = 0
-  let r = RELATIVE_LINK_PATTERN.exec(body)
-  while (r !== null) {
-    if (body[r.index - 1] !== '!' && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(r[2] ?? '')) {
+  for (const span of scanRelativeLinks(body)) {
+    if (body[span.start - 1] !== '!' && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(span.rawTarget)) {
       relativeLinks.push({
-        start: r.index,
-        end: r.index + r[0].length,
-        text: r[1] ?? '',
-        target: decodeTarget(r[2] ?? '').replace(/^\/+/, ''),
+        start: span.start,
+        end: span.end,
+        text: span.text,
+        target: decodeTarget(span.rawTarget).replace(/^\/+/, ''),
       })
     }
-    r = RELATIVE_LINK_PATTERN.exec(body)
   }
   return { wikilinks, relativeLinks }
 }

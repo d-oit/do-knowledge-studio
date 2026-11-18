@@ -57,6 +57,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
+      // Tests consume dks-core from source so the unit suite never depends on
+      // the package's build output; dev/build still compile it via its script.
+      'dks-core': path.resolve(import.meta.dirname, './packages/dks-core/src'),
     },
   },
 });
