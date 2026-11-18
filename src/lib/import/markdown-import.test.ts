@@ -6,7 +6,6 @@ import {
   MAX_MARKDOWN_FILES,
   MAX_MARKDOWN_TOTAL_BYTES,
   checkVaultLimits,
-  extractHashtags,
   parseVaultFiles,
 } from './markdown-import'
 
@@ -51,6 +50,7 @@ describe('parseVaultFiles with the fixture vault', () => {
     expect(alpha?.description).toBe('The flagship effort for the fall.')
     expect(alpha?.createdAt).toBe('2026-09-01T10:00:00.000Z')
     expect(alpha?.tags).toEqual(['planning', 'q4', 'Alpha Initiative', 'launch'])
+    expect(alpha?.aliases).toEqual(['Alpha Initiative'])
     expect(result.warnings.some((w) => w.includes('obsolete'))).toBe(true)
   })
 
@@ -91,13 +91,30 @@ describe('parseVaultFiles with the fixture vault', () => {
   })
 })
 
-describe('extractHashtags', () => {
+describe('shared Markdown link spans', () => {
+  it('keeps spans aligned after trimming note body whitespace', () => {
+    const result = expectSuccess(parseVaultFiles(new Map([
+      ['source.md', '---\ntitle: Source\n---\n\n  [[Target]] and [Target](target.md)\n'],
+      ['target.md', '---\ntitle: Target\n---\n\nTarget body.\n'],
+    ])))
+    const source = result.entities.find((entity) => entity.name === 'Source')
+    expect(source?.content).not.toContain('[[Target]]')
+    expect(source?.content).not.toContain('[Target](target.md)')
+    expect(source?.content.match(/dks:\/\/entity\//g)).toHaveLength(2)
+  })
+})
+
+describe('Markdown body tags', () => {
   it('skips headings and fenced code', () => {
-    expect(extractHashtags('# Title #not-a-tag\nBody with #real.\n```\n#code\n```\n')).toEqual(['real'])
+    const result = expectSuccess(
+      parseVaultFiles(new Map([['tags.md', '# Heading #headingTag\nBody #real\n```\n#codeTag\n```\n']])),
+    )
+    expect(result.entities[0]?.tags).toEqual(['real'])
   })
 
-  it('keeps tag order and dedupes', () => {
-    expect(extractHashtags('#a then #b then #a')).toEqual(['a', 'b'])
+  it('deduplicates body hashtags in order', () => {
+    const result = expectSuccess(parseVaultFiles(new Map([['tags.md', 'Body #a then #b then #a']])))
+    expect(result.entities[0]?.tags).toEqual(['a', 'b'])
   })
 })
 

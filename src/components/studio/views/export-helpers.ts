@@ -187,6 +187,27 @@ export const buildHtmlExport = (entities: Entity[], claims: Claim[]): string => 
 </html>`
 }
 
+/** Top-level fields in the flat JSON export format emitted by released v1 builds. */
+const LEGACY_VERSIONLESS_EXPORT_FIELDS: Record<string, true> = {
+  entities: true,
+  claims: true,
+  exportedAt: true,
+  graph: true,
+  mindMap: true,
+  links: true,
+  tags: true,
+}
+
+/**
+ * Recognizes only the historical flat export shape. Unknown keys, nested
+ * persistence envelopes, and malformed optional fields remain unsupported.
+ */
+const isRecognizedVersionlessExport = (root: Record<string, unknown>): boolean => {
+  if (Object.hasOwn(root, 'version') || !Array.isArray(root.entities)) return false
+  if (!Array.isArray(root.claims) || typeof root.exportedAt !== 'string') return false
+  return Object.keys(root).every((field) => Object.hasOwn(LEGACY_VERSIONLESS_EXPORT_FIELDS, field))
+}
+
 /** Parses and validates an imported JSON export file. */
 export const parseImportFile = (text: string): ImportResult => {
   let data: unknown
@@ -200,14 +221,22 @@ export const parseImportFile = (text: string): ImportResult => {
   }
 
   const root = data as Record<string, unknown>
-  if (typeof root.version !== 'number') {
-    return { success: false, errors: [{ path: 'version', message: 'Missing version: file has no version field (legacy v1 files must be re-exported).' }] }
+  let version: number
+  if (typeof root.version === 'number') {
+    version = root.version
+  } else if (isRecognizedVersionlessExport(root)) {
+    version = EXPORT_SCHEMA_VERSION
+  } else {
+    return {
+      success: false,
+      errors: [{ path: 'version', message: 'Missing or invalid version: only the recognized flat version-less v1 export format is supported.' }],
+    }
   }
-  if (root.version !== EXPORT_SCHEMA_VERSION) {
-    return { success: false, errors: [{ path: 'version', message: `Unsupported version ${String(root.version)}: this app reads version ${String(EXPORT_SCHEMA_VERSION)}.` }] }
+  if (version !== EXPORT_SCHEMA_VERSION) {
+    return { success: false, errors: [{ path: 'version', message: `Unsupported version ${String(version)}: this app reads version ${String(EXPORT_SCHEMA_VERSION)}.` }] }
   }
   const payload = {
-    version: root.version,
+    version,
     exportedAt: typeof root.exportedAt === 'string' ? root.exportedAt : new Date().toISOString(),
     entities: root.entities ?? [],
     claims: root.claims ?? [],
@@ -239,5 +268,5 @@ export const parseImportFile = (text: string): ImportResult => {
     }
   }
 
-  return { success: true, entities, claims, version: root.version, graph, mindMap, links, tags }
+  return { success: true, entities, claims, version, graph, mindMap, links, tags }
 }

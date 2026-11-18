@@ -8,6 +8,7 @@ import {
   parseVaultFiles,
   type MarkdownImportResult,
 } from '@/lib/import/markdown-import'
+import { checkImportSize } from './export-helpers'
 import { readVaultZip } from '@/lib/import/vault-zip'
 
 /**
@@ -162,6 +163,13 @@ export const stagePickedNonJsonFiles = async (
 
   /** The picked Markdown notes. */
   const markdownFiles = selected.filter((file) => isMarkdownPath(file.name))
+  /** Total Markdown payload size, rejected before any file is read. */
+  const totalBytes = markdownFiles.reduce((total, file) => total + file.size, 0)
+  const sizeError = checkImportSize(totalBytes)
+  if (sizeError !== null) {
+    toast.error(exportT('export.import.failed'), { description: sizeError })
+    return true
+  }
   try {
     /** The path → content batch. */
     const batch = new Map<string, string>()

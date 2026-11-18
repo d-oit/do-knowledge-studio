@@ -1,0 +1,54 @@
+{
+  "name": "dks-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./frontmatter": {
+      "types": "./dist/frontmatter.d.ts",
+      "import": "./dist/frontmatter.js"
+    },
+    "./graph-path": {
+      "types": "./dist/graph-path.d.ts",
+      "import": "./dist/graph-path.js"
+    },
+    "./markdown": {
+      "types": "./dist/markdown.d.ts",
+      "import": "./dist/markdown.js"
+    },
+    "./okf-export": {
+      "types": "./dist/okf-export.d.ts",
+      "import": "./dist/okf-export.js"
+    },
+    "./okf-parse": {
+      "types": "./dist/okf-parse.d.ts",
+      "import": "./dist/okf-parse.js"
+    },
+    "./pwa-retrieval": {
+      "types": "./dist/pwa-retrieval.d.ts",
+      "import": "./dist/pwa-retrieval.js"
+    }
+  },
+  "description": "Framework-neutral Knowledge Studio domain services shared by the dks CLI and the optional MCP adapter. No React/Next/MCP dependencies.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "typescript": "^6",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": ">=22.12.0 <27.0.0"
+  }
+}

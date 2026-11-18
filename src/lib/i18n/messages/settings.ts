@@ -53,6 +53,53 @@ const messages = {
     'The next semantic search downloads the model again, which needs a network connection.',
   /** Shown when storage cannot be measured at all. */
   'settings.unavailable': 'Storage is not available in this browser',
+  /** Section heading for origin storage diagnostics. */
+  'settings.origin.title': 'Origin storage',
+  /** Explains what the origin panel measures. */
+  'settings.origin.description':
+    'What your browser reports this site may use on this device, and whether it protects the data from eviction.',
+  /** Label for the estimated usage row. */
+  'settings.origin.usage': 'Estimated usage',
+  /** Label for the estimated quota row. */
+  'settings.origin.quota': 'Estimated quota',
+  /** Notes that usage and quota are estimates, not exact disk usage. */
+  'settings.origin.estimatesHint': 'Usage and quota are browser estimates, not exact disk usage.',
+  /** Explains the estimate covers every app-owned store, not per-store sizes. */
+  'settings.origin.coverage':
+    "One estimate, all stores: the number above is your browser's estimate for everything this site stores here — notes, attachments, cached models, and recovery copies. Individual stores are not weighed separately.",
+  /** Shown when the browser refused to return an estimate. */
+  'settings.origin.measureFailed': 'Your browser did not return usable storage measurements.',
+  /** Shown when the Storage API is missing. */
+  'settings.origin.unsupported': 'This browser does not expose origin storage diagnostics.',
+  /** Label for the persistent-storage status line. */
+  'settings.origin.persisted': 'Persistent storage',
+  /** Status when persistence was granted. */
+  'settings.origin.persistedGranted':
+    "Granted — the browser will avoid evicting this site's data under storage pressure.",
+  /** Status when persistence was not granted. */
+  'settings.origin.persistedNotGranted':
+    "Not granted — under storage pressure the browser may evict this site's data.",
+  /** Status while the browser has not said yet. */
+  'settings.origin.persistedUnknown': 'Status unavailable',
+  /** Shown when the browser did not provide an estimate field. */
+  'settings.origin.valueUnavailable': 'Unavailable',
+  /** Explains when the browser exposes no persistent-storage request. */
+  'settings.origin.persistUnavailable': 'This browser cannot request persistent storage.',
+  /** Button that requests persistent storage. */
+  'settings.origin.persistAction': 'Request persistent storage',
+  /** Toast when the browser granted persistence. */
+  'settings.origin.persistGranted': 'Persistent storage granted',
+  /** Toast when the browser declined persistence. */
+  'settings.origin.persistDenied':
+    'The browser declined persistent storage. Your data may still be evicted.',
+  /** Explains persistence is not a backup. */
+  'settings.origin.notBackup':
+    "Persistent storage is not a backup: it only asks the browser not to evict this site's data. It cannot prevent manual site-data deletion or device loss.",
+  /** Link to the backup/export view. */
+  'settings.origin.backupLink': 'Back up your library',
+  /** Quota warning, with the reported usage percentage. */
+  'settings.origin.nearQuota': (percent: string) =>
+    `Your browser reports this site is using about ${percent}% of its estimated storage quota. Near the limit the browser may evict data — back up anything you cannot recreate.`,
   /** Settings persist failure toast. */
   'settings.save.failed': 'Failed to save settings. Your changes may not persist.',
 } as const

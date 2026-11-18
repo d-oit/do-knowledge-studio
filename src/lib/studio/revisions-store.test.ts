@@ -50,6 +50,40 @@ describe('restoreEntityRevision', () => {
     expect(entity?.content).toBe('current text')
   })
 
+  it('restores aliases alongside the content', () => {
+    useStudioStore
+      .getState()
+      .restoreEntityRevision({ ...makeEntity('entity-1', 'old text'), aliases: ['Old Alias'] })
+    const entity = useStudioStore.getState().entities.find((item) => item.id === 'entity-1')
+    expect(entity?.content).toBe('old text')
+    expect(entity?.aliases).toEqual(['Old Alias'])
+  })
+
+  it('undo restores the pre-restore aliases', () => {
+    const current = { ...makeEntity('entity-1', 'current text'), aliases: ['Current Alias'] }
+    useStudioStore.setState({
+      entities: [current],
+      claims: [],
+      entityHistory: [
+        snapshotCorpus([current], [], {
+          graph: { nodes: [], edges: [] },
+          mindMap: { nodes: [], edges: [] },
+          links: [],
+        }),
+      ],
+      historyIndex: 0,
+    })
+    useStudioStore
+      .getState()
+      .restoreEntityRevision({ ...makeEntity('entity-1', 'old text'), aliases: ['Old Alias'] })
+    const afterRestore = useStudioStore.getState().entities.find((item) => item.id === 'entity-1')
+    expect(afterRestore?.aliases).toEqual(['Old Alias'])
+    useStudioStore.getState().undo()
+    const restored = useStudioStore.getState().entities.find((item) => item.id === 'entity-1')
+    expect(restored?.content).toBe('current text')
+    expect(restored?.aliases).toEqual(['Current Alias'])
+  })
+
   it('ignores a snapshot for an entity that no longer exists', () => {
     useStudioStore.getState().restoreEntityRevision(makeEntity('missing', 'old text'))
     expect(
