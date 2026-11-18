@@ -74,9 +74,7 @@ const sha256Hex = async (bytes: Uint8Array<ArrayBuffer>): Promise<string> => {
 /** Decodes base64 into bytes; throws on malformed input. */
 const fromBase64 = (text: string): Uint8Array<ArrayBuffer> => {
   const binary = atob(text)
-  const out = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i)
-  return out
+  return Uint8Array.from(binary, (ch) => ch.charCodeAt(0))
 }
 
 /** Parses JSON; returns undefined on any parse failure. */
@@ -112,9 +110,9 @@ const validateManifest = (value: unknown): BackupFailure | { ok: true; manifest:
   if (typeof m.counts !== 'object' || m.counts === null || Array.isArray(m.counts)) {
     return failure('format', ['backup counts are invalid'])
   }
-  const counts = m.counts as Record<string, unknown>
+  const counts = new Map(Object.entries(m.counts as Record<string, unknown>))
   for (const key of ['entities', 'claims', 'graphNodes', 'graphEdges', 'mindMapNodes', 'mindMapEdges', 'links', 'tags']) {
-    const v = counts[key]
+    const v = counts.get(key)
     if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) {
       return failure('format', [`backup count "${key}" is invalid`])
     }
@@ -196,12 +194,12 @@ const decryptArchivePayload = async (
 /** Verifies manifest-declared hashes against the payload files. */
 const verifyFileHashes = async (
   manifest: Record<string, unknown>,
-  files: Record<string, string>,
+  files: Map<string, string>,
 ): Promise<BackupFailure | { ok: true }> => {
   const entries = manifest.files as Array<Record<string, unknown>>
   for (const entry of entries) {
     const path = String(entry.path)
-    const content = files[path]
+    const content = files.get(path)
     if (content === undefined) return failure('checksum', [`missing payload file: ${path}`])
     const bytes = new TextEncoder().encode(content)
     if (bytes.length !== Number(entry.bytes)) {
@@ -216,17 +214,17 @@ const verifyFileHashes = async (
 
 /** Verifies record counts and references against parsed payload files. */
 const validatePayload = (
-  files: Record<string, string>,
+  files: Map<string, string>,
   manifest: Record<string, unknown>,
 ): BackupFailure | { ok: true; entityCount: number; claimCount: number; graphEdgeCount: number; mindMapEdgeCount: number; linkCount: number; tagCount: number; graphViewCount: number } => {
   const expected = new Set(Object.values(BACKUP_FILE_PATHS))
-  const actual = new Set(Object.keys(files))
+  const actual = new Set(files.keys())
   if (actual.size !== expected.size || [...expected].some((p) => !actual.has(p))) {
     return failure('manifest', ['backup payload file inventory is incomplete or unexpected'])
   }
-  const entitiesFile = parseJson(files[BACKUP_FILE_PATHS.entities] ?? '') as { entities?: unknown } | undefined
-  const claimsFile = parseJson(files[BACKUP_FILE_PATHS.claims] ?? '') as { claims?: unknown } | undefined
-  const canvasFile = parseJson(files[BACKUP_FILE_PATHS.canvas] ?? '') as Record<string, unknown> | undefined
+  const entitiesFile = parseJson(files.get(BACKUP_FILE_PATHS.entities) ?? '') as { entities?: unknown } | undefined
+  const claimsFile = parseJson(files.get(BACKUP_FILE_PATHS.claims) ?? '') as { claims?: unknown } | undefined
+  const canvasFile = parseJson(files.get(BACKUP_FILE_PATHS.canvas) ?? '') as Record<string, unknown> | undefined
   if (entitiesFile === undefined || claimsFile === undefined || canvasFile === undefined) {
     return failure('payload', ['payload file is not valid JSON'])
   }
@@ -346,7 +344,9 @@ export const verifyBackupArchive = async (raw: string, passphrase?: string): Pro
   const encrypted = envelope.encryption !== null
 
   let manifest: Record<string, unknown>
-  let files: Record<string, string>
+  // Payload files are keyed lookups from untrusted manifest paths; a Map keeps
+  // lookups own-property-only (no prototype-chain reads like `__proto__`).
+  let files: Map<string, string>
   if (encrypted) {
     if (typeof envelope.ciphertext !== 'string' || envelope.ciphertext === '') {
       return failure('format', ['encrypted backup is missing its ciphertext'])
@@ -381,7 +381,7 @@ export const verifyBackupArchive = async (raw: string, passphrase?: string): Pro
     const innerManifest = validateManifest(inner.manifest)
     if (!innerManifest.ok) return innerManifest
     manifest = innerManifest.manifest
-    files = inner.files as Record<string, string>
+    files = new Map(Object.entries(inner.files as Record<string, string>))
   } else {
     if (envelope.manifest === undefined || envelope.files === undefined) {
       return failure('format', ['unencrypted backup is missing its manifest or files'])
@@ -392,12 +392,12 @@ export const verifyBackupArchive = async (raw: string, passphrase?: string): Pro
     const manifestCheck = validateManifest(envelope.manifest)
     if (!manifestCheck.ok) return manifestCheck
     manifest = manifestCheck.manifest
-    files = envelope.files as Record<string, string>
+    files = new Map(Object.entries(envelope.files as Record<string, string>))
   }
 
   if (Number(manifest.schemaVersion) > Number.MAX_SAFE_INTEGER || Number(manifest.schemaVersion) < MIN_SUPPORTED_SCHEMA_VERSION) {
     return failure('schema-version', [
-      `backup schema version ${manifest.schemaVersion} is not supported by this build`,
+      `backup schema version ${String(manifest.schemaVersion)} is not supported by this build`,
     ])
   }
 

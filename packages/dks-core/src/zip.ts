@@ -21,14 +21,14 @@ export type ZipEntries = Map<string, Uint8Array>
 
 /** Reads a 16-bit little-endian unsigned int at `offset`. */
 const u16 = (b: Uint8Array, offset: number): number =>
-  (b[offset] ?? 0) | ((b[offset + 1] ?? 0) << 8)
+  (b.at(offset) ?? 0) | ((b.at(offset + 1) ?? 0) << 8)
 
 /** Reads a 32-bit little-endian unsigned int at `offset`. */
 const u32 = (b: Uint8Array, offset: number): number =>
-  ((b[offset] ?? 0) |
-    ((b[offset + 1] ?? 0) << 8) |
-    ((b[offset + 2] ?? 0) << 16) |
-    ((b[offset + 3] ?? 0) << 24)) >>>
+  ((b.at(offset) ?? 0) |
+    ((b.at(offset + 1) ?? 0) << 8) |
+    ((b.at(offset + 2) ?? 0) << 16) |
+    ((b.at(offset + 3) ?? 0) << 24)) >>>
   0
 
 /** Locates the end-of-central-directory record from the buffer tail. */

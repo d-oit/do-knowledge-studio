@@ -72,6 +72,20 @@ describe('parseFrontmatter', () => {
   it('rejects scalar entries in a mapping document', () => {
     expect(parseFrontmatter('[unclosed').ok).toBe(false)
   })
+
+  it('keeps a literal __proto__ key as plain data (no prototype pollution)', () => {
+    const r = parseFrontmatter('__proto__:\n  polluted: yes\ntitle: Safe\n')
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // The key must be an own data property (assignment via `map[key] = …`
+    // would instead invoke the prototype setter and silently drop the key).
+    expect(Object.keys(r.data)).toContain('__proto__')
+    const desc = Object.getOwnPropertyDescriptor(r.data, '__proto__')
+    expect(desc).toBeDefined()
+    expect((desc?.value as Record<string, unknown>).polluted).toBe('yes')
+    expect((r.data as Record<string, unknown>).polluted).toBeUndefined()
+    expect(r.data.title).toBe('Safe')
+  })
 })
 
 describe('splitFrontmatter', () => {

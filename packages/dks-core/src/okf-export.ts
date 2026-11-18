@@ -123,7 +123,7 @@ const buildConceptBody = (
   sources: SourceEntry[],
 ): string => {
   const lines = [
-    e.content ?? '',
+    e.content,
     claims.length ? '\n# Claims\n' : '',
     ...claims.map((c) => {
       const id = c.source ? sourceIdByResource.get(c.source) : undefined
@@ -239,9 +239,9 @@ export const buildOkfBundle = (
   }))
 
   const pathByEntityId = new Map(
-    entities.map((e, i) => [e.id, `/${conceptFiles[i]?.path ?? ''}`]),
+    entities.map((e, i) => [e.id, `/${conceptFiles.at(i)?.path ?? ''}`]),
   )
-  const entityByPath = new Map(entities.map((e, i) => [conceptFiles[i]?.path ?? '', e]))
+  const entityByPath = new Map(entities.map((e, i) => [conceptFiles.at(i)?.path ?? '', e]))
   const entityById = new Map(entities.map((e) => [e.id, e]))
   appendRelatedLinks(conceptFiles, edges, entityById, pathByEntityId)
 

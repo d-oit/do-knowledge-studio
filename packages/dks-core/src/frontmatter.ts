@@ -50,12 +50,12 @@ const unquote = (raw: string): string => {
   }
   let out = ''
   for (let i = 0; i < body.length; i += 1) {
-    const ch = body[i] ?? ''
+    const ch = body.charAt(i)
     if (ch !== '\\') {
       out += ch
       continue
     }
-    const next = body[i + 1] ?? ''
+    const next = body.charAt(i + 1)
     i += 1
     switch (next) {
       case 'n': out += '\n'; break
@@ -176,7 +176,7 @@ const parseBlock = (
   let i = start
   // Skip blank/comment lines before deciding the block kind.
   while (i < lines.length) {
-    const line = lines[i] ?? { indent: 0, content: '' }
+    const line = lines.at(i) ?? { indent: 0, content: '' }
     if (line.indent < 0) throw new Error('Tabs are not supported in frontmatter indentation')
     if (line.indent < indent) return { node: {}, next: i }
     if (line.indent > indent) throw new Error(`Unexpected indentation at line ${i + 1}`)
@@ -184,14 +184,14 @@ const parseBlock = (
     if (content !== '' && !content.startsWith('#')) break
     i += 1
   }
-  const first = lines[i]
-  if (!first) return { node: {}, next: i }
+  const first = lines.at(i)
+  if (first === undefined) return { node: {}, next: i }
 
   if (first.content.startsWith('- ')) {
     // Array block.
     const items: FmValue[] = []
     while (i < lines.length) {
-      const itemLine = lines[i] ?? { indent: 0, content: '' }
+      const itemLine = lines.at(i) ?? { indent: 0, content: '' }
       if (itemLine.indent < 0) throw new Error('Tabs are not supported in frontmatter indentation')
       if (itemLine.indent !== indent || !itemLine.content.startsWith('- ')) break
       const rest = itemLine.content.slice(2).trimStart()
@@ -200,7 +200,7 @@ const parseBlock = (
         i += 1
         continue
       }
-      const nextLine = lines[i + 1]
+      const nextLine = lines.at(i + 1)
       const hasNested = nextLine !== undefined && nextLine.indent > indent && nextLine.indent >= 0
       if (hasNested && isInlineMap(rest)) {
         const colon = rest.indexOf(':')
@@ -215,9 +215,9 @@ const parseBlock = (
         ) {
           // `key: value` followed by more keys at a deeper indent — merge them
           // into one item map instead of nesting the remainder under the key.
-          const item: Record<string, FmValue> = { [key]: parseInlineValue(restValue) }
-          Object.assign(item, nested.node)
-          items.push(item)
+          // Spread (not Object.assign) so a literal `__proto__` key stays a
+          // plain data property instead of invoking the prototype setter.
+          items.push({ [key]: parseInlineValue(restValue), ...nested.node })
         } else {
           items.push({ [key]: parseInlineValue(restValue) })
         }
@@ -242,10 +242,12 @@ const parseBlock = (
     return { node: items, next: i }
   }
 
-  // Mapping block.
-  const map: Record<string, FmValue> = {}
+  // Mapping block. Built as a Map so arbitrary YAML keys (including
+  // `__proto__`/`constructor`) stay plain data and never hit object setters;
+  // converted to a plain record at the return boundary.
+  const map = new Map<string, FmValue>()
   while (i < lines.length) {
-    const line = lines[i] ?? { indent: 0, content: '' }
+    const line = lines.at(i) ?? { indent: 0, content: '' }
     if (line.indent < 0) throw new Error('Tabs are not supported in frontmatter indentation')
     if (line.indent < indent) break
     if (line.indent > indent) throw new Error(`Unexpected indentation at line ${i + 1}`)
@@ -266,23 +268,23 @@ const parseBlock = (
     const key = content.slice(0, colon).trim()
     const rest = content.slice(colon + 1).trimStart()
     if (key === '') throw new Error(`Empty key at line ${i + 1}`)
-    const nextLine = lines[i + 1]
+    const nextLine = lines.at(i + 1)
     const hasNested = nextLine !== undefined && nextLine.indent > indent && nextLine.indent >= 0
     if (rest === '' || rest.startsWith('#')) {
       if (hasNested) {
         const nested = parseBlock(lines, i + 1, nextLine.indent)
-        map[key] = nested.node
+        map.set(key, nested.node)
         i = nested.next
       } else {
-        map[key] = ''
+        map.set(key, '')
         i += 1
       }
       continue
     }
-    map[key] = parseInlineValue(rest)
+    map.set(key, parseInlineValue(rest))
     i += 1
   }
-  return { node: map, next: i }
+  return { node: Object.fromEntries(map), next: i }
 }
 
 /**

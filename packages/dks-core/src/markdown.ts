@@ -24,14 +24,14 @@ export const MAX_MARKDOWN_TOTAL_BYTES = 20_971_520
 export const MARKDOWN_EXTENSIONS = ['.md', '.markdown']
 
 /** Frontmatter keys mapped onto entity fields; others are warned and ignored. */
-const KNOWN_FRONTMATTER_KEYS: Record<string, true> = {
-  title: true,
-  tags: true,
-  aliases: true,
-  type: true,
-  created: true,
-  description: true,
-}
+const KNOWN_FRONTMATTER_KEYS: ReadonlySet<string> = new Set([
+  'title',
+  'tags',
+  'aliases',
+  'type',
+  'created',
+  'description',
+])
 
 /** Obsidian type strings mapped onto entity types (unknown → concept). */
 const VAULT_TYPE_MAP: Record<string, string> = {
@@ -138,7 +138,7 @@ const extractHashtags = (body: string): string[] => {
   for (const line of body.split('\n')) {
     const fence = /^\s*(```|~~~)/.exec(line)
     if (fence) {
-      const marker = fence[1] ?? ''
+      const marker = fence.at(1) ?? ''
       if (inFence === null) inFence = marker
       else if (inFence === marker) inFence = null
       continue
@@ -148,7 +148,7 @@ const extractHashtags = (body: string): string[] => {
     HASHTAG_PATTERN.lastIndex = 0
     let match = HASHTAG_PATTERN.exec(withoutInline)
     while (match !== null) {
-      const tag = match[2] ?? ''
+      const tag = match.at(2) ?? ''
       if (tag !== '' && !seen.has(tag)) {
         seen.add(tag)
         tags.push(tag)
@@ -242,7 +242,7 @@ const parseDraftFile = (
     }
     fm = parsed.data as Record<string, unknown>
     for (const key of Object.keys(fm)) {
-      if (!KNOWN_FRONTMATTER_KEYS[key]) {
+      if (!KNOWN_FRONTMATTER_KEYS.has(key)) {
         warnings.push(`${path}: ignoring unknown frontmatter key "${key}"`)
       }
     }

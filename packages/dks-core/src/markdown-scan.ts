@@ -68,11 +68,11 @@ export const scanRelativeLinks = (body: string): RawLinkSpan[] => {
     if (body.charCodeAt(textEnd + 1) === 40) {
       let k = textEnd + 2
       while (k < n) {
-        const c: string = body[k] as string
+        const c = body.charAt(k)
         if (c === ')' || isSpace(c)) break
         k += 1
       }
-      if (k < n && body[k] === ')' && k > textEnd + 2) {
+      if (k < n && body.charAt(k) === ')' && k > textEnd + 2) {
         spans.push({
           start,
           end: k + 1,
