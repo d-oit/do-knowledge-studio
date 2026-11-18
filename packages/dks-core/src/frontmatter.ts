@@ -318,5 +318,5 @@ export const splitFrontmatter = (
 ): { frontmatter: string | null; body: string } => {
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(content)
   if (!match) return { frontmatter: null, body: content }
-  return { frontmatter: match[1] ?? '', body: match[2] ?? '' }
+  return { frontmatter: match.at(1) ?? '', body: match.at(2) ?? '' }
 }
