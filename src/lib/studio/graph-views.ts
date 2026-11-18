@@ -7,6 +7,7 @@
  * schema-validated before it can steer a canvas.
  */
 import { z } from 'zod'
+import { GraphQuerySchema } from './graph-query-builder'
 import { MAX_ZOOM, MIN_ZOOM } from './graph-gestures'
 import { EMPTY_GRAPH_FILTER } from './graph-query'
 import { GRAPH_LAYOUTS, type GraphLayout } from './graph-snapshot'
@@ -43,6 +44,8 @@ export const SavedGraphViewSchema = z.object({
   layout: z.enum(GRAPH_LAYOUTS),
   focusMode: z.boolean(),
   viewport: GraphViewportSchema,
+  /** Visual query composition (#1164); null/absent keeps legacy filter behavior. */
+  query: GraphQuerySchema.nullable().optional().default(null),
   createdAt: z.string().min(1),
 })
 
@@ -61,7 +64,7 @@ export const normalizeGraphViewName = (name: string): string =>
 
 /**
  * Builds a saved view with a fresh id and timestamp.
- * @param input - Filter, layout, focus mode, and viewport to store.
+ * @param input - Filter, layout, focus mode, query, and viewport to store.
  * @param options - Id and timestamp overrides (used by import/restore paths).
  * @returns The saved view.
  */
@@ -76,6 +79,7 @@ export const buildSavedGraphView = (
   layout: input.layout,
   focusMode: input.focusMode,
   viewport: input.viewport,
+  query: input.query,
 })
 
 /**

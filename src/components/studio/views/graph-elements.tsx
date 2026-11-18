@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { type GraphEdge, type GraphNode } from '@/lib/studio/types'
 import { cn } from '@/lib/utils'
 import { getEntityTypeMeta } from '@/lib/studio/entity-types'
@@ -81,7 +82,7 @@ const EdgeRelationLabel = ({
  * 500-LOC limit (Plan 159 follow-on F6). The render body and z-order are
  * unchanged: the label is drawn after its line and only while highlighted.
  */
-export const GraphEdgeElement = ({
+export const GraphEdgeElement = memo(function GraphEdgeElement({
   edge,
   sourceNode,
   targetNode,
@@ -97,7 +98,7 @@ export const GraphEdgeElement = ({
   pathHighlighted?: boolean
   /** Level-of-detail switch: relation labels are hidden on large, zoomed-out graphs. */
   showRelationLabel?: boolean
-}) => {
+}) {
   const isHighlighted = isEdgeHighlighted(edge, selectedEntityId) || pathHighlighted
   const stroke = EDGE_STROKE[isHighlighted ? 'highlighted' : 'default']
 
@@ -120,7 +121,7 @@ export const GraphEdgeElement = ({
       )}
     </g>
   )
-}
+})
 
 /**
  * One graph node: dot, selection ring, optional core and label.
@@ -129,7 +130,7 @@ export const GraphEdgeElement = ({
  * 500-LOC limit while it gained roving-tabindex keyboard navigation
  * (plans/213). Render output is unchanged.
  */
-export const GraphNodeElement = ({
+export const GraphNodeElement = memo(function GraphNodeElement({
   node,
   selected,
   focused,
@@ -158,7 +159,7 @@ export const GraphNodeElement = ({
   onKeyDown: (nodeId: string, event: React.KeyboardEvent<SVGGElement>) => void
   onFocusNode: (nodeId: string) => void
   onBlurNode: () => void
-}) => {
+}) {
   const meta = getEntityTypeMeta(node.type)
   const radius = selected ? SELECTED_NODE_RADIUS : NODE_RADIUS
   const label = node.label.length > LABEL_MAX_CHARS
@@ -217,4 +218,4 @@ export const GraphNodeElement = ({
       </g>
     </g>
   )
-}
+})
