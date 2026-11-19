@@ -6,13 +6,20 @@ durations printed by the vitest reporters under `pnpm run test:bench`, measured
 on the repository's CI-class runner. Re-run that command before trusting them
 on different hardware.
 
-## How to reproduce
-
 ```bash
 pnpm run test:bench          # bench config: src/**/*.bench.test.ts + fusion bench
 pnpm vitest run src/lib/studio/graph-layout.bench.test.ts   # graph layout only
+pnpm vitest run src/lib/studio/graph-filter.bench.test.ts   # filter/query CPU budgets
 pnpm exec playwright test e2e/graph-frame-timeline.spec.ts --project=chromium  # frame timeline
+GRAPH_BENCH_SIZES=1,5,10 pnpm exec playwright test e2e/graph-frame-timeline.spec.ts --project=chromium  # 1k/5k/10k sweep
 ```
+
+The E2E runner prints, next to the percentile floors, the browser/OS/hardware
+context it measured under (user agent, platform, `navigator.deviceMemory`,
+`hardwareConcurrency`, viewport) and heap samples (`JSHeapUsedSize` from the
+Chromium metrics API) at load and after a drag. That metadata is the
+`env=`/`heapLoaded=`/`heapAfterPan=` fields of the printed `[frame-timeline]`
+lines; never trust a percentile without the context that produced it.
 
 The reporter prints each test's duration next to its name; a budget is a hard
 assertion, so a slower machine turns the figure into a failing check rather than
@@ -162,13 +169,63 @@ frame cadence describes one rendering engine on one viewport, so repeating it
 under emulated WebKit and phone viewports would produce four numbers for four
 emulators.
 
+## Graph query evaluation (`src/lib/studio/graph-filter.bench.test.ts`)
+
+Issue #1163 adds deterministic corpus fixtures and CPU budgets for the pure
+query paths that run on the main thread before placement. The fixture
+(`src/lib/studio/graph-bench-fixture.ts`) is a seeded, reproducible 1k/5k/10k
+corpus with ring + shortcut edges (average degree ≈ 2.25), a spread of entity
+types and tags, labels, and ~1.5 claims per entity — the same corpus the
+perf-baselines runner and the E2E sweep can reload through the store fixture.
+
+Budgets (regression floors, not measured targets — the first CI run prints the
+measured values in the reporter next to the test names):
+
+| Nodes | `filterGraph` ceiling | `evaluateGraphQuery` ceiling (nested query) |
+| ----- | --------------------- | ------------------------------------------- |
+| 1,000 | < 25 ms | < 25 ms |
+| 5,000 | < 120 ms | < 150 ms |
+| 10,000 | < 250 ms | < 300 ms |
+
+These cover the "filtering" item of the benchmark scope. Selection, path
+highlighting, and initial render are covered by the browser harness: selection
+and path highlighting are additive SVG state (no per-frame corpus scan), and
+initial render is the placement + DOM work the frame timeline already bounds.
+
 ## Not measured here
 
 - **Frame rate on GPU hardware.** See the section above: the harness records
   software-rendered timings, which is what every runner available to this
   project provides.
-- **Memory.** The 5k pass allocates the node list and grid only; no heap
-  measurement is recorded.
+- **Physical mobile devices.** The `mobile` project emulates an iPhone 13
+  viewport in software; it is not a device, and no physical-device run exists
+  in this repo.
+- **Memory on non-Chromium engines.** Heap samples come from the Chromium
+  metrics API (`page.metrics()`) and are `null` where that API is absent; the
+  timeline spec therefore runs in the `chromium` project only.
+
+## Frame-timeline sweep record (2026-11-18, issue #1163)
+
+Recorded by `GRAPH_BENCH_SIZES=1,5,10 pnpm exec playwright test
+e2e/graph-frame-timeline.spec.ts --project=chromium` on the CI-class Linux
+runner (Linux x86_64, Chromium 156.0.8078.4 headless, `hardwareConcurrency` 14,
+`deviceMemory` 8, 1280×720 viewport; software rendering). Pan/zoom p50 and p95
+in milliseconds, from the `[frame-timeline]` lines the runner prints with its
+own environment metadata:
+
+| Nodes | pan p50 | pan p95 | zoom p50 | zoom p95 |
+| -----:| -------:| -------:| --------:| --------:|
+| 1,000 | 16.7 | 166.7 | 16.7 | 200.9 |
+| 5,000 | 33.3 | 638.4 | 33.3 | 694.1 |
+| 10,000 | 66.7 | 1246.6 | 49.9 | 910.8 |
+
+All three sizes stay inside the 120 ms p50 / 1500 ms p95 ceilings the spec
+asserts, and the 5k type-filter pass (`filterGraph` over the 5k corpus, 1250
+surviving entities) re-rendered in 95 ms. Heap (`JSHeapUsedSize`) stayed in the
+~64–250 MB band across the sweep; the runner prints per-run heap samples next
+to the timings. These are regression floors for this runner class, not product
+targets: GPU-accelerated hardware and physical mobile devices remain unmeasured
+(the sections above), and the ceilings are asserted, not tuned, by the spec.
 
 ## Storage baselines
 

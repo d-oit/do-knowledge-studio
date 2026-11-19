@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Filter, Route, BookmarkPlus, Trash2, Play } from 'lucide-react'
+import { Filter, Route, Play } from 'lucide-react'
 import type { Claim, Entity } from '@/lib/studio/types'
 import {
   EMPTY_GRAPH_FILTER,
@@ -12,17 +12,16 @@ import {
   type GraphFilter,
   type GraphPathResult,
 } from '@/lib/studio/graph-query'
-import {
-  GRAPH_VIEW_NAME_MAX_LENGTH,
-  MAX_SAVED_GRAPH_VIEWS,
-  buildSavedGraphView,
-  normalizeGraphViewName,
-  type SavedGraphView,
-  type SavedGraphViewInput,
-} from '@/lib/studio/graph-views'
+import type { SavedGraphView, SavedGraphViewInput } from '@/lib/studio/graph-views'
+import type { GraphQuery } from '@/lib/studio/graph-query-builder'
 import { getEntityTypeDefs } from '@/lib/studio/entity-types'
 import { translate } from '@/lib/i18n/messages/graph'
 import { cn } from '@/lib/utils'
+import { GraphQueryBuilder } from './graph-query-builder'
+import { GraphSavedViews } from './graph-saved-views'
+
+/** Bound mobile query controls so the graph canvas retains a visible region. */
+const GRAPH_QUERY_PANEL_MOBILE_MAX_HEIGHT_CLASS = 'max-h-[35dvh]'
 
 /** Input class shared by the text and date fields in this panel. */
 const FIELD_CLASS =
@@ -61,12 +60,14 @@ const splitList = (value: string): string[] =>
 /** Joins a list for display in a comma-separated field. */
 const joinList = (values: string[]): string => values.join(', ')
 
-/** Filtering, path finding, and saved-view controls for the graph canvas. */
+/** Filtering, path finding, visual query composition, and saved views. */
 export const GraphQueryPanel = ({
   entities,
   claims,
   filter,
   onFilterChange,
+  query,
+  onQueryChange,
   pathResult,
   onPathResult,
   views,
@@ -79,6 +80,8 @@ export const GraphQueryPanel = ({
   claims: Claim[]
   filter: GraphFilter
   onFilterChange: (next: GraphFilter) => void
+  query: GraphQuery
+  onQueryChange: (next: GraphQuery) => void
   pathResult: GraphPathResult | null
   onPathResult: (result: GraphPathResult | null) => void
   views: SavedGraphView[]
@@ -89,7 +92,6 @@ export const GraphQueryPanel = ({
 }) => {
   const [fromId, setFromId] = useState('')
   const [toId, setToId] = useState('')
-  const [viewName, setViewName] = useState('')
 
   const sortedEntities = useMemo(
     () => [...entities].sort((a, b) => a.name.localeCompare(b.name)),
@@ -118,12 +120,13 @@ export const GraphQueryPanel = ({
     })
   }
 
-  const canSave = normalizeGraphViewName(viewName).length > 0
-
   return (
     <section
       aria-labelledby="graph-queries-heading"
-      className="border-b border-border bg-card/40 px-5 py-3"
+      className={cn(
+        GRAPH_QUERY_PANEL_MOBILE_MAX_HEIGHT_CLASS,
+        'shrink-0 overflow-y-auto overscroll-contain border-b border-border bg-card/40 px-5 py-3 lg:max-h-none lg:shrink lg:overflow-visible',
+      )}
     >
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <h2 id="graph-queries-heading" className="font-serif text-body font-semibold text-ink">
@@ -351,74 +354,23 @@ export const GraphQueryPanel = ({
         </fieldset>
 
         {/* Saved views */}
-        <fieldset className="rounded-md border border-border p-3">
-          <legend className="flex items-center gap-1.5 px-1 text-label font-semibold text-ink">
-            <BookmarkPlus className="h-3 w-3" aria-hidden="true" />
-            {translate('graph.queries.views.legend')}
-          </legend>
-          <div className="space-y-2">
-            <label className="block text-label text-ink-soft">
-              {translate('graph.queries.views.name')}
-              <input
-                type="text"
-                aria-label={translate('graph.queries.views.name')}
-                value={viewName}
-                maxLength={GRAPH_VIEW_NAME_MAX_LENGTH}
-                onChange={(e) => {
-                  setViewName(e.target.value)
-                }}
-                className={cn(FIELD_CLASS, 'mt-1 w-full')}
-              />
-            </label>
-            <button
-              type="button"
-              disabled={!canSave || views.length >= MAX_SAVED_GRAPH_VIEWS}
-              onClick={() => {
-                onSaveView(buildSavedGraphView({ ...currentView, name: viewName }))
-                setViewName('')
-              }}
-              className="min-h-touch rounded bg-primary px-3 text-label font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-ring disabled:opacity-50"
-            >
-              {translate('graph.queries.views.save')}
-            </button>
-            <p className="text-caption text-ink-faint">
-              {translate('graph.queries.views.limit', String(MAX_SAVED_GRAPH_VIEWS))}
-            </p>
+        <GraphSavedViews
+          views={views}
+          currentView={currentView}
+          onSaveView={onSaveView}
+          onApplyView={onApplyView}
+          onDeleteView={onDeleteView}
+        />
+      </div>
 
-            {views.length === 0 ? (
-              <p className="text-label text-ink-faint">{translate('graph.queries.views.empty')}</p>
-            ) : (
-              <ul className="space-y-1">
-                {views.map((view) => (
-                  <li key={view.id} className="flex items-center gap-1">
-                    <span className="flex-1 truncate text-label text-ink-soft" title={view.name}>
-                      {view.name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onApplyView(view)
-                      }}
-                      className="min-h-touch rounded px-2 text-label font-medium text-saffron-deep transition-colors hover:bg-saffron-soft focus-ring"
-                    >
-                      {translate('graph.queries.views.apply')}
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={translate('graph.queries.views.deleteAria', view.name)}
-                      onClick={() => {
-                        onDeleteView(view.id)
-                      }}
-                      className="flex min-h-touch min-w-touch items-center justify-center rounded text-ink-faint transition-colors hover:text-ink focus-ring"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </fieldset>
+      {/* Visual query builder */}
+      <div className="mt-4">
+        <GraphQueryBuilder
+          entities={entities}
+          claims={claims}
+          query={query}
+          onQueryChange={onQueryChange}
+        />
       </div>
     </section>
   )

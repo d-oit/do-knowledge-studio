@@ -133,6 +133,81 @@ const messages = {
   'graph.queries.views.save': 'Save view',
   /** Applies a saved view. */
   'graph.queries.views.apply': 'Apply',
+  /** Visual query builder (#1164) heading. */
+  'graph.builder.heading': 'Visual query builder',
+  /** Label for the root operator selector. */
+  'graph.builder.match': 'Match',
+  /** Operator option: all conditions must match. */
+  'graph.builder.and': 'AND',
+  /** Operator option: any condition may match. */
+  'graph.builder.or': 'OR',
+  /** Adds a leaf condition to a group. */
+  'graph.builder.addCondition': 'Add condition',
+  /** Adds a nested group to a group. */
+  'graph.builder.addGroup': 'Add group',
+  /** Negates a clause inside its group. */
+  'graph.builder.exclude': 'Exclude',
+  /** Accessible label on a clause's remove control. */
+  'graph.builder.removeAria': (label: string) => `Remove ${label}`,
+  /** Group kind label used in remove/announcements. */
+  'graph.builder.group': 'Group',
+  /** Accessible name for a clause list, distinguishing it from validation lists. */
+  'graph.builder.list.conditions': 'Conditions',
+  /** Condition kind label used in remove/announcements. */
+  'graph.builder.condition': 'Condition',
+  /** Condition-kind option labels. */
+  'graph.builder.kind.entityType': 'Entity type',
+  'graph.builder.kind.tag': 'Tag',
+  'graph.builder.kind.text': 'Text',
+  'graph.builder.kind.claimStatus': 'Claim status',
+  'graph.builder.kind.minConfidence': 'Min confidence',
+  /** Accessible labels for condition value controls. */
+  'graph.builder.value.entityType': 'Entity type value',
+  'graph.builder.value.tag': 'Tag value',
+  'graph.builder.value.text': 'Text to search',
+  'graph.builder.value.claimStatus': 'Claim verification',
+  'graph.builder.value.minConfidence': (percent: string) =>
+    `Minimum claim confidence: ${percent}%`,
+  /** Readable summary of the active query. */
+  'graph.builder.summary.empty': 'No conditions — every entity matches.',
+  'graph.builder.summary.query': (summary: string) => `Query: ${summary}`,
+  /** Live preview count, matching the canvas renderer. */
+  'graph.builder.preview': (entities: string, total: string, edges: string) =>
+    `${entities} of ${total} entities and ${edges} edges match.`,
+  /** Shown while the query is invalid and therefore not applied. */
+  'graph.builder.preview.invalid': 'This query has issues and is not applied to the canvas.',
+  /** Validation issue group heading. */
+  'graph.builder.errors.title': (count: string) => `${count} issue(s) with this query`,
+  /** Validation message: blank condition value. */
+  'graph.builder.error.blankValue': 'Condition value cannot be empty.',
+  /** Validation message: value exceeds the length bound. */
+  'graph.builder.error.tooLong': (max: string) => `Value must be at most ${max} characters.`,
+  /** Validation message: empty nested group. */
+  'graph.builder.error.emptyGroup': 'An empty group matches nothing. Add a condition or remove it.',
+  /** Validation message: nesting depth exceeded. */
+  'graph.builder.error.depth': (max: string) => `Queries can nest at most ${max} groups deep.`,
+  /** Validation message: clause count exceeded. */
+  'graph.builder.error.clauseCount': (max: string) =>
+    `A query can hold at most ${max} clauses.`,
+  /** Validation message: root exclusion. */
+  'graph.builder.error.rootExclude': 'The root group cannot be excluded.',
+  /** Validation message: confidence out of range. */
+  'graph.builder.error.confidenceRange': 'Confidence must be between 0 and 1.',
+  /** Renames a saved view. */
+  'graph.queries.views.rename': 'Rename',
+  /** Duplicates a saved view. */
+  'graph.queries.views.duplicate': 'Duplicate',
+  /** Accessible name of a view's rename control. */
+  'graph.queries.views.renameAria': (name: string) => `Rename saved view ${name}`,
+  /** Accessible name of a view's duplicate control. */
+  'graph.queries.views.duplicateAria': (name: string) => `Duplicate saved view ${name}`,
+  /** Confirms an inline rename. */
+  'graph.queries.views.renameConfirm': 'Save name',
+  /** Cancels an inline rename. */
+  'graph.queries.views.renameCancel': 'Cancel rename',
+  /** Default name for a duplicated view. */
+  'graph.queries.views.duplicateName': (name: string) => `Copy of ${name}`,
+
   /** Empty saved-view list message. */
   'graph.queries.views.empty': 'No saved views yet.',
   /** Stored-view cap hint. */
