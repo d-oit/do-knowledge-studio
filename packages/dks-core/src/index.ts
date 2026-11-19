@@ -107,8 +107,7 @@ export {
 } from './types.js'
 export { loadBundleFromDisk } from './bundle-load.js'
 export {
-  nodeFsPort,
-  nodeFsWriterPort,
+  type DirEntry,
   type FsPort,
   type FsWriterPort,
 } from './io.js'
