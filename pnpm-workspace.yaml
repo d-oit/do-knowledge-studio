@@ -1,8 +1,7 @@
 packages:
   - 'packages/*'
 
-# pnpm 10+ reads these settings from this file; pnpm 12 REMOVED the package.json
-# `pnpm` field (see plans/219 for the #1166 toolchain decision).
+# pnpm 12 workspace-level package-manager and security policy.
 engineStrict: true
 
 peerDependencyRules:
@@ -25,9 +24,12 @@ overrides:
   smol-toml: ^1.9.1
   katex: ^0.19.0
 
-auditConfig:
-  ignoreCves:
-    - CVE-2026-93687
+audit:
+  level: high
+  # GHSA IDs are required by pnpm audit; CVE identifiers are not recognized.
+  # This advisory was withdrawn as not practically exploitable (2026-10-23).
+  ignore:
+    - GHSA-vfj7-8cjw-p6xm
 
 allowBuilds:
   core-js: false
