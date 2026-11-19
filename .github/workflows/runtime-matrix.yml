@@ -1,3 +1,4 @@
+---
 name: Runtime Matrix
 
 # #1165: compatibility validation across the supported Node.js LTS lines.
@@ -5,9 +6,7 @@ name: Runtime Matrix
 # wider matrix on a schedule so per-PR CI time stays bounded while every
 # supported runtime gets install/lint/typecheck/unit/build evidence weekly
 # (and on demand, and on every change to its own definition).
-name: Runtime Matrix
-
-on:
+'on':
   schedule:
     # Weekly, Monday 04:07 UTC — off the hour to reduce runner contention.
     - cron: '7 4 * * 1'
@@ -60,6 +59,6 @@ jobs:
         run: |
           {
             echo "## Runtime matrix — Node ${{ matrix.node }}"
-            echo '- install/lint/typecheck/test/build completed on this runtime'
-            echo '- engines.node: `$(node -p "require(\"./package.json\").engines.node")`'
+            echo "- engines.node: $(node -p 'require("./package.json").engines.node')"
+            echo "- Install, lint, typecheck, unit tests, and build are configured above."
           } >> "$GITHUB_STEP_SUMMARY"
