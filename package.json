@@ -9,17 +9,17 @@
   },
   "scripts": {
     "prepare": "./scripts/install-hooks.sh",
-    "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "next build && node scripts/generate-precache-manifest.mjs",
+    "dev": "pnpm --filter dks-core build && next dev -p 3000 2>&1 | tee dev.log",
+    "build": "pnpm --filter dks-core build && next build && node scripts/generate-precache-manifest.mjs",
     "start": "next start",
     "lint": "eslint .",
     "docs:check": "node scripts/check-doc-consistency.mjs",
     "workflows:check": "./scripts/check-workflow-hygiene.sh",
-    "typecheck": "next typegen && tsc --noEmit -p tsconfig.app.json && pnpm --filter dks-mcp typecheck",
-    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
-    "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json",
+    "typecheck": "pnpm --filter dks-core build && next typegen && tsc --noEmit -p tsconfig.app.json && pnpm --filter dks-core typecheck && pnpm --filter dks-mcp typecheck",
+    "typecheck:test": "pnpm --filter dks-core build && tsc --noEmit -p tsconfig.test.json",
+    "typecheck:e2e": "pnpm --filter dks-core build && tsc --noEmit -p tsconfig.e2e.json",
     "propagate:version": "bash scripts/propagate-version.sh",
-    "test": "vitest run && pnpm --filter dks-mcp test",
+    "test": "pnpm --filter dks-core build && vitest run && pnpm --filter dks-core test && pnpm --filter dks-mcp test",
     "test:mutation": "stryker run && node scripts/check-mutation-score.mjs < reports/mutation.json",
     "test:properties:nightly": "FAST_CHECK_PROFILE=nightly vitest run",
     "test:coverage": "vitest run --coverage",
@@ -88,7 +88,8 @@
     "yaml": "^2.9.1",
     "yjs": "^13.6.33",
     "zod": "^4.6.7",
-    "zustand": "^5.0.15"
+    "zustand": "^5.0.15",
+    "dks-core": "workspace:*"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

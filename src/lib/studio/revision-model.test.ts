@@ -112,6 +112,79 @@ describe('entitySnapshotSignature', () => {
   })
 })
 
+describe('alias handling in change detection', () => {
+  const base = makeEntity('entity-1')
+
+  it('creates revisions for meaningful alias changes', () => {
+    expect(
+      shouldCaptureRevision({ previous: base, next: { ...base, aliases: ['Alpha'] }, reason: 'save', now: 1_000 }),
+    ).toBe(true)
+    expect(
+      shouldCaptureRevision({
+        previous: { ...base, aliases: ['Alpha'] },
+        next: { ...base, aliases: [] },
+        reason: 'save',
+        now: 1_000,
+      }),
+    ).toBe(true)
+    expect(
+      shouldCaptureRevision({
+        previous: { ...base, aliases: ['Alpha'] },
+        next: { ...base, aliases: ['Alphabet'] },
+        reason: 'save',
+        now: 1_000,
+      }),
+    ).toBe(true)
+  })
+
+  it('does not create revisions for semantically identical alias arrays', () => {
+    expect(
+      shouldCaptureRevision({ previous: base, next: { ...base, aliases: [] }, reason: 'save', now: 1_000 }),
+    ).toBe(false)
+    expect(
+      shouldCaptureRevision({
+        previous: { ...base, aliases: ['Alpha'] },
+        next: { ...base, aliases: ['alpha'] },
+        reason: 'save',
+        now: 1_000,
+      }),
+    ).toBe(false)
+    expect(
+      shouldCaptureRevision({
+        previous: { ...base, aliases: [' Alpha '] },
+        next: { ...base, aliases: ['Alpha'] },
+        reason: 'save',
+        now: 1_000,
+      }),
+    ).toBe(false)
+    // Identity matching never depends on array order, so a reorder is a
+    // semantic no-op just like case or whitespace changes.
+    expect(
+      shouldCaptureRevision({
+        previous: { ...base, aliases: ['Alpha', 'Beta'] },
+        next: { ...base, aliases: ['Beta', 'Alpha'] },
+        reason: 'save',
+        now: 1_000,
+      }),
+    ).toBe(false)
+    // A case-duplicate fold also leaves the normalized alias set unchanged.
+    expect(
+      shouldCaptureRevision({
+        previous: { ...base, aliases: ['Alpha', 'alpha'] },
+        next: { ...base, aliases: ['Alpha'] },
+        reason: 'save',
+        now: 1_000,
+      }),
+    ).toBe(false)
+  })
+
+  it('includes aliases in the snapshot signature', () => {
+    expect(entitySnapshotSignature({ ...base, aliases: ['Alpha'] })).not.toBe(
+      entitySnapshotSignature(base),
+    )
+  })
+})
+
 describe('planEvictions', () => {
   it('keeps the newest revisions and evicts the rest', () => {
     const revisions = Array.from({ length: MAX_REVISIONS_PER_ENTITY + 5 }, (_, index) =>

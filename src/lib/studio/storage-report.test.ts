@@ -5,10 +5,20 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MODEL_CACHE_MAX_BYTES, MODEL_CACHE_NAME } from './pwa-cache'
-import { clearModelCache, formatBytes, readModelCacheUsage } from './storage-report'
+import {
+  clearModelCache,
+  estimateUsagePercent,
+  formatBytes,
+  isNearQuota,
+  QUOTA_WARNING_RATIO,
+  readModelCacheUsage,
+  readOriginStorage,
+  requestPersistence,
+} from './storage-report'
 
 const responseWith = (bytes: number): Response =>
   new Response('x', { headers: { 'content-length': String(bytes) } })
+const MB = 1024 * 1024
 
 /** Fake Cache Storage exposing just what the report touches. */
 const stubCacheStorage = (entries: { bytes: number }[]) => {
@@ -129,5 +139,173 @@ describe('clearModelCache', () => {
     vi.stubGlobal('caches', undefined)
 
     expect(await clearModelCache()).toBe(false)
+  })
+})
+
+describe('readOriginStorage', () => {
+  it('reports estimated usage, quota and persistence when supported', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn(async () => ({ usage: 250 * MB, quota: 1000 * MB })),
+        persisted: vi.fn(async () => true),
+        persist: vi.fn(async () => true),
+      },
+    })
+
+    expect(await readOriginStorage()).toEqual({
+      supported: true,
+      estimate: { usageBytes: 250 * MB, quotaBytes: 1000 * MB },
+      persisted: true,
+      persistenceRequestSupported: true,
+    })
+  })
+
+  it('reports unsupported when navigator.storage is missing', async () => {
+    vi.stubGlobal('navigator', {})
+
+    expect(await readOriginStorage()).toEqual({
+      supported: false,
+      estimate: null,
+      persisted: null,
+      persistenceRequestSupported: false,
+    })
+  })
+
+  it('keeps the panel usable when the estimate call rejects', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn(async () => {
+          throw new Error('blocked')
+        }),
+        persisted: vi.fn(async () => false),
+      },
+    })
+
+    const state = await readOriginStorage()
+    expect(state.supported).toBe(true)
+    expect(state.estimate).toBeNull()
+    expect(state.persisted).toBe(false)
+    expect(state.persistenceRequestSupported).toBe(false)
+  })
+
+  it('normalizes a null estimate result to unknown rather than crashing', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn(async () => null),
+        persisted: vi.fn(async () => false),
+      },
+    })
+
+    expect((await readOriginStorage()).estimate).toBeNull()
+  })
+
+  it('normalizes unavailable usage and quota fields independently', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn(async () => ({ usage: null, quota: undefined })),
+        persisted: vi.fn(async () => false),
+      },
+    })
+
+    expect((await readOriginStorage()).estimate).toEqual({ usageBytes: null, quotaBytes: null })
+  })
+
+  it('keeps persisted unknown when the status call rejects', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn(async () => ({ usage: 1, quota: 2 })),
+        persisted: vi.fn(async () => {
+          throw new Error('blocked')
+        }),
+      },
+    })
+
+    expect((await readOriginStorage()).persisted).toBeNull()
+  })
+
+  it('reports available methods without claiming unsupported capabilities', async () => {
+    vi.stubGlobal('navigator', { storage: { persisted: vi.fn(async () => false) } })
+
+    expect(await readOriginStorage()).toEqual({
+      supported: true,
+      estimate: null,
+      persisted: false,
+      persistenceRequestSupported: false,
+    })
+  })
+
+  it('reports unsupported when storage methods are missing entirely', async () => {
+    vi.stubGlobal('navigator', { storage: {} })
+
+    expect(await readOriginStorage()).toEqual({
+      supported: false,
+      estimate: null,
+      persisted: null,
+      persistenceRequestSupported: false,
+    })
+  })
+})
+
+describe('requestPersistence', () => {
+  it('reports a grant when the browser accepts', async () => {
+    vi.stubGlobal('navigator', {
+      storage: { persist: vi.fn(async () => true) },
+    })
+
+    expect(await requestPersistence()).toEqual({ supported: true, granted: true })
+  })
+
+  it('reports a denial when the browser declines', async () => {
+    vi.stubGlobal('navigator', {
+      storage: { persist: vi.fn(async () => false) },
+    })
+
+    expect(await requestPersistence()).toEqual({ supported: true, granted: false })
+  })
+
+  it('does not throw when the persist call rejects', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        persist: vi.fn(async () => {
+          throw new Error('refused')
+        }),
+      },
+    })
+
+    expect(await requestPersistence()).toEqual({ supported: true, granted: false })
+  })
+
+  it('reports unsupported without a Storage API', async () => {
+    vi.stubGlobal('navigator', {})
+
+    expect(await requestPersistence()).toEqual({ supported: false, granted: false })
+  })
+  it('reports unsupported when the persist method is missing', async () => {
+    vi.stubGlobal('navigator', { storage: { persisted: vi.fn(async () => false) } })
+
+    expect(await requestPersistence()).toEqual({ supported: false, granted: false })
+  })
+})
+
+describe('estimateUsagePercent / isNearQuota', () => {
+  it('computes the rounded percentage of reported quota in use', () => {
+    expect(estimateUsagePercent({ usageBytes: 250, quotaBytes: 1000 })).toBe(25)
+    expect(estimateUsagePercent({ usageBytes: 899, quotaBytes: 1000 })).toBe(90)
+  })
+
+  it('returns null when either side is unknown or quota is empty', () => {
+    expect(estimateUsagePercent(null)).toBeNull()
+    expect(estimateUsagePercent({ usageBytes: null, quotaBytes: 1000 })).toBeNull()
+    expect(estimateUsagePercent({ usageBytes: 10, quotaBytes: null })).toBeNull()
+    expect(estimateUsagePercent({ usageBytes: 10, quotaBytes: 0 })).toBeNull()
+  })
+
+  it('warns at and above the documented ratio and stays quiet below it', () => {
+    expect(QUOTA_WARNING_RATIO).toBe(0.8)
+    expect(isNearQuota({ usageBytes: 800, quotaBytes: 1000 })).toBe(true)
+    expect(isNearQuota({ usageBytes: 801, quotaBytes: 1000 })).toBe(true)
+    expect(isNearQuota({ usageBytes: 799, quotaBytes: 1000 })).toBe(false)
+    expect(isNearQuota(null)).toBe(false)
+    expect(isNearQuota({ usageBytes: null, quotaBytes: 1000 })).toBe(false)
   })
 })

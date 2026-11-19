@@ -11,6 +11,7 @@ import { todayStamp } from './export-types'
 import { buildPdfExport, buildDocxExport } from './export-documents'
 import { buildMentionToken } from '@/lib/editor/mention'
 import { escapeHtml } from '@/lib/security'
+import { EXPORT_SCHEMA_VERSION } from '@/lib/studio/constants'
 import type { Entity, Claim } from '@/lib/studio/types'
 import type { ValidatedGraph, ValidatedMindMap, ValidatedLink, ValidatedTag } from '@/lib/studio/schema'
 
@@ -57,6 +58,17 @@ const SAMPLE_LINKS: ValidatedLink[] = [
 const SAMPLE_TAGS: ValidatedTag[] = [
   { id: 't1', name: 'important', color: '#ff0000' },
 ]
+
+/** Sanitized flat v1 export shape accepted by releases before strict version checks. */
+const VERSIONLESS_V1_EXPORT_FIXTURE = {
+  exportedAt: '2026-08-12T00:00:00.000Z',
+  entities: SAMPLE_ENTITIES,
+  claims: SAMPLE_CLAIMS,
+  graph: SAMPLE_GRAPH,
+  mindMap: SAMPLE_MIND_MAP,
+  links: SAMPLE_LINKS,
+  tags: SAMPLE_TAGS,
+}
 
 /**
  * Assembled from parts so the fixture never contains a literal script-URL
@@ -311,11 +323,48 @@ describe('checkImportSize', () => {
 })
 
 describe('parseImportFile', () => {
-  it('rejects a payload with no version field', () => {
-    const result = parseImportFile('{"entities":[],"claims":[]}')
+  it('accepts the historically supported versionless v1 export shape', () => {
+    // Released tags emitted the flat v1 shape; their parser mapped an absent version to v1.
+    const result = parseImportFile(JSON.stringify(VERSIONLESS_V1_EXPORT_FIXTURE))
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.entities).toHaveLength(1)
+      expect(result.claims).toHaveLength(1)
+      expect(result.entities[0]?.aliases).toEqual([])
+      expect(result.graph).toEqual(SAMPLE_GRAPH)
+      expect(result.mindMap).toEqual(SAMPLE_MIND_MAP)
+      expect(result.links).toEqual(SAMPLE_LINKS)
+      expect(result.tags).toEqual(SAMPLE_TAGS)
+    }
+  })
+
+  it('rejects an unversioned persistence envelope that is not a recognized export', () => {
+    const result = parseImportFile(JSON.stringify({ state: { entities: SAMPLE_ENTITIES, claims: SAMPLE_CLAIMS } }))
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.errors[0].path).toBe('version')
+      expect(result.errors[0]?.path).toBe('version')
+    }
+  })
+
+  it('rejects a versionless flat payload with unknown fields', () => {
+    const legacyPayload: Record<string, unknown> = { ...VERSIONLESS_V1_EXPORT_FIXTURE }
+    legacyPayload.futureField = true
+
+    const result = parseImportFile(JSON.stringify(legacyPayload))
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.errors[0]?.path).toBe('version')
+    }
+  })
+
+  it('requires the historical claims and timestamp fields for versionless exports', () => {
+    const result = parseImportFile(JSON.stringify({ entities: SAMPLE_ENTITIES }))
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.errors[0]?.path).toBe('version')
     }
   })
 
@@ -438,5 +487,55 @@ describe('buildDocxExport', () => {
     const blob = await buildDocxExport([], [])
     expect(blob).toBeInstanceOf(Blob)
     expect(blob.size).toBeGreaterThan(0)
+  })
+})
+
+describe('legacy v1 import fingerprint round trip (#1159)', () => {
+  // Mirrors the canonicalization of scripts/corpus-fingerprint.mjs (sorted
+  // keys, top-level exportedAt excluded) so the legacy import path is pinned
+  // to the same fingerprint the shadow persistence checks compare.
+  const canonicalize = (value: unknown, isTopLevel = false): string => {
+    if (Array.isArray(value)) return `[${value.map((item) => canonicalize(item)).join(',')}]`
+    if (value !== null && typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => !isTopLevel || key !== 'exportedAt')
+        .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+        .map(([key, child]) => `${JSON.stringify(key)}:${canonicalize(child)}`)
+      return `{${entries.join(',')}}`
+    }
+    return JSON.stringify(value) ?? 'null'
+  }
+
+  const fingerprint = async (json: string): Promise<string> => {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalize(JSON.parse(json), true)))
+    return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('')
+  }
+
+  it('lands a recognized legacy v1 import on the same canonical corpus as its modern equivalent', async () => {
+    const legacyResult = parseImportFile(JSON.stringify(VERSIONLESS_V1_EXPORT_FIXTURE))
+    expect(legacyResult.success).toBe(true)
+    if (!legacyResult.success) return
+
+    // Same corpus data under the modern versioned envelope with a different
+    // export timestamp: the fingerprint must not be able to tell them apart.
+    const modernEquivalent = {
+      ...VERSIONLESS_V1_EXPORT_FIXTURE,
+      version: EXPORT_SCHEMA_VERSION,
+      exportedAt: '2026-11-18T00:00:00.000Z',
+    }
+    const modernResult = parseImportFile(JSON.stringify(modernEquivalent))
+    expect(modernResult.success).toBe(true)
+    if (!modernResult.success) return
+
+    const exportOptions = {
+      graph: legacyResult.graph,
+      mindMap: legacyResult.mindMap,
+      links: legacyResult.links,
+      tags: legacyResult.tags,
+    }
+    const legacyJson = buildJsonExport(legacyResult.entities, legacyResult.claims, exportOptions)
+    const modernJson = buildJsonExport(modernResult.entities, modernResult.claims, exportOptions)
+
+    expect(await fingerprint(legacyJson)).toBe(await fingerprint(modernJson))
   })
 })

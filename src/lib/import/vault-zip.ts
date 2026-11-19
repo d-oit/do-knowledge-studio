@@ -1,4 +1,5 @@
 import {
+  isMarkdownPath,
   MAX_VAULT_UNCOMPRESSED_BYTES,
   MAX_VAULT_ZIP_BYTES,
   MAX_VAULT_ZIP_ENTRIES,
@@ -15,13 +16,9 @@ import {
  * hold the bomb in memory before any cap could fire.
  */
 
-/** File extensions treated as importable notes. */
-const MARKDOWN_EXTENSIONS = ['.md', '.markdown']
 
 /** True for directory entries and non-note files. */
-const isSkippableEntry = (path: string): boolean =>
-  path.endsWith('/') ||
-  !MARKDOWN_EXTENSIONS.some((ext) => path.toLowerCase().endsWith(ext))
+const isSkippableEntry = (path: string): boolean => path.endsWith('/') || !isMarkdownPath(path)
 
 /**
  * Sanitizes a zip entry path to prevent Zip Slip / path traversal.

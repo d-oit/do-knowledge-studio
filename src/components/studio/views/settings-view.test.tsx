@@ -1,10 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ModelCacheUsage } from '@/lib/studio/storage-report'
+import { formatBytes, type ModelCacheUsage } from '@/lib/studio/storage-report'
 
 const mocks = vi.hoisted(() => ({
   readModelCacheUsage: vi.fn(),
   clearModelCache: vi.fn(),
+  readOriginStorage: vi.fn(),
+  requestPersistence: vi.fn(),
   resetSemanticCache: vi.fn(),
   getSemanticIndexProgress: vi.fn(),
   getMemoryBytes: vi.fn(),
@@ -20,6 +22,8 @@ vi.mock('@/lib/studio/storage-report', async () => {
     ...actual,
     readModelCacheUsage: mocks.readModelCacheUsage,
     clearModelCache: mocks.clearModelCache,
+    readOriginStorage: mocks.readOriginStorage,
+    requestPersistence: mocks.requestPersistence,
   }
 })
 
@@ -49,10 +53,18 @@ const usage = (overrides: Partial<ModelCacheUsage> = {}): ModelCacheUsage => ({
 beforeEach(() => {
   mocks.readModelCacheUsage.mockResolvedValue(usage())
   mocks.clearModelCache.mockResolvedValue(true)
+  mocks.readOriginStorage.mockResolvedValue({
+    supported: true,
+    estimate: { usageBytes: 200 * MB, quotaBytes: 1000 * MB },
+    persisted: false,
+    persistenceRequestSupported: true,
+  })
+  mocks.requestPersistence.mockResolvedValue({ supported: true, granted: true })
   mocks.getSemanticIndexProgress.mockReturnValue({ status: 'ready', completed: 42, total: 42 })
   mocks.getMemoryBytes.mockReturnValue(2 * MB)
   mocks.toastSuccess.mockClear()
   mocks.toastInfo.mockClear()
+  mocks.requestPersistence.mockClear()
   mocks.resetSemanticCache.mockClear()
 })
 
@@ -84,7 +96,7 @@ describe('SettingsView', () => {
       expect(screen.getByText('42')).toBeDefined()
     })
 
-    screen.getByRole('button', { name: /rebuild index/i }).click()
+    fireEvent.click(screen.getByRole('button', { name: /rebuild index/i }))
 
     expect(mocks.resetSemanticCache).toHaveBeenCalledOnce()
     expect(mocks.toastSuccess).toHaveBeenCalledWith('Semantic index cleared')
@@ -101,7 +113,7 @@ describe('SettingsView', () => {
       expect(screen.getByText('3')).toBeDefined()
     })
 
-    screen.getByRole('button', { name: /clear model cache/i }).click()
+    fireEvent.click(screen.getByRole('button', { name: /clear model cache/i }))
 
     await waitFor(() => {
       expect(mocks.toastInfo).toHaveBeenCalledWith('No cached model files')
@@ -121,4 +133,139 @@ describe('SettingsView', () => {
       ).toBeDefined()
     })
   })
+
+  it('reports estimated origin usage, quota and persistence status', async () => {
+    render(<SettingsView />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Estimated usage')).toBeDefined()
+    })
+    expect(screen.getByText('200 MB')).toBeDefined()
+    expect(screen.getByText(formatBytes(1000 * MB))).toBeDefined()
+    expect(screen.getByText(/Not granted/)).toBeDefined()
+    expect(screen.getByText(/everything this site stores here/)).toBeDefined()
+    expect(screen.getByText(/not a backup/)).toBeDefined()
+    expect(screen.getByRole('region', { name: 'Origin storage' })).toBeDefined()
+    expect(screen.getByRole('region', { name: 'Semantic index' })).toBeDefined()
+    expect(screen.getByRole('region', { name: 'Model cache' })).toBeDefined()
+  })
+
+  it('does not warn while usage stays under the threshold', async () => {
+    render(<SettingsView />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Estimated usage')).toBeDefined()
+    })
+    expect(screen.queryByText(/back up anything you cannot recreate/)).toBeNull()
+  })
+
+  it('warns when the origin approaches its reported quota', async () => {
+    mocks.readOriginStorage.mockResolvedValue({
+      supported: true,
+      estimate: { usageBytes: 900 * MB, quotaBytes: 1000 * MB },
+      persisted: false,
+      persistenceRequestSupported: true,
+    })
+    render(<SettingsView />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/90%/)).toBeDefined()
+    })
+  })
+
+  it('requests persistence and reports a grant', async () => {
+    render(<SettingsView />)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /request persistent storage/i })).toBeDefined()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /request persistent storage/i }))
+
+    await waitFor(() => {
+      expect(mocks.requestPersistence).toHaveBeenCalledOnce()
+    })
+    await waitFor(() => {
+      expect(mocks.toastSuccess).toHaveBeenCalledWith('Persistent storage granted')
+    })
+  })
+
+  it('explains when the browser declines persistence', async () => {
+    mocks.requestPersistence.mockResolvedValue({ supported: true, granted: false })
+    render(<SettingsView />)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /request persistent storage/i })).toBeDefined()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /request persistent storage/i }))
+
+    await waitFor(() => {
+      expect(mocks.toastInfo).toHaveBeenCalledWith(
+        'The browser declined persistent storage. Your data may still be evicted.',
+      )
+    })
+  })
+
+  it('hides the request button once persistence is already granted', async () => {
+    mocks.readOriginStorage.mockResolvedValue({
+      supported: true,
+      estimate: { usageBytes: 1, quotaBytes: 10 },
+      persisted: true,
+      persistenceRequestSupported: true,
+    })
+    render(<SettingsView />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/^Granted/)).toBeDefined()
+    })
+    expect(screen.queryByRole('button', { name: /request persistent storage/i })).toBeNull()
+  })
+
+  it('degrades gracefully when the Storage API is missing', async () => {
+    mocks.readOriginStorage.mockResolvedValue({
+      supported: false,
+      estimate: null,
+      persisted: null,
+      persistenceRequestSupported: false,
+    })
+    render(<SettingsView />)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('This browser does not expose origin storage diagnostics.'),
+      ).toBeDefined()
+    })
+    expect(screen.getByText(/not a backup/)).toBeDefined()
+    expect(screen.getByRole('link', { name: /back up your library/i })).toBeDefined()
+  })
+
+  it('shows a usable message when the estimate call fails', async () => {
+    mocks.readOriginStorage.mockResolvedValue({
+      supported: true,
+      estimate: null,
+      persisted: false,
+      persistenceRequestSupported: true,
+    })
+    render(<SettingsView />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Your browser did not return usable storage measurements.')).toBeDefined()
+    })
+  })
+
+  it('keeps unknown origin estimates visibly unknown', async () => {
+    mocks.readOriginStorage.mockResolvedValue({
+      supported: true,
+      estimate: { usageBytes: null, quotaBytes: null },
+      persisted: null,
+      persistenceRequestSupported: false,
+    })
+    render(<SettingsView />)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Unavailable')).toHaveLength(2)
+    })
+    expect(screen.queryByText('0 B')).toBeNull()
+    expect(screen.getByText('This browser cannot request persistent storage.')).toBeDefined()
+  })
 })
+

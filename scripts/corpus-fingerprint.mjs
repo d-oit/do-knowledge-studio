@@ -2,9 +2,9 @@
 // scripts/corpus-fingerprint.mjs — stable sha256 of a JSON corpus export (#1152).
 //
 // Shadow comparisons for persistence work: export the store before and after
-// a migration (or a kill-the-tab-mid-write run), fingerprint both files, and
-// compare. Key order and insignificant whitespace do not affect the hash;
-// array order does (arrays are ordered data).
+// a migration or interrupted write, then fingerprint both files.
+// Root-level exportedAt timestamps are metadata and excluded; key order and
+// insignificant whitespace do not affect the hash, but array order does.
 //
 // Usage:
 //   node scripts/corpus-fingerprint.mjs <export.json>
@@ -21,18 +21,20 @@ import { readTextFile } from "./lib/read-text.mjs";
 const EXPECT_FLAG = "--expect";
 const STDIN_FLAG = "--stdin";
 const CORPUS_EXTENSION = ".json";
+const EXPORT_TIMESTAMP_FIELD = "exportedAt";
 
 function fail(message) {
   process.stderr.write(`corpus-fingerprint: ${message}\n`);
   process.exit(1);
 }
 
-function canonicalize(value) {
+function canonicalize(value, isTopLevel = false) {
   if (Array.isArray(value)) {
     return `[${value.map((item) => canonicalize(item)).join(",")}]`;
   }
   if (value !== null && typeof value === "object") {
     const entries = Object.entries(value)
+      .filter(([key]) => !isTopLevel || key !== EXPORT_TIMESTAMP_FIELD)
       .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
       .map(([key, child]) => `${JSON.stringify(key)}:${canonicalize(child)}`);
     return `{${entries.join(",")}}`;
@@ -47,7 +49,7 @@ function fingerprint(text, label) {
   } catch {
     fail(`invalid JSON in ${label}`);
   }
-  return createHash("sha256").update(canonicalize(parsed)).digest("hex");
+  return createHash("sha256").update(canonicalize(parsed, true)).digest("hex");
 }
 
 async function main() {

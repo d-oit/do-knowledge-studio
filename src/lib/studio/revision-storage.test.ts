@@ -21,7 +21,7 @@ const makeEntity = (id: string, content = 'first draft'): EntityRevision['entity
   description: '',
   content,
   tags: [],
-  aliases: [],
+  aliases: ['fixture-alias'],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   links: [],
@@ -109,6 +109,13 @@ describe('revision storage', () => {
 
     const revisions = await listEntityRevisions('entity-1')
     expect(revisions.map((revision) => revision.reason)).toEqual(['merge', 'save', 'save'])
+  })
+
+  it('preserves the exact alias state in stored snapshots', async () => {
+    const entity = { ...makeEntity('entity-1'), aliases: ['Alpha', ' Beta ', 'gamma'] }
+    await captureEntityRevision({ entity, previous: null, reason: 'save', now: 1 })
+    const revisions = await listEntityRevisions('entity-1')
+    expect(revisions[0]?.entity.aliases).toEqual(['Alpha', ' Beta ', 'gamma'])
   })
 
   it('evicts old revisions past the per-entity retention limit', async () => {

@@ -50,6 +50,49 @@ const upsertEntities = (current: Entity[], upserts: Entity[]): Entity[] => {
   return [...fresh, ...merged]
 }
 
+/**
+ * Builds the merged survivor entity from two current entities (deterministic).
+ * Survivor fields win; the loser's trimmed name and aliases are appended
+ * when not already present. Alias equivalence uses the resolver's
+ * normalization (`trim().toLowerCase()`, matching `resolveWikilinkTarget`),
+ * while the RETAINED value keeps its exact stored spelling — the first
+ * occurrence (survivor's, then loser's) wins and is preserved verbatim.
+ * Claims, links, tags, and referential updates are handled by the caller's
+ * setter patch.
+ */
+const buildMergedEntity = (survivor: Entity, loser: Entity): Entity => {
+  const mergedAliases = [...(survivor.aliases ?? [])]
+  const loserName = loser.name.trim()
+  if (loserName !== '' && !mergedAliases.some((a) => a.trim().toLowerCase() === loserName.toLowerCase())) {
+    mergedAliases.push(loserName)
+  }
+  for (const alias of loser.aliases ?? []) {
+    if (!mergedAliases.some((a) => a.trim().toLowerCase() === alias.trim().toLowerCase())) {
+      mergedAliases.push(alias)
+    }
+  }
+  const mergedTags = [...survivor.tags]
+  for (const tag of loser.tags) {
+    if (!mergedTags.some((t) => t.toLowerCase() === tag.toLowerCase())) mergedTags.push(tag)
+  }
+  return {
+    ...survivor,
+    aliases: mergedAliases,
+    tags: mergedTags,
+    content: survivor.content !== '' ? survivor.content : loser.content,
+    description: survivor.description !== '' ? survivor.description : loser.description,
+    links: [
+      ...survivor.links,
+      ...loser.links.filter(
+        (l) =>
+          l.targetId !== survivor.id &&
+          !survivor.links.some((s) => s.targetId === l.targetId && s.relation === l.relation),
+      ),
+    ].map((l) => (l.targetId === loser.id ? { ...l, targetId: survivor.id } : l)),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
 /** Builds the entity slice of the studio store. */
 export const createEntitiesSlice: StudioSlice<EntitiesSlice> = (set, get) => ({
   selectEntity: (id) => set({ selectedEntityId: id }),
@@ -143,35 +186,20 @@ export const createEntitiesSlice: StudioSlice<EntitiesSlice> = (set, get) => ({
 
   mergeEntities: (survivorId, loserId) => {
     if (survivorId === loserId) return false
-    const state = get()
-    const survivor = state.entities.find((x) => x.id === survivorId)
-    const loser = state.entities.find((x) => x.id === loserId)
-    if (!survivor || !loser) return false
-    const loserName = loser.name.trim()
-    const mergedAliases = [...(survivor.aliases ?? [])]
-    if (loserName !== '' && !mergedAliases.some((a) => a.toLowerCase() === loserName.toLowerCase())) {
-      mergedAliases.push(loserName)
-    }
-    for (const alias of loser.aliases ?? []) {
-      if (!mergedAliases.some((a) => a.toLowerCase() === alias.toLowerCase())) mergedAliases.push(alias)
-    }
-    const mergedTags = [...survivor.tags]
-    for (const tag of loser.tags) {
-      if (!mergedTags.some((t) => t.toLowerCase() === tag.toLowerCase())) mergedTags.push(tag)
-    }
-    const mergedEntity: Entity = {
-      ...survivor,
-      aliases: mergedAliases,
-      tags: mergedTags,
-      content: survivor.content !== '' ? survivor.content : loser.content,
-      description: survivor.description !== '' ? survivor.description : loser.description,
-      links: [
-        ...survivor.links,
-        ...loser.links.filter((l) => l.targetId !== survivorId && !survivor.links.some((s) => s.targetId === l.targetId && s.relation === l.relation)),
-      ].map((l) => (l.targetId === loserId ? { ...l, targetId: survivorId } : l)),
-      updatedAt: new Date().toISOString(),
-    }
+    // All state-dependent merge calculation reads the LATEST state inside the
+    // functional setter. Deriving `mergedEntity` from a `get()` snapshot taken
+    // before `set` runs would silently overwrite any intervening edit to the
+    // survivor or loser that landed between the two (#1158). The computed
+    // outcome is stashed for the history push and revision capture that follow.
+    // The explicitly typed holder carries the setter's result to the following
+    // history/revision steps while the merge still reads the latest state.
+    const outcomeContainer: { outcome: { merged: Entity; previous: Entity } | null } = { outcome: null }
     set((current) => {
+      const survivor = current.entities.find((x) => x.id === survivorId)
+      const loser = current.entities.find((x) => x.id === loserId)
+      if (!survivor || !loser) return {}
+      const mergedEntity = buildMergedEntity(survivor, loser)
+      outcomeContainer.outcome = { merged: mergedEntity, previous: survivor }
       const canvas = removeCanvasRefs(
         { graph: current.graph, mindMap: current.mindMap, links: current.links },
         loserId,
@@ -194,8 +222,9 @@ export const createEntitiesSlice: StudioSlice<EntitiesSlice> = (set, get) => ({
         selectedEntityId: current.selectedEntityId === loserId ? survivorId : current.selectedEntityId,
       }
     })
+    if (!outcomeContainer.outcome) return false
     get().pushHistory()
-    recordEntityRevision({ entity: mergedEntity, previous: survivor, reason: 'save' })
+    recordEntityRevision({ entity: outcomeContainer.outcome.merged, previous: outcomeContainer.outcome.previous, reason: 'save' })
     return true
   },
 

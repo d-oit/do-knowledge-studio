@@ -1,74 +1,48 @@
-import yaml from 'yaml'
-import type { Claim, Entity } from '@/lib/studio/types'
-import { buildMentionToken, getMentionCodeRanges } from '@/lib/editor/mention'
-import { findWikilinkTokens, resolveWikilinkTarget } from '@/lib/editor/wikilinks'
-import { extractClaimsFromText } from '@/lib/studio/claim-parser'
-
 /**
- * Markdown / Obsidian-vault import (issue #1054) — pure, framework-free.
+ * Markdown / Obsidian-vault import (issue #1054) — thin adapter over the
+ * shared `dks-core` Markdown import service.
  *
- * One entity per `.md` file, two passes: pass 1 parses frontmatter + body per
- * file, pass 2 resolves `[[Wikilinks]]` and relative `.md` links against every
- * parsed entity and mints stub entities for names that resolve to nothing.
- * Malformed files never throw the batch — they are collected as warnings,
- * OKF §11 style. Hard limits fail closed before any entity is built.
+ * All batch limits, path guards, frontmatter validation/mapping, tag
+ * extraction, and link-span scanning live in
+ * `packages/dks-core/src/markdown.ts` (`parseMarkdownImport`). This file
+ * keeps only the PWA-specific presentation layer: mention-token rendering
+ * (editor tokens), vault-relative link resolution, claim extraction from
+ * text, and UUID stub minting. Public behavior is unchanged.
  */
 
-/** Maximum `.md` files accepted in one import batch. */
-export const MAX_MARKDOWN_FILES = 500
-
-/** Maximum bytes read from a single `.md` file. */
-export const MAX_MARKDOWN_FILE_BYTES = 1_048_576
-
-/** Maximum total bytes across all `.md` files in one batch. */
-export const MAX_MARKDOWN_TOTAL_BYTES = 20_971_520
+import type { Entity, Claim } from '@/lib/studio/types'
+import { buildMentionToken } from '@/lib/editor/mention'
+import { resolveWikilinkTarget } from '@/lib/editor/wikilinks'
+import { extractClaimsFromText } from '@/lib/studio/claim-parser'
+import {
+  checkVaultLimits as coreCheckVaultLimits,
+  isMarkdownPath,
+  parseMarkdownImport,
+  scanMarkdownLinks,
+  stripMarkdownExtension,
+  type MarkdownLinkSpans,
+} from 'dks-core/markdown'
+export {
+  MAX_MARKDOWN_FILES,
+  MAX_MARKDOWN_FILE_BYTES,
+  MAX_MARKDOWN_TOTAL_BYTES,
+  MARKDOWN_EXTENSIONS,
+} from 'dks-core/markdown'
 
 /** Maximum compressed bytes accepted for a vault `.zip`. */
 export const MAX_VAULT_ZIP_BYTES = 10_485_760
-
 /** Maximum decompressed bytes accepted for a vault `.zip` (zip-bomb guard). */
 export const MAX_VAULT_UNCOMPRESSED_BYTES = 52_428_800
-
 /** Maximum entries accepted from a vault `.zip`. */
 export const MAX_VAULT_ZIP_ENTRIES = 2_000
 
-/** File extensions treated as importable notes. */
-export const MARKDOWN_EXTENSIONS = ['.md', '.markdown']
+/** Strips a Markdown extension from a vault path (shared helper). */
+export { stripMarkdownExtension } from 'dks-core/markdown'
+/** True when the path points at an importable note file (shared helper). */
+export { isMarkdownPath } from 'dks-core/markdown'
+/** Splits raw content into frontmatter + body (shared helper). */
+export { splitFrontmatter } from 'dks-core/frontmatter'
 
-/** Strips a Markdown extension (`.md` / `.markdown`) from a vault path. */
-export const stripMarkdownExtension = (path: string): string =>
-  path.replace(/\.markdown$/i, '').replace(/\.md$/i, '')
-
-/** True when the path points at an importable note file. */
-export const isMarkdownPath = (path: string): boolean =>
-  MARKDOWN_EXTENSIONS.some((ext) => path.toLowerCase().endsWith(ext))
-
-/** Frontmatter keys mapped onto entity fields; everything else is warned + ignored. */
-const KNOWN_FRONTMATTER_KEYS = new Set([
-  'title',
-  'tags',
-  'aliases',
-  'type',
-  'created',
-  'description',
-])
-
-/** Obsidian type strings mapped onto studio entity types (unknown → concept). */
-const VAULT_TYPE_MAP: Record<string, Entity['type']> = {
-  note: 'note',
-  concept: 'concept',
-  person: 'person',
-  project: 'project',
-}
-
-/** Matches a relative Markdown link `[text](target)`; images are filtered by caller. */
-const RELATIVE_LINK_PATTERN = /\[([^\]]*)\]\(([^)\s]+)\)/g
-
-/** Matches `#tag` tokens (unicode-aware); headings and code are filtered by caller. */
-const HASHTAG_PATTERN = /(^|\s)#([\p{L}\p{N}_][\p{L}\p{N}_-]*)/gu
-
-/** A Markdown heading line — `#tag` on such a line is a heading, not a tag. */
-const HEADING_LINE_PATTERN = /^\s*#{1,6}(?:\s|$)/
 
 /** Result of parsing a Markdown / vault batch. */
 export type MarkdownImportResult =
@@ -93,164 +67,19 @@ export interface VaultEntityDraft {
   description: string
   content: string
   tags: string[]
+  aliases?: string[]
   createdAt: string
   updatedAt: string
+  linkSpans?: MarkdownLinkSpans
 }
 
 /**
- * Fails closed on batch limits before any parsing happens, so an oversized
- * or hostile input can never leave partial state behind.
+ * Fails closed on batch limits before any parsing happens (shared service).
  * @param files - Vault-relative path → raw content.
  * @returns An error message, or null when the batch is within limits.
  */
-export const checkVaultLimits = (files: Map<string, string>): string | null => {
-  if (files.size === 0) return 'No Markdown files found to import.'
-  if (files.size > MAX_MARKDOWN_FILES) {
-    return `Too many files (${files.size}); at most ${MAX_MARKDOWN_FILES} Markdown files can be imported at once.`
-  }
-  let total = 0
-  for (const [path, content] of files) {
-    const bytes = content.length
-    if (bytes > MAX_MARKDOWN_FILE_BYTES) {
-      return `"${path}" is too large (${bytes} characters); files are limited to ${MAX_MARKDOWN_FILE_BYTES} characters.`
-    }
-    total += bytes
-    if (total > MAX_MARKDOWN_TOTAL_BYTES) {
-      return `Import is too large; Markdown batches are limited to ${MAX_MARKDOWN_TOTAL_BYTES} characters in total.`
-    }
-  }
-  return null
-}
-
-/** Coerces a frontmatter `tags`/`aliases` value (list or string) into strings. */
-const coerceStringList = (value: unknown): string[] => {
-  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === 'string')
-  if (typeof value === 'string') return value.split(/[,\s]+/)
-  return []
-}
-
-/** Splits raw content into frontmatter source + body (null frontmatter when absent). */
-const splitFrontmatter = (content: string): { frontmatter: string | null; body: string } => {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-  if (!match) return { frontmatter: null, body: content }
-  return { frontmatter: match[1] ?? '', body: match[2] ?? '' }
-}
-
-/** True when the `[start, end)` span overlaps any code range. */
-const inCode = (
-  start: number,
-  end: number,
-  ranges: readonly { start: number; end: number }[],
-): boolean => ranges.some((r) => r.start < end && r.end > start)
-
-/**
- * Extracts `#tags` from a body, skipping headings, fenced/inline code, and
- * tag-like text inside URLs (`example.com/#frag` has no leading space).
- */
-export const extractHashtags = (body: string): string[] => {
-  const codeRanges = getMentionCodeRanges(body)
-  const tags: string[] = []
-  const seen = new Set<string>()
-  let lineStart = 0
-  for (const line of body.split('\n')) {
-    if (!HEADING_LINE_PATTERN.test(line)) {
-      HASHTAG_PATTERN.lastIndex = 0
-      let match = HASHTAG_PATTERN.exec(line)
-      while (match !== null) {
-        const tag = match[2] ?? ''
-        // Match positions are line-relative; code ranges are body-relative —
-        // shift by the line offset so multi-line fenced blocks still mask tags.
-        const at = lineStart + match.index + (match[1] ?? '').length
-        if (tag !== '' && !seen.has(tag) && !inCode(at, at + tag.length + 1, codeRanges)) {
-          seen.add(tag)
-          tags.push(tag)
-        }
-        match = HASHTAG_PATTERN.exec(line)
-      }
-    }
-    lineStart += line.length + 1
-  }
-  return tags
-}
-
-/**
- * Parses one vault file into an entity draft. Never throws: problems are
- * collected into `warnings` and the file is skipped (null draft).
- */
-const parseVaultFile = (
-  path: string,
-  content: string,
-  nowIso: string,
-  warnings: string[],
-): VaultEntityDraft | null => {
-  const id = stripMarkdownExtension(path)
-  const fileName = path.split('/').pop() ?? path
-  const fallbackName = stripMarkdownExtension(fileName)
-  const { frontmatter, body } = splitFrontmatter(content)
-
-  let name = fallbackName
-  const tags: string[] = []
-  let type: Entity['type'] = 'concept'
-  let description = ''
-  let createdAt = nowIso
-
-  if (frontmatter !== null) {
-    let parsed: unknown
-    try {
-      parsed = yaml.parse(frontmatter)
-    } catch (error) {
-      warnings.push(`${path}: invalid YAML frontmatter — ${error instanceof Error ? error.message : 'unparseable'}`)
-      return null
-    }
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      warnings.push(`${path}: frontmatter must be a mapping — file skipped`)
-      return null
-    }
-    const fm = parsed as Record<string, unknown>
-    for (const key of Object.keys(fm)) {
-      if (!KNOWN_FRONTMATTER_KEYS.has(key)) {
-        warnings.push(`${path}: ignoring unknown frontmatter key "${key}"`)
-      }
-    }
-    if (typeof fm.title === 'string' && fm.title.trim() !== '') name = fm.title.trim()
-    const seen = new Set<string>()
-    for (const tag of [...coerceStringList(fm.tags), ...coerceStringList(fm.aliases)]) {
-      const clean = tag.trim()
-      if (clean !== '' && !seen.has(clean)) {
-        seen.add(clean)
-        tags.push(clean)
-      }
-    }
-    if (typeof fm.type === 'string') {
-      const mapped = VAULT_TYPE_MAP[fm.type.trim().toLowerCase()]
-      if (mapped) {
-        type = mapped
-      } else {
-        warnings.push(`${path}: unknown type "${fm.type}" — imported as concept`)
-      }
-    }
-    if (typeof fm.description === 'string') description = fm.description
-    if (typeof fm.created === 'string') {
-      const parsedDate = new Date(fm.created)
-      if (Number.isNaN(parsedDate.getTime())) {
-        warnings.push(`${path}: ignoring unparseable created date "${fm.created}"`)
-      } else {
-        createdAt = parsedDate.toISOString()
-      }
-    }
-  }
-
-  const bodyTags = extractHashtags(body)
-  const seenTags = new Set(tags)
-  for (const tag of bodyTags) {
-    if (!seenTags.has(tag)) {
-      seenTags.add(tag)
-      tags.push(tag)
-    }
-  }
-
-  return { id, name, type, description, content: body.trim(), tags, createdAt, updatedAt: nowIso }
-}
+export const checkVaultLimits = (files: Map<string, string>): string | null =>
+  coreCheckVaultLimits(files)
 
 /** Normalizes `./x.md` / `../d/y.md` against the importing file's directory. */
 const resolveRelativePath = (fromDir: string, target: string): string | null => {
@@ -283,57 +112,51 @@ export const buildVaultLinkIndex = (drafts: VaultEntityDraft[]): VaultLinkIndex 
 })
 
 /**
- * Converts `[[Wikilinks]]` and relative `.md` links in one body to canonical
- * mention tokens. Names nothing matches are collected (not linked) so the
- * caller can mint stubs for them.
+ * Converts shared Markdown link spans to canonical mention tokens (PWA
+ * presentation). Unresolved names remain plain text and are collected for
+ * stub creation by the caller.
  */
 export const convertVaultLinks = (
   content: string,
   fileDir: string,
   index: VaultLinkIndex,
   unresolved: Map<string, string>,
+  linkSpans: MarkdownLinkSpans = scanMarkdownLinks(content),
 ): string => {
   const entities = index.drafts as Entity[]
   let text = content
-  // Pass A: [[Name]] / [[path/Name]] / [[Name|display]] — basename fallback
-  // covers Obsidian's folder-qualified links without a path index.
-  const wikilinks = findWikilinkTokens(text)
-  for (const token of [...wikilinks].sort((a, b) => b.start - a.start)) {
-    const candidates = token.name.includes('/')
-      ? [token.name, token.name.split('/').pop() ?? token.name]
-      : [token.name]
-    let targetId: string | undefined
-    for (const candidate of candidates) {
-      targetId = resolveWikilinkTarget(candidate, entities)
-      if (targetId !== undefined) break
-    }
-    if (targetId === undefined) {
-      const key = token.name.toLowerCase()
-      if (!unresolved.has(key)) unresolved.set(key, token.name)
+  let wikiIndex = linkSpans.wikilinks.length - 1
+  let relativeIndex = linkSpans.relativeLinks.length - 1
+  while (wikiIndex >= 0 || relativeIndex >= 0) {
+    const wiki = wikiIndex >= 0 ? linkSpans.wikilinks[wikiIndex] : undefined
+    const relative = relativeIndex >= 0 ? linkSpans.relativeLinks[relativeIndex] : undefined
+    if (relative === undefined || (wiki !== undefined && wiki.start > relative.start)) {
+      wikiIndex -= 1
+      if (!wiki) continue
+      const candidates = wiki.name.includes('/')
+        ? [wiki.name, wiki.name.split('/').pop() ?? wiki.name]
+        : [wiki.name]
+      let targetId: string | undefined
+      for (const candidate of candidates) {
+        targetId = resolveWikilinkTarget(candidate, entities)
+        if (targetId !== undefined) break
+      }
+      if (targetId === undefined) {
+        const key = wiki.name.toLowerCase()
+        if (!unresolved.has(key)) unresolved.set(key, wiki.name)
+        continue
+      }
+      const target = index.byId.get(targetId)
+      const display = wiki.display ?? target?.name ?? wiki.name
+      text = text.slice(0, wiki.start) + buildMentionToken(targetId, display) + text.slice(wiki.end)
       continue
     }
-    const target = index.byId.get(targetId)
-    const display = token.display ?? target?.name ?? token.name
-    text = text.slice(0, token.start) + buildMentionToken(targetId, display) + text.slice(token.end)
-  }
-  // Pass B: relative .md links [text](./other.md) — resolved by vault path.
-  RELATIVE_LINK_PATTERN.lastIndex = 0
-  const matches = Array.from(text.matchAll(RELATIVE_LINK_PATTERN))
-  for (const match of matches.reverse()) {
-    const start = match.index ?? 0
-    if (text[start - 1] === '!') continue // images stay literal
-    const target = match[2] ?? ''
-    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(target)) continue // absolute URLs stay literal
-    let decoded = target
-    try {
-      decoded = decodeURIComponent(target)
-    } catch {
-      decoded = target // malformed escapes: match the raw text instead
-    }
-    if (!isMarkdownPath(decoded.split('#')[0] ?? '')) continue
-    const resolved = resolveRelativePath(fileDir, decoded)
+
+    relativeIndex -= 1
+    if (!relative || !isMarkdownPath(relative.target)) continue
+    const resolved = resolveRelativePath(fileDir, relative.target)
     const draft = resolved === null ? undefined : index.byId.get(stripMarkdownExtension(resolved))
-    const fallbackName = stripMarkdownExtension(decoded.split('/').pop() ?? decoded).split('#')[0] ?? decoded
+    const fallbackName = stripMarkdownExtension(relative.target.split('/').pop() ?? relative.target)
     const fallbackId = resolveWikilinkTarget(fallbackName, entities)
     const finalId = draft?.id ?? fallbackId
     if (finalId === undefined) {
@@ -341,8 +164,10 @@ export const convertVaultLinks = (
       if (!unresolved.has(key)) unresolved.set(key, fallbackName)
       continue
     }
-    const display = (match[1] ?? '').trim() === '' ? (index.byId.get(finalId)?.name ?? fallbackName) : (match[1] ?? fallbackName)
-    text = text.slice(0, start) + buildMentionToken(finalId, display) + text.slice(start + match[0].length)
+    const display = relative.text.trim() === ''
+      ? (index.byId.get(finalId)?.name ?? fallbackName)
+      : relative.text
+    text = text.slice(0, relative.start) + buildMentionToken(finalId, display) + text.slice(relative.end)
   }
   return text
 }
@@ -350,22 +175,27 @@ export const convertVaultLinks = (
 /**
  * Parses a vault batch (path → content) into entities + claims with resolved
  * links, stub entities for unresolvable names, and conflict/warning lists.
+ * Validation/parsing runs in the shared `dks-core` service; this adapter
+ * supplies the PWA presentation layer.
  */
 export const parseVaultFiles = (files: Map<string, string>): MarkdownImportResult => {
-  const limitError = checkVaultLimits(files)
-  if (limitError !== null) return { success: false, error: limitError }
-
+  const service = parseMarkdownImport(files)
+  if (!service.success) return { success: false, error: service.error }
+  const warnings = service.warnings
   const nowIso = new Date().toISOString()
-  const warnings: string[] = []
-  const drafts: VaultEntityDraft[] = []
-  for (const [path, content] of files) {
-    if (/^[A-Za-z]:[\\/]/.test(path) || /^[\\/]/.test(path)) {
-      warnings.push(`${path}: not a vault-relative path — file skipped`)
-      continue
-    }
-    const draft = parseVaultFile(path, content, nowIso, warnings)
-    if (draft) drafts.push(draft)
-  }
+
+  const drafts: VaultEntityDraft[] = service.drafts.map((d) => ({
+    id: d.id,
+    name: d.name,
+    type: d.type as Entity['type'],
+    description: d.description,
+    content: d.content,
+    tags: [...new Set([...d.frontmatterTags, ...(d.aliases ?? []), ...d.bodyTags])],
+    ...(d.aliases !== undefined ? { aliases: d.aliases } : {}),
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
+    linkSpans: d,
+  }))
   if (drafts.length === 0) {
     return { success: false, error: `No importable notes found. ${warnings.join('; ')}`.trim() }
   }
@@ -374,7 +204,7 @@ export const parseVaultFiles = (files: Map<string, string>): MarkdownImportResul
   const unresolved = new Map<string, string>()
   const linkedDrafts: VaultEntityDraft[] = drafts.map((draft) => {
     const dir = draft.id.includes('/') ? draft.id.slice(0, draft.id.lastIndexOf('/')) : ''
-    return { ...draft, content: convertVaultLinks(draft.content, dir, index, unresolved) }
+    return { ...draft, content: convertVaultLinks(draft.content, dir, index, unresolved, draft.linkSpans) }
   })
   const linkedById = new Map(linkedDrafts.map((d) => [d.id, d]))
 
@@ -421,6 +251,7 @@ export const parseVaultFiles = (files: Map<string, string>): MarkdownImportResul
     description: draft.description,
     content: draft.content,
     tags: draft.tags,
+    ...(draft.aliases !== undefined ? { aliases: draft.aliases } : {}),
     createdAt: draft.createdAt,
     updatedAt: draft.updatedAt,
     links: [],

@@ -32,6 +32,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
+      // Benchmarks consume dks-core from source (bench.yml runs vitest
+      // directly, before any package build).
+      'dks-core': path.resolve(import.meta.dirname, './packages/dks-core/src'),
     },
   },
 })

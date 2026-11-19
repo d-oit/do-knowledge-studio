@@ -48,11 +48,20 @@ export const MAX_DAILY_MILESTONES = 14
 /** Total bytes every entity's revisions may occupy. */
 export const MAX_REVISION_BYTES = 4 * 1024 * 1024
 
-
 /**
  * Fields that make two snapshots the same version of an entity. Deliberately
  * excludes `updatedAt`: a save that only bumps the timestamp is not a version
  * worth keeping, and capturing it would fill the throttle window with noise.
+ * `aliases` is included because alias changes alter how an entity is
+ * identified, and were previously invisible to revision history (#1157).
+ *
+ * Aliases identify an entity as a normalized SET: wikilink resolution and
+ * merge dedupe both match per-alias with `trim().toLowerCase()` and never
+ * depend on array position, so arrays that differ only in order, case,
+ * whitespace, or duplicate entries are semantically identical. Canonicalizing
+ * to a sorted, deduplicated, trimmed/lowercased list keeps such no-ops from
+ * minting spurious revisions while any real addition, removal, or edit still
+ * changes the signature.
  */
 export const entitySnapshotSignature = (entity: Entity): string =>
   JSON.stringify([
@@ -63,6 +72,7 @@ export const entitySnapshotSignature = (entity: Entity): string =>
     entity.sourceUrl ?? '',
     entity.tags,
     entity.links,
+    [...new Set((entity.aliases ?? []).map((alias) => alias.trim().toLowerCase()))].sort(),
   ])
 
 /** Whether `next` is a different version of the entity from `previous`. */

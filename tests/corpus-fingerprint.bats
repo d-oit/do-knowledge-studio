@@ -27,6 +27,23 @@ write_corpus() {
   [ "$hash_a" = "$hash_b" ]
 }
 
+@test "ignores exportedAt when fingerprinting the same corpus" {
+  local a="$BATS_TEST_TMPDIR/a.json"
+  local b="$BATS_TEST_TMPDIR/b.json"
+  write_corpus '{"version":1,"exportedAt":"2026-11-17T10:00:00.000Z","entities":[{"id":"e1"}],"claims":[]}' "$a"
+  write_corpus '{"version":1,"exportedAt":"2026-11-17T10:01:00.000Z","entities":[{"id":"e1"}],"claims":[]}' "$b"
+
+  run node "$SCRIPT" "$a"
+  [ "$status" -eq 0 ]
+  local hash_a="${output%% *}"
+
+  run node "$SCRIPT" "$b"
+  [ "$status" -eq 0 ]
+  local hash_b="${output%% *}"
+
+  [ "$hash_a" = "$hash_b" ]
+}
+
 @test "changed content changes the hash" {
   local a="$BATS_TEST_TMPDIR/a.json"
   local b="$BATS_TEST_TMPDIR/b.json"
