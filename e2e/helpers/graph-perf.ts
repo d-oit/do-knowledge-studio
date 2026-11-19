@@ -46,9 +46,6 @@ const ZOOM_STEPS = 24
 /** Wheel delta per event. */
 const ZOOM_DELTA_Y = 25
 
-/** In-page sampler handle; the name is shared between the injected scripts. */
-const SAMPLER_KEY = '__dksFrameSampler'
-
 /** Shape of the sampler the page keeps between `page.evaluate` calls. */
 interface FrameSampler {
   deltas: number[]
@@ -89,9 +86,9 @@ export const percentile = (sample: number[], fraction: number): number => {
   const position = (sorted.length - 1) * fraction
   const lowerIndex = Math.floor(position)
   const upperIndex = Math.ceil(position)
-  const lower = sorted[lowerIndex]
-  const upper = sorted[upperIndex]
-  if (lower === undefined || upper === undefined) return Number.NaN
+  const lower = sorted.at(lowerIndex) ?? Number.NaN
+  const upper = sorted.at(upperIndex) ?? lower
+  if (Number.isNaN(lower) || Number.isNaN(upper)) return Number.NaN
   return lower + (upper - lower) * (position - lowerIndex)
 }
 
@@ -116,10 +113,13 @@ export const summarize = (deltas: number[]): FrameSummary => {
 
 /** Start recording the interval between animation frames. */
 export const startFrameSampling = async (page: Page): Promise<void> => {
-  await page.evaluate((key) => {
-    const scope = globalThis as unknown as Record<string, FrameSampler>
+  await page.evaluate(() => {
+    // Static property name (no computed key): each page is its own JS realm,
+    // so a single well-known hook is enough and the sampler survives across
+    // evaluate calls on typed accessors only.
+    const scope = globalThis as unknown as { __dksFrameSampler?: FrameSampler }
     const sampler: FrameSampler = { deltas: [], handle: null }
-    scope[key] = sampler
+    scope.__dksFrameSampler = sampler
     let last = performance.now()
     const tick = (now: number): void => {
       sampler.deltas.push(now - last)
@@ -127,19 +127,19 @@ export const startFrameSampling = async (page: Page): Promise<void> => {
       sampler.handle = requestAnimationFrame(tick)
     }
     sampler.handle = requestAnimationFrame(tick)
-  }, SAMPLER_KEY)
+  })
 }
 
 /** Stop recording and return every frame interval the page observed. */
 export const stopFrameSampling = async (page: Page): Promise<number[]> => {
-  return page.evaluate((key) => {
-    const scope = globalThis as unknown as Record<string, FrameSampler>
-    const sampler = scope[key]
-    if (sampler === null || sampler === undefined) return []
+  return page.evaluate(() => {
+    const scope = globalThis as unknown as { __dksFrameSampler?: FrameSampler }
+    const sampler = scope.__dksFrameSampler
+    if (sampler === undefined) return []
     if (sampler.handle !== null) cancelAnimationFrame(sampler.handle)
-    delete scope[key]
+    scope.__dksFrameSampler = undefined
     return sampler.deltas
-  }, SAMPLER_KEY)
+  })
 }
 
 /**
@@ -156,10 +156,10 @@ export const buildSeededEntities = (
   return Array.from({ length: nodeCount }, (_, index) => ({
     id: `frame-${index}`,
     name: `Frame node ${index}`,
-    type: types[index % types.length]!,
+    type: types.at(index % types.length) ?? 'note',
     description: `Seeded node ${index} for the frame-timeline guard`,
     content: '',
-    tags: [tags[index % tags.length]!],
+    tags: [tags.at(index % tags.length) ?? 'search'],
     aliases: [],
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-06-15T00:00:00Z',
@@ -216,9 +216,9 @@ export const zoomCanvas = async (
 export const recordEnvironment = async (page: Page): Promise<BenchEnvironment> => {
   const navigatorInfo = await page.evaluate(() => ({
     userAgent: navigator.userAgent,
-    platform: navigator.platform ?? '',
+    platform: navigator.platform,
     deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory ?? null,
-    hardwareConcurrency: navigator.hardwareConcurrency ?? null,
+    hardwareConcurrency: navigator.hardwareConcurrency,
   }))
   const viewport = page.viewportSize() ?? { width: 0, height: 0 }
   return { ...navigatorInfo, viewport }
