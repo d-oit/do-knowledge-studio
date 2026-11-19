@@ -35,7 +35,9 @@ test.describe('Graph queries', () => {
     // --- Filter --------------------------------------------------------------
     await page.getByRole('checkbox', { name: 'Person' }).check()
     // Only the single seeded person survives a Person-only filter.
-    await expect(page.getByText(/1 nodes/)).toBeVisible()
+    await expect(
+      page.getByRole('img', { name: /Knowledge graph with 1 entities and 0 connections/ }),
+    ).toBeVisible()
 
     // --- Saved view + reload -------------------------------------------------
     await page.getByLabel(/view name/i).fill('People only')
@@ -49,9 +51,11 @@ test.describe('Graph queries', () => {
 
     // Filters are view state, not corpus data: a reload starts unfiltered, so
     // Apply is what has to bring the narrowed canvas back.
-    await expect(page.getByText(/1 nodes/)).toBeHidden()
+    await expect(page.getByRole('img', { name: /Knowledge graph with 8 entities/ })).toBeVisible()
 
     await page.getByRole('button', { name: /^apply$/i }).click()
-    await expect(page.getByText(/1 nodes/)).toBeVisible()
+    await expect(
+      page.getByRole('img', { name: /Knowledge graph with 1 entities and 0 connections/ }),
+    ).toBeVisible()
   })
 })

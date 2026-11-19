@@ -21,7 +21,7 @@ import { getEntityTypeDefs } from '@/lib/studio/entity-types'
 import { translate as entityTypesT } from '@/lib/i18n/messages/entity-types'
 import { exportGraphPng } from './export-graph-png'
 import { CircleDot, GitFork, Plus } from 'lucide-react'
-import { useState, useRef, useMemo, useCallback } from 'react'
+import { useState, useRef, useMemo, useCallback, useLayoutEffect } from 'react'
 import { GraphToolbar } from './graph-toolbar'
 import { cn } from '@/lib/utils'
 import { useReducedMotion } from '@/lib/studio/use-reduced-motion'
@@ -39,12 +39,19 @@ import { GraphQueryPanel } from './graph-query-panel'
 import {
   EMPTY_GRAPH_FILTER,
   countActiveFilterFacets,
+  evaluateGraphQuery,
   filterGraph,
   pathEdgeKeys,
   undirectedEdgeKey,
   type GraphFilter,
   type GraphPathResult,
 } from '@/lib/studio/graph-query'
+import {
+  EMPTY_GRAPH_QUERY,
+  isGraphQueryActive,
+  validateGraphQuery,
+  type GraphQuery,
+} from '@/lib/studio/graph-query-builder'
 import type { SavedGraphView } from '@/lib/studio/graph-views'
 
 /**
@@ -88,7 +95,24 @@ export const GraphView = () => {
   // Structural queries are canvas chrome, not corpus data: they stay in view
   // state so a reload starts from the full graph rather than a hidden filter.
   const [filter, setFilter] = useState<GraphFilter>(EMPTY_GRAPH_FILTER)
+  const [query, setQuery] = useState<GraphQuery>(EMPTY_GRAPH_QUERY)
   const [pathResult, setPathResult] = useState<GraphPathResult | null>(null)
+  const queryIssues = useMemo(() => validateGraphQuery(query), [query])
+  const hasActiveQuery = useMemo(
+    () => isGraphQueryActive(query) && queryIssues.length === 0,
+    [query, queryIssues],
+  )
+  // Filtering happens before placement so hidden nodes cannot stretch the
+  // canvas band or leave dangling edges behind. A valid composed query takes
+  // precedence over the flat filter and runs through the same evaluator the
+  // builder preview uses.
+  const filtered = useMemo(
+    () =>
+      hasActiveQuery
+        ? evaluateGraphQuery(entities, claims, query)
+        : filterGraph(entities, claims, filter),
+    [entities, claims, filter, query, hasActiveQuery],
+  )
   const [queriesOpen, setQueriesOpen] = useState(false)
 
   // The placement band reshapes itself to the rendered canvas (plans/152 §6.1).
@@ -97,17 +121,8 @@ export const GraphView = () => {
   // from — the measurement is loop-free by construction.
   const canvasRef = useRef<HTMLDivElement>(null)
   const viewport = useElementSize(canvasRef)
-
   // Build adjacency index for O(1) focus-mode neighbor lookups
   const adjacency = useMemo(() => buildAdjacencyIndex(entities), [entities])
-
-  // Filtering happens before placement so hidden nodes cannot stretch the
-  // canvas band or leave dangling edges behind.
-  const filtered = useMemo(
-    () => filterGraph(entities, claims, filter),
-    [entities, claims, filter],
-  )
-
   // Large corpora place across animation frames; small ones resolve in one pass.
   const placedNodes = useGraphPlacement(filtered.entities, seedGraph.nodes, viewport)
 
@@ -193,6 +208,10 @@ export const GraphView = () => {
     () => cullNodes(visibleNodes, viewRect),
     [visibleNodes, viewRect],
   )
+  const renderedNodesRef = useRef(renderedNodes)
+  useLayoutEffect(() => {
+    renderedNodesRef.current = renderedNodes
+  }, [renderedNodes])
   const renderedNodeIds = useMemo(
     () => new Set(renderedNodes.map((node) => node.id)),
     [renderedNodes],
@@ -230,23 +249,24 @@ export const GraphView = () => {
     () => new Set(pathResult?.found ? pathResult.nodeIds : []),
     [pathResult],
   )
-  const activeFilterCount = countActiveFilterFacets(filter)
+  const activeFilterCount = hasActiveQuery ? 1 : countActiveFilterFacets(filter)
   const currentViewInput = useMemo(
     () => ({
       name: '',
       filter,
+      query,
       layout,
       focusMode,
       viewport: { panX: panOffset.x, panY: panOffset.y, zoom },
     }),
-    [filter, layout, focusMode, panOffset, zoom],
+    [filter, query, layout, focusMode, panOffset, zoom],
   )
 
   const handleApplyView = useCallback(
     (view: SavedGraphView) => {
       setFilter(view.filter)
       setLayout(view.layout)
-      setFocusMode(view.focusMode)
+      setQuery(view.query ?? EMPTY_GRAPH_QUERY)
       setPanOffset({ x: view.viewport.panX, y: view.viewport.panY })
       setZoom(view.viewport.zoom)
       setPathResult(null)
@@ -290,12 +310,12 @@ export const GraphView = () => {
       if (!direction) return
       e.preventDefault()
       e.stopPropagation()
-      const nextNodeId = findDirectionalNodeId(renderedNodes, nodeId, direction)
+      const nextNodeId = findDirectionalNodeId(renderedNodesRef.current, nodeId, direction)
       if (!nextNodeId) return
       setActiveNodeId(nextNodeId)
       focusNode(nextNodeId)
     },
-    [renderedNodes, selectEntity, focusNode],
+    [selectEntity, focusNode],
   )
   const handleNodeFocus = useCallback((nodeId: string) => {
     setFocusedNodeId(nodeId)
@@ -312,11 +332,9 @@ export const GraphView = () => {
     [isDraggingRef, selectEntity],
   )
 
-
   return (
     <div className={cn('flex h-full flex-col', VIEW_CONTAINER_CLASS)}>
       <ViewHeader icon={GitFork} title={navT('nav.graph.title')} subtitle={graphT('graph.subtitle')} />
-
       {/* Toolbar — extracted to GraphToolbar */}
       <GraphToolbar
         layout={layout}
@@ -341,7 +359,6 @@ export const GraphView = () => {
         onToggleQueries={() => { setQueriesOpen(!queriesOpen) }}
         activeFilterCount={activeFilterCount}
       />
-
       {queriesOpen && (
         <GraphQueryPanel
           entities={entities}
@@ -349,6 +366,8 @@ export const GraphView = () => {
           filter={filter}
           onFilterChange={setFilter}
           pathResult={pathResult}
+          query={query}
+          onQueryChange={setQuery}
           onPathResult={setPathResult}
           views={graphViews}
           onSaveView={saveGraphView}
@@ -379,7 +398,7 @@ export const GraphView = () => {
 
       {/* Canvas */}
       <div
-        className="relative flex-1 canvas-grid overflow-hidden"
+        className="relative min-h-48 flex-1 canvas-grid overflow-hidden"
         ref={canvasRef}
         tabIndex={0}
         role="application"
@@ -396,7 +415,6 @@ export const GraphView = () => {
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
         >
           {/* Edges */}
