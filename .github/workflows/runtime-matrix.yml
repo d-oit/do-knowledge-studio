@@ -1,0 +1,64 @@
+---
+name: Runtime Matrix
+
+# #1165: compatibility validation across the supported Node.js LTS lines.
+# Primary CI runtime is Node 22 (ci-and-labels.yml); this workflow adds the
+# wider matrix on a schedule so per-PR CI time stays bounded while every
+# supported runtime gets install/lint/typecheck/unit/build evidence weekly
+# (and on demand, and on every change to its own definition).
+'on':
+  schedule:
+    # Weekly, Monday 04:07 UTC — off the hour to reduce runner contention.
+    - cron: '7 4 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/runtime-matrix.yml'
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24', '26']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115  # v6.1.1
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'pnpm'
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm run lint
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Unit tests
+        run: pnpm run test
+      - name: Production build
+        run: pnpm run build
+      - name: Runtime summary
+        if: always()
+        run: |
+          {
+            echo "## Runtime matrix — Node ${{ matrix.node }}"
+            echo "- engines.node: $(node -p 'require("./package.json").engines.node')"
+            echo "- Install, lint, typecheck, unit tests, and build are configured above."
+          } >> "$GITHUB_STEP_SUMMARY"

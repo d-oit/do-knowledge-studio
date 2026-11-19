@@ -67,7 +67,7 @@ Your notes stay in this browser (IndexedDB + a small localStorage envelope). No 
 ### Prerequisites
 
 - **Node.js**: $\ge 22$ (pinned by `.nvmrc` and permitted by `package.json` `engines`)
-- **pnpm**: `10.30.3` (pinned by `package.json` `packageManager`)
+- **pnpm**: `12.17.0` (pinned by `package.json` `packageManager`)
 
 ### Installation & Development
 

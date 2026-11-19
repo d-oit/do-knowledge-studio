@@ -31,18 +31,26 @@ else
     echo -e "${GREEN}✓ package-lock.json is absent${NC}"
 fi
 
-# 2. Ensure .npmrc exists
-if [ ! -f ".npmrc" ]; then
-    echo -e "${RED}✗ .npmrc is missing!${NC}"
-    echo "   An .npmrc file is required to enforce package manager settings (e.g., engine-strict=true)."
+# 2. Ensure pnpm settings live in pnpm-workspace.yaml (pnpm 12 dropped the
+#    package.json `pnpm` field; engine-strict moved there in plans/202).
+if [ ! -f "pnpm-workspace.yaml" ]; then
+    echo -e "${RED}✗ pnpm-workspace.yaml is missing!${NC}"
+    echo "   Workspace settings (engine-strict, overrides) live in pnpm-workspace.yaml."
     FAILED=1
 else
-    echo -e "${GREEN}✓ .npmrc is present${NC}"
-    # Optional: check content of .npmrc
-    if ! grep -q "engine-strict=true" .npmrc; then
-        echo -e "${RED}✗ .npmrc missing 'engine-strict=true'${NC}"
+    echo -e "${GREEN}✓ pnpm-workspace.yaml is present${NC}"
+    if ! grep -q "engineStrict: true" pnpm-workspace.yaml; then
+        echo -e "${RED}✗ pnpm-workspace.yaml missing 'engineStrict: true'${NC}"
         FAILED=1
+    else
+        echo -e "${GREEN}✓ pnpm-workspace.yaml enforces engineStrict${NC}"
     fi
+fi
+
+# 3. Ensure no legacy settings remain in the wrong place
+if [ -f ".npmrc" ] && grep -q "engine-strict" .npmrc; then
+    echo -e "${RED}✗ .npmrc still carries engine-strict; it moved to pnpm-workspace.yaml (plans/202)${NC}"
+    FAILED=1
 fi
 
 # 3. Ensure package.json has packageManager field
