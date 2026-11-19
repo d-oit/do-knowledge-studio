@@ -47,9 +47,10 @@ describe('pwa-retrieval search', () => {
 
   it('returns snippets bounded to 140 chars', () => {
     const big: PwaEntityLike[] = [
-      { id: 'big', name: 'X'.repeat(200), type: 'note', description: '', content: 'y'.repeat(400), tags: [] },
+      { id: 'big', name: 'Long', type: 'note', description: 'x'.repeat(300), content: 'y'.repeat(300), tags: [] },
     ]
-    const results = search(big, [], 'x', 1)
+    const results = search(big, [], 'long', 1)
+    expect(results.length).toBeGreaterThan(0)
     expect(results[0]?.snippet.length).toBeLessThanOrEqual(141)
   })
 

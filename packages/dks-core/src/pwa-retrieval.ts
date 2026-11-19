@@ -97,13 +97,26 @@ const getSegmenter = (): Intl.Segmenter | null => {
   }
 }
 
+/**
+ * True when a token carries at least one non-ASCII character (CJK, Cyrillic,
+ * accented, or Latin-extension scripts). Such tokens carry real meaning at
+ * 1-2 characters, so they must not be dropped by the ASCII minimum-length
+ * rule. Scans UTF-16 code units (no regex with control characters).
+ */
+const containsNonAscii = (token: string): boolean => {
+  for (let i = 0; i < token.length; i++) {
+    if (token.charCodeAt(i) > 0x7f) return true
+  }
+  return false
+}
+
 /** ASCII-only fallback used when Intl.Segmenter is unavailable. */
 const tokenizeAsciiFallback = (text: string): string[] =>
   text
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
-    .filter((w) => !STOP_WORDS.has(w))
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
 
 const tokenize = (text: string): string[] => {
   const tokens: string[] = []
@@ -119,7 +132,10 @@ const tokenize = (text: string): string[] => {
     for (const part of seg.segment(text)) {
       if (!part.isWordLike) continue
       const token = part.segment.normalize('NFC').toLowerCase()
-      if (!STOP_WORDS.has(token)) {
+      // Keep English-like tokens of 3+ chars and any non-ASCII word segment
+      // (CJK and composed scripts are meaningful at 1-2 characters). The
+      // stop-word list never applies to non-ASCII.
+      if (!STOP_WORDS.has(token) && (token.length > 2 || containsNonAscii(token))) {
         tokens.push(token)
       }
     }
