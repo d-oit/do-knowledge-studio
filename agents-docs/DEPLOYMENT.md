@@ -23,10 +23,10 @@
 <https://vercel.com/docs/package-managers>, an override makes Vercel use the
 *oldest* version of the named package manager in the build image — for pnpm
 that is **v6**, which cannot read this repo's `lockfileVersion: '9.0'` or its
-`pnpm.overrides`. With no override, Vercel infers pnpm from `pnpm-lock.yaml`
+`pnpm-workspace.yaml` `overrides`. With no override, Vercel infers pnpm from `pnpm-lock.yaml`
 and picks the right major.
 
-The `packageManager: "pnpm@10.30.3"` field only takes effect when Corepack is
+The `packageManager: "pnpm@12.17.0"` field only takes effect when Corepack is
 enabled on the Vercel project (`ENABLE_EXPERIMENTAL_COREPACK=1`). Do not assume
 it is active.
 

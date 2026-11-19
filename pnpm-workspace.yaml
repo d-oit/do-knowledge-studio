@@ -1,2 +1,37 @@
 packages:
   - 'packages/*'
+
+# pnpm 10+ reads these settings from this file; pnpm 12 REMOVED the package.json
+# `pnpm` field (see plans/219 for the #1166 toolchain decision).
+engineStrict: true
+
+peerDependencyRules:
+  allowedVersions:
+    eslint: "10"
+
+overrides:
+  postcss: ^8.5.23
+  source-map-js: ^1.2.2
+  brace-expansion@<1.1.18: 1.1.21
+  brace-expansion@>=5: ^5.0.12
+  picomatch: ^4.0.4
+  browserslist: ^4.28.7
+  js-yaml: ^4.3.2
+  adm-zip: npm:adm-zip@0.6.1
+  dompurify: ^3.4.18
+  undici: ^7.29.1
+  nanoid@3: 3.3.18
+  postcss-selector-parser: ^7.1.6
+  smol-toml: ^1.9.1
+  katex: ^0.19.0
+
+auditConfig:
+  ignoreCves:
+    - CVE-2026-93687
+
+allowBuilds:
+  core-js: false
+  esbuild: false
+  onnxruntime-node: false
+  protobufjs: false
+  unrs-resolver: false
