@@ -1,8 +1,9 @@
 /**
  * Minimal YAML-subset frontmatter parser.
  *
- * Core services are dependency-free and run in Node with no third-party
- * packages, so this parser covers the YAML subset actually used by OKF
+ * The bundled subset parser is dependency-free (no third-party packages),
+ * so tooling that cannot ship a dependency can still read frontmatter.
+ * It covers the YAML subset actually used by OKF
  * concept frontmatter and Markdown vault notes:
  *   - `key: scalar` (string, number, boolean, null)
  *   - single/double quoted strings with common escapes
@@ -14,7 +15,15 @@
  * is preserved as a raw string. The studio app uses the full `yaml`
  * package; this subset is tested against the same fixtures and is documented
  * as a deliberate, bounded implementation.
+ *
+ * The shared import services parse user-facing frontmatter with the full
+ * `yaml` package (the studio importer's original behavior — the header
+ * parsers must accept block scalars, anchors, and multi-line plain values),
+ * via {@link parseFrontmatterYaml}; the subset {@link parseFrontmatter} is
+ * the zero-third-party fallback for callers that cannot ship a dependency.
  */
+
+import yaml from 'yaml'
 
 /** A parsed value node: plain JSON values plus nested maps/arrays. */
 export type FmValue = string | number | boolean | null | FmValue[] | { [key: string]: FmValue }
@@ -319,4 +328,22 @@ export const splitFrontmatter = (
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(content)
   if (!match) return { frontmatter: null, body: content }
   return { frontmatter: match.at(1) ?? '', body: match.at(2) ?? '' }
+}
+
+/**
+ * Full-YAML frontmatter parse via the `yaml` package — parity with the
+ * studio's original import behavior (block scalars, anchors, multi-line
+ * plain values). Non-mapping documents fail closed like the subset parser.
+ */
+export const parseFrontmatterYaml = (text: string): FmResult => {
+  let parsed: unknown
+  try {
+    parsed = yaml.parse(text)
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'invalid frontmatter' }
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { ok: false, error: 'Frontmatter must be a mapping' }
+  }
+  return { ok: true, data: parsed as Record<string, FmValue> }
 }

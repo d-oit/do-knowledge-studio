@@ -113,4 +113,37 @@ describe('readZip', () => {
     patched[cd + 24] = 0xff
     expect(() => readZip(patched)).toThrow(/size mismatch/)
   })
+
+  it('rejects entries whose declared size exceeds the cap before inflating', () => {
+    // ~6 MB of zeros deflate to a few KB; the honest header declares 6 MB,
+    // so the pre-inflation check must reject without ever decompressing
+    // (the thrown message is the discriminator — only the pre-check says
+    // "over the entry limit").
+    const zip = buildZip([{ name: 'bomb.bin', data: new Uint8Array(6_291_456), method: 8 }])
+    expect(zip.byteLength).toBeLessThan(100_000)
+    expect(() => readZip(zip, { maxEntryBytes: 5_242_880, maxTotalBytes: 52_428_800 }))
+      .toThrow(/over the entry limit/)
+  })
+
+  it('rejects total decompressed size over the cap before inflating', () => {
+    // Ten 5 MB entries are within every individual cap but together cross
+    // the 50 MB total cap at the declared-size check.
+    const huge = new Uint8Array(5_242_880)
+    const zip = buildZip(Array.from({ length: 11 }, (_, i) => ({ name: `b${i}.bin`, data: huge, method: 8 })))
+    expect(zip.byteLength).toBeLessThan(200_000)
+    expect(() => readZip(zip, { maxEntryBytes: 5_242_880, maxTotalBytes: 52_428_800 }))
+      .toThrow(/total limit/)
+  })
+
+  it('rejects lying headers whose actual output exceeds the cap (maxOutputLength)', () => {
+    // Central directory claims 1 KiB; the real payload inflates to ~3 MB of
+    // 'a'. The pre-inflate check passes, and the decompressor cap must catch
+    // the lie instead of materializing the attacker's output.
+    const zip = buildZip([{ name: 'lie.bin', data: new Uint8Array(3_145_728).fill(97), method: 8 }])
+    const patched = zip.slice()
+    const cd = findCentralDirectory(patched)
+    new DataView(patched.buffer).setUint32(cd + 24, 1024, true)
+    expect(() => readZip(patched, { maxEntryBytes: 1_048_576, maxTotalBytes: 52_428_800 }))
+      .toThrow(/exceeds its size cap|failed to decompress/)
+  })
 })

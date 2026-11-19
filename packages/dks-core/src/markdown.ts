@@ -10,7 +10,7 @@
  * minting) on its side; the CLI uses {@link parseMarkdownBundle} directly.
  */
 
-import { parseFrontmatter, splitFrontmatter } from './frontmatter.js'
+import { parseFrontmatterYaml, splitFrontmatter } from './frontmatter.js'
 import { scanRelativeLinks, scanWikilinks } from './markdown-scan.js'
 import type { CoreEntity } from './types.js'
 
@@ -235,7 +235,7 @@ const parseDraftFile = (
   let fm: Record<string, unknown> = {}
 
   if (split.frontmatter !== null) {
-    const parsed = parseFrontmatter(split.frontmatter)
+    const parsed = parseFrontmatterYaml(split.frontmatter)
     if (!parsed.ok) {
       warnings.push(`${path}: invalid YAML frontmatter — ${parsed.error}`)
       return null

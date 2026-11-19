@@ -271,4 +271,22 @@ describe('verifyBackupArchive (encrypted)', () => {
     if (r.ok) return
     expect(r.code).toBe('decrypt-failed')
   })
+
+  it('reports a tampered ciphertext as checksum, not decrypt-failed (hash first)', async () => {
+    // Flip one byte of ciphertext while KEEPING the declared
+    // ciphertextSha256 stale. If verification checked the hash before
+    // decrypting, the failure is 'checksum'; a decrypt-first order would
+    // surface 'decrypt-failed' (or corrupt output) instead.
+    const archive = await makeEncrypted('correct horse')
+    const parsed = JSON.parse(archive) as { ciphertext: string }
+    const raw = atob(parsed.ciphertext)
+    // Flip a bit well past the GCM header/IV region.
+    const idx = Math.floor(raw.length / 2)
+    const flipped = String.fromCharCode((raw.charCodeAt(idx) ^ 0x01) & 0xff)
+    parsed.ciphertext = btoa(raw.slice(0, idx) + flipped + raw.slice(idx + 1))
+    const r = await verifyBackupArchive(JSON.stringify(parsed), 'correct horse')
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.code).toBe('checksum')
+  })
 })

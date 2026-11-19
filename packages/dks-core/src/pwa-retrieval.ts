@@ -36,17 +36,12 @@ const K1 = 1.5
 const B = 0.75
 /** Common English stop words excluded from indexing. */
 const STOP_WORDS = new Set([
-  'the', 'a', 'an', 'and', 'or', 'but', 'if', 'then', 'else', 'when',
-  'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between',
-  'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to',
-  'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again',
-  'further', 'then', 'once', 'here', 'there', 'all', 'any', 'both', 'each',
-  'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
-  'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will',
-  'just', 'don', 'should', 'now', 'is', 'are', 'was', 'were', 'be', 'been',
-  'being', 'has', 'have', 'had', 'having', 'does', 'did', 'doing', 'would',
-  'could', 'ought', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'them',
-  'his', 'her', 'its', 'our', 'their', 'my', 'your', 'me', 'him', 'us',
+  'what', 'how', 'why', 'when', 'where', 'which', 'that', 'this',
+  'with', 'from', 'your', 'about', 'please', 'could', 'would',
+  'should', 'have', 'been', 'being', 'were', 'does', 'into',
+  'also', 'just', 'only', 'than', 'then', 'them', 'they',
+  'their', 'there', 'these', 'those', 'very', 'some', 'more',
+  'most', 'such', 'each', 'every', 'both', 'much', 'many',
 ])
 
 /** A single search result with relevance score and snippet. */

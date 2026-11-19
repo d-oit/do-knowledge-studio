@@ -34,6 +34,17 @@ describe('pwa-retrieval search', () => {
     expect(search(entities, claims, 'the', 10)).toHaveLength(0)
   })
 
+  it('preserves the PWA stop-word list: "the" indexes, question words do not', () => {
+    // Discriminating corpus — both documents contain the literal words.
+    // The old (main) list filters question words like "how" from the index
+    // but keeps "the"; the generic swap flagged in review inverts both.
+    const words: PwaEntityLike[] = [
+      { id: 'w1', name: 'Notes', type: 'note', description: '', content: 'the plan shows how the graph scales', tags: [] },
+    ]
+    expect(search(words, [], 'the', 10).map((r) => r.id)).toEqual(['w1'])
+    expect(search(words, [], 'how', 10)).toHaveLength(0)
+  })
+
   it('returns snippets bounded to 140 chars', () => {
     const big: PwaEntityLike[] = [
       { id: 'big', name: 'X'.repeat(200), type: 'note', description: '', content: 'y'.repeat(400), tags: [] },

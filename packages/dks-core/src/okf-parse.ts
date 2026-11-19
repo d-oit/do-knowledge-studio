@@ -5,7 +5,7 @@
  * the single implementation shared by the `dks` CLI and the MCP adapter.
  */
 
-import { parseFrontmatter, splitFrontmatter } from './frontmatter.js'
+import { parseFrontmatterYaml, splitFrontmatter } from './frontmatter.js'
 import { findMachineSection, scanRelativeLinks } from './markdown-scan.js'
 import type {
   BundleClaim,
@@ -181,7 +181,7 @@ const stripMachineSections = (body: string): string => {
 export const parseConcept = (path: string, content: string): BundleConcept | null => {
   const split = splitFrontmatter(content)
   if (!split.frontmatter) return null
-  const parsed = parseFrontmatter(split.frontmatter)
+  const parsed = parseFrontmatterYaml(split.frontmatter)
   if (!parsed.ok) return null
   const fm = parsed.data
   const fileName = path.split('/').pop() ?? path
@@ -226,7 +226,7 @@ export const parseIndexVersion = (content: string): string | null => {
 export const parseIndexFrontmatterVersion = (content: string): string | null => {
   const split = splitFrontmatter(content)
   if (!split.frontmatter) return null
-  const parsed = parseFrontmatter(split.frontmatter)
+  const parsed = parseFrontmatterYaml(split.frontmatter)
   if (!parsed.ok) return null
   const version = parsed.data.okf_version
   return typeof version === 'string' ? version : null

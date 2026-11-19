@@ -117,9 +117,12 @@ describe('mergeEntities', () => {
     const store = useStudioStore.getState()
     const [a, b] = store.entities
     if (!a || !b) return
-    // An edit lands while the merge is in flight (e.g. a cross-tab or sync
-    // write). The merge must build from this latest state, not from a
-    // pre-edit snapshot, so the intervening change survives.
+    // An edit lands just before the merge reads the store (e.g. a cross-tab
+    // write that committed a tick earlier). The merge must build from the
+    // latest visible state, not from a pre-edit snapshot, so the intervening
+    // change survives. NOTE: with a synchronous zustand set-updater this
+    // cannot simulate a write DURING mergeEntities' own set(); it pins the
+    // read-from-latest-state contract, not the interleaving timing.
     useStudioStore.setState({
       entities: useStudioStore.getState().entities.map((e) =>
         e.id === a.id ? { ...e, content: 'interim edit', aliases: ['Interim Alias'] } : e,

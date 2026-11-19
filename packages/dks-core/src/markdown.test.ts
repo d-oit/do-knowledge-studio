@@ -55,6 +55,22 @@ const VAULT = new Map<string, string>([
 ])
 
 describe('parseMarkdownBundle', () => {
+  it('accepts full-YAML frontmatter (block scalars and anchors)', () => {
+    // Parity pin: frontmatter here parses with the `yaml` package (as the
+    // pre-shared-core importer did). The zero-dependency subset parser
+    // rejects block scalars/multi-line values, so this test would fail if
+    // the import path regressed to it.
+    const files = new Map([
+      ['notes/deep.md', '---\ntitle: Deep\ndescription: |\n  line one\n  line two\ntags: [deep]\nsummary: &s shared\n---\nBody text.\n'],
+    ])
+    const r = parseMarkdownBundle(files)
+    expect(r.success).toBe(true)
+    if (!r.success) return
+    const deep = r.entities.find((e) => e.id === 'notes/deep')
+    expect(deep?.name).toBe('Deep')
+    expect(deep?.description).toBe('line one\nline two\n')
+  })
+
   it('parses entities with aliases, tags, and wikilink resolution', () => {
     const r = parseMarkdownBundle(VAULT)
     expect(r.success).toBe(true)

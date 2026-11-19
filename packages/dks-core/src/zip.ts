@@ -54,17 +54,29 @@ const decodeName = (bytes: Uint8Array): string => {
   }
 }
 
+/** Optional per-entry and total caps enforced DURING extraction (fail-closed before/while inflating). */
+export interface ZipCaps {
+  /** Maximum decompressed size of one entry. */
+  maxEntryBytes: number
+  /** Maximum sum of decompressed sizes across all entries. */
+  maxTotalBytes: number
+}
+
 /**
- * Reads all entries from a zip buffer. Path traversal and size caps are the
- * caller's responsibility (they own the bundle safety limits).
+ * Reads all entries from a zip buffer. Path traversal is the caller's
+ * responsibility; the optional `caps` bound decompression so a hostile
+ * archive cannot exhaust memory (a small compressed payload can expand
+ * thousands-fold, so the compressed-input bound does not protect us).
  * @param buffer - Raw zip bytes.
+ * @param caps - Per-entry and total output caps (recommended for untrusted input).
  * @returns Entry name → decompressed bytes, in archive order.
  */
-export const readZip = (buffer: Uint8Array): ZipEntries => {
+export const readZip = (buffer: Uint8Array, caps?: ZipCaps): ZipEntries => {
   const eocd = findEocd(buffer)
   if (eocd.count === 0) return new Map()
   let cursor = eocd.offset
   const entries: ZipEntries = new Map()
+  let total = 0
   for (let n = 0; n < eocd.count; n += 1) {
     if (u32(buffer, cursor) !== CD_ENTRY_SIG) {
       throw new Error('Zip central directory is corrupted.')
@@ -79,6 +91,18 @@ export const readZip = (buffer: Uint8Array): ZipEntries => {
     const name = decodeName(buffer.subarray(cursor + 46, cursor + 46 + nameLen))
     cursor += 46 + nameLen + extraLen + commentLen
 
+    // Cap checks run BEFORE inflation from the declared size and again at
+    // the decompressor level (headers can lie about the expanded size).
+    if (caps !== undefined) {
+      if (uncompressedSize > caps.maxEntryBytes) {
+        throw new Error(`Zip entry "${name}" declares ${uncompressedSize} bytes, over the entry limit.`)
+      }
+      total += uncompressedSize
+      if (total > caps.maxTotalBytes) {
+        throw new Error(`Zip entries exceed the decompressed total limit (${caps.maxTotalBytes} bytes).`)
+      }
+    }
+
     if (u32(buffer, localOffset) !== LOCAL_HEADER_SIG) {
       throw new Error(`Zip local header is corrupted for entry "${name}".`)
     }
@@ -92,9 +116,13 @@ export const readZip = (buffer: Uint8Array): ZipEntries => {
       out = data
     } else if (method === 8) {
       try {
-        out = inflateRawSync(data)
+        out = caps !== undefined
+          ? inflateRawSync(data, { maxOutputLength: caps.maxEntryBytes })
+          : inflateRawSync(data)
       } catch {
-        throw new Error(`Zip entry "${name}" failed to decompress.`)
+        throw new Error(caps !== undefined
+          ? `Zip entry "${name}" failed to decompress or exceeds its size cap.`
+          : `Zip entry "${name}" failed to decompress.`)
       }
     } else {
       throw new Error(`Zip entry "${name}" uses unsupported compression method ${method}.`)

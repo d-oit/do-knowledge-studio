@@ -31,7 +31,10 @@ const readZipEntries = (buffer: Uint8Array): Map<string, string> => {
   if (buffer.byteLength > MAX_BUNDLE_ZIP_BYTES) {
     throw new Error(`Bundle zip is too large; limited to ${MAX_BUNDLE_ZIP_BYTES} bytes compressed.`)
   }
-  const entries = readZip(buffer)
+  const entries = readZip(buffer, {
+    maxEntryBytes: MAX_CONCEPT_BYTES,
+    maxTotalBytes: MAX_BUNDLE_UNCOMPRESSED_BYTES,
+  })
   if (entries.size > MAX_BUNDLE_ENTRIES) {
     throw new Error(`Too many entries in the bundle; limited to ${MAX_BUNDLE_ENTRIES} files.`)
   }
