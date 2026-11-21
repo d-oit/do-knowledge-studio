@@ -75,7 +75,7 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv.at(index)
-    if (token === undefined) break
+    if (typeof token !== 'string') break
     switch (token) {
       case '--help':
       case '-h':

@@ -24,5 +24,7 @@ export const installStreamGuard = (
   stream: ErrorStream,
   exit: (code: number) => void = (code) => process.exit(code),
 ): void => {
-  stream.on('error', (err) => exit(exitCodeForStreamError(err)))
+  stream.on('error', (err) => {
+    exit(exitCodeForStreamError(err))
+  })
 }

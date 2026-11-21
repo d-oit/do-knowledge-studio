@@ -95,14 +95,15 @@ const pathExists = (port: FsPort, path: string): boolean => {
 /** CommonMark fence run; the info string follows the opening backticks. */
 const FENCE_PATTERN = /^(`{3,})(.*)$/
 /** A fence explicitly marked illustrative is skipped (canonical parity). */
-const EXAMPLE_MARKER_PATTERN = /^\s*(?:#{1,6}\s+|(?:<!--|\/\/|--|;|%|"|')\s*)?example\b/i
+const EXAMPLE_MARKER_PATTERN =
+  /^\s*(?:example\b|#{1,6}\s+example\b|(?:<!--|\/\/|--|;|%|"|')\s*example\b)/i
 /**
  * Path-shaped references only, mirroring `agent-surface.py`:
  * `scripts/…`, `agents-docs/…`, `references/…`, or `<skill>/…`.
  * Bare code identifiers (`JSON.parse`), emails, and prose dots do not match.
  */
 const REFERENCE_TOKEN_PATTERN =
-  /(?:^|[\s(["'`>$=*/])((?:[a-z0-9][a-z0-9-]*\/)?(?:scripts|agents-docs|references)\/[A-Za-z0-9_][A-Za-z0-9_./-]*)/g
+  /(?:^|[\s(["'`>$=*/])((?:[a-z0-9][a-z0-9-]*\/(?:scripts|agents-docs|references)\/|(?:scripts|agents-docs|references)\/)[A-Za-z0-9_][A-Za-z0-9_./-]*)/g
 
 /** Extracts references, skipping example fences and non-path tokens. */
 const collectReferences = (body: string): string[] => {
@@ -114,8 +115,8 @@ const collectReferences = (body: string): string[] => {
   for (const line of body.split('\n')) {
     const stripped = line.trim()
     const fence = FENCE_PATTERN.exec(stripped)
-    if (fence !== null && (!inFence || (fence[2] ?? '').trim().length === 0)) {
-      const run = (fence[1] ?? '').length
+    if (fence !== null && (!inFence || (fence.at(2) ?? '').trim().length === 0)) {
+      const run = (fence.at(1) ?? '').length
       if (!inFence) {
         inFence = true
         fenceLength = run
@@ -135,7 +136,7 @@ const collectReferences = (body: string): string[] => {
       if (fenceIsExample) continue
     }
     for (const match of line.matchAll(REFERENCE_TOKEN_PATTERN)) {
-      const ref = (match[1] ?? '').replace(/[.,:;)]+$/, '')
+      const ref = (match.at(1) ?? '').replace(/[.,:;)]+$/, '')
       if (ref.endsWith('/') || ref.endsWith('.') || ref.endsWith(',')) continue
       const basename = ref.split('/').pop() ?? ''
       if (basename.length === 0 || basename.includes('*') || !basename.includes('.')) continue

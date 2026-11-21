@@ -61,7 +61,7 @@ const parseBackupArgs = (
   let passphraseEnvName: string | undefined
   for (let index = 0; index < args.length; index += 1) {
     const token = args.at(index)
-    if (token === undefined) break
+    if (typeof token !== 'string') break
     switch (token) {
       case PASSPHRASE_FLAG: {
         const name = args.at(index + 1)

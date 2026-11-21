@@ -186,6 +186,16 @@ describe('skillsValidateData — findings', () => {
     })
   })
 
+  it('skips fences whose first content line marks an example', async () => {
+    await withTempDir(async (dir) => {
+      await writeSkill(dir, 'sample', {
+        body: '```bash\n# example -- not in this repo\nscripts/missing.sh --now\n```\n\nProse only after the example.\n',
+      })
+      const findings = skillsValidateData(nodeFsPort, dir, 'sample').results.at(0)?.findings ?? []
+      expect(findings).toEqual([])
+    })
+  })
+
   it('flags prefixed paths outside backticks', async () => {
     await withTempDir(async (dir) => {
       await writeSkill(dir, 'sample', { body: 'Run scripts/missing.sh before continuing.\n' })
