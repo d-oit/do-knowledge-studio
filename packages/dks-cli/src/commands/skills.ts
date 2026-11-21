@@ -3,12 +3,12 @@
  * under `<bundle>/.agents/skills`. Rules (mirroring the repo's
  * `scripts/agent-surface.py`): required `name`/`description`, name/dir
  * consistency, 300-char single-line description budget, and referenced
- * files that must exist. Executability of referenced scripts is checked
- * through the FsPort contract with a shebang probe — the port exposes no
- * stat/mode API by design (LESSON-063: no extra `node:fs` surface).
+ * files that must exist. Reference extraction mirrors the repo's canonical
+ * `scripts/agent-surface.py` scanner: prefixed path tokens only, example
+ * fences skipped, and cross-skill references resolved under the skills root.
  */
 
-import { parseFrontmatter, splitFrontmatter, type FmValue, type FsPort } from 'dks-core'
+import { isSafePath, parseFrontmatter, splitFrontmatter, type FmValue, type FsPort } from 'dks-core'
 import { CliError } from '../errors.js'
 import { decodeUtf8Strict } from '../fs-port.js'
 
@@ -18,8 +18,6 @@ export const SKILL_MD_NAME = 'SKILL.md'
 
 export const SKILL_DESCRIPTION_MAX_CHARS = 300
 export const MIN_SKILL_MD_CHARS = 50
-/** A `#!` first line is the port-visible proxy for an executable script. */
-const SHEBANG = '#!'
 /** Registry of the checks every skill is run through. */
 export const SKILL_CHECKS = [
   'frontmatter',
@@ -27,7 +25,6 @@ export const SKILL_CHECKS = [
   'name-match',
   'description-budget',
   'references-exist',
-  'scripts-executable',
 ] as const
 export const SKILL_CHECK_LABELS: Readonly<Record<(typeof SKILL_CHECKS)[number], string>> = {
   frontmatter: 'YAML frontmatter parses',
@@ -35,7 +32,6 @@ export const SKILL_CHECK_LABELS: Readonly<Record<(typeof SKILL_CHECKS)[number], 
   'name-match': 'frontmatter name equals directory name',
   'description-budget': 'description is a single-line string within 300 chars',
   'references-exist': 'referenced files resolve in the bundle or skill dir',
-  'scripts-executable': 'referenced scripts carry a shebang',
 }
 
 export interface SkillReport {
@@ -74,7 +70,7 @@ const skillsDirOrThrow = (port: FsPort, skillsDir: string): string[] => {
     throw new CliError(
       'not_found',
       `no skills directory at "${skillsDir}"`,
-      `skills commands read <bundle>/${AGENTS_SUBDIR}/${SKILLS_DIRNAME}; point --bundle at a bundle root`,
+      `skills commands read [bundle]/${AGENTS_SUBDIR}/${SKILLS_DIRNAME}; point --bundle at a bundle root`,
     )
   }
   const names = port.readDirEntries(skillsDir)
@@ -96,38 +92,125 @@ const pathExists = (port: FsPort, path: string): boolean => {
   }
 }
 
-const startsWithShebang = (port: FsPort, path: string): boolean => {
-  try {
-    return decodeUtf8Strict(port.readFileBytes(path)).startsWith(SHEBANG)
-  } catch {
-    return false
-  }
-}
+/** CommonMark fence run; the info string follows the opening backticks. */
+const FENCE_PATTERN = /^(`{3,})(.*)$/
+/** A fence explicitly marked illustrative is skipped (canonical parity). */
+const EXAMPLE_MARKER_PATTERN = /^\s*(?:#{1,6}\s+|(?:<!--|\/\/|--|;|%|"|')\s*)?example\b/i
+/**
+ * Path-shaped references only, mirroring `agent-surface.py`:
+ * `scripts/…`, `agents-docs/…`, `references/…`, or `<skill>/…`.
+ * Bare code identifiers (`JSON.parse`), emails, and prose dots do not match.
+ */
+const REFERENCE_TOKEN_PATTERN =
+  /(?:^|[\s(["'`>$=*/])((?:[a-z0-9][a-z0-9-]*\/)?(?:scripts|agents-docs|references)\/[A-Za-z0-9_][A-Za-z0-9_./-]*)/g
 
-/** Backticked tokens that look like file references (globs/bare dirs skipped). */
-const referencedFiles = (body: string): string[] => {
+/** Extracts references, skipping example fences and non-path tokens. */
+const collectReferences = (body: string): string[] => {
   const refs: string[] = []
-  const pattern = /`([^`\n]+)`/g
-  for (const match of body.matchAll(pattern)) {
-    const token = (match.at(1) ?? '').replace(/[.,:;)\]]+$/, '')
-    if (token.includes('*') || token.includes(' ') || token.endsWith('/')) continue
-    const basename = token.split('/').pop() ?? ''
-    if (!basename.includes('.')) continue
-    if (!refs.includes(token)) refs.push(token)
+  let inFence = false
+  let fenceIsExample = false
+  let fenceSawContent = false
+  let fenceLength = 0
+  for (const line of body.split('\n')) {
+    const stripped = line.trim()
+    const fence = FENCE_PATTERN.exec(stripped)
+    if (fence !== null && (!inFence || (fence[2] ?? '').trim().length === 0)) {
+      const run = (fence[1] ?? '').length
+      if (!inFence) {
+        inFence = true
+        fenceLength = run
+        fenceIsExample = stripped.toLowerCase().includes('example')
+        fenceSawContent = false
+      } else if (run >= fenceLength) {
+        inFence = false
+        fenceIsExample = false
+      }
+      continue
+    }
+    if (inFence) {
+      if (!fenceIsExample && !fenceSawContent && stripped.length > 0) {
+        fenceSawContent = true
+        if (EXAMPLE_MARKER_PATTERN.test(stripped)) fenceIsExample = true
+      }
+      if (fenceIsExample) continue
+    }
+    for (const match of line.matchAll(REFERENCE_TOKEN_PATTERN)) {
+      const ref = (match[1] ?? '').replace(/[.,:;)]+$/, '')
+      if (ref.endsWith('/') || ref.endsWith('.') || ref.endsWith(',')) continue
+      const basename = ref.split('/').pop() ?? ''
+      if (basename.length === 0 || basename.includes('*') || !basename.includes('.')) continue
+      if (!refs.includes(ref)) refs.push(ref)
+    }
   }
   return refs
 }
 
-/** Candidate paths for a reference: skill dir first, then bundle root. */
-const referenceCandidates = (ref: string, skillName: string, skillsDir: string, bundleRoot: string): string[] => {
+/** Canonical resolution order for one reference. */
+const referenceResolves = (
+  port: FsPort,
+  ref: string,
+  skillName: string,
+  skillsDir: string,
+  bundleRoot: string,
+  knownSkills: ReadonlySet<string>,
+): boolean => {
+  if (!isSafePath(ref)) return false
   const skillDir = `${skillsDir}/${skillName}`
   const first = ref.split('/').at(0) ?? ''
-  if (first === skillName) return [`${skillsDir}/${ref}`]
+  if (knownSkills.has(first)) return pathExists(port, `${skillsDir}/${ref}`)
   if (ref.startsWith('scripts/')) {
-    return [`${skillDir}/${ref}`, `${bundleRoot}/${ref}`]
+    const sub = ref.slice('scripts/'.length)
+    return pathExists(port, `${bundleRoot}/scripts/${sub}`) || pathExists(port, `${skillDir}/scripts/${sub}`)
   }
-  if (ref.startsWith('references/')) return [`${skillDir}/${ref}`]
-  return [`${bundleRoot}/${ref}`]
+  if (ref.startsWith('references/')) return pathExists(port, `${skillDir}/${ref}`)
+  return pathExists(port, `${bundleRoot}/${ref}`)
+}
+
+/** Every Markdown file under a skill, relative to the skill directory. */
+const listMarkdownFiles = (port: FsPort, skillDir: string): string[] => {
+  const files: string[] = []
+  const walk = (current: string, prefix: string): void => {
+    for (const entry of port.readDirEntries(current)) {
+      if (entry.name.startsWith('.')) continue
+      const relative = prefix.length > 0 ? `${prefix}/${entry.name}` : entry.name
+      if (entry.isDirectory) {
+        walk(`${current}/${entry.name}`, relative)
+      } else if (entry.name.endsWith('.md')) {
+        files.push(relative)
+      }
+    }
+  }
+  walk(skillDir, '')
+  return files.sort()
+}
+
+/**
+ * Canonical parity: scan every Markdown file in the skill, including
+ * reference documents and frontmatter, not only SKILL.md's body.
+ */
+const checkReferences = (
+  port: FsPort,
+  skillDir: string,
+  skillName: string,
+  skillsDir: string,
+  bundleRoot: string,
+  knownSkills: ReadonlySet<string>,
+  findings: string[],
+): void => {
+  for (const relative of listMarkdownFiles(port, skillDir)) {
+    let text: string
+    try {
+      text = decodeUtf8Strict(port.readFileBytes(`${skillDir}/${relative}`))
+    } catch {
+      findings.push(`${relative}: could not be read as UTF-8`)
+      continue
+    }
+    for (const ref of collectReferences(text)) {
+      if (!referenceResolves(port, ref, skillName, skillsDir, bundleRoot, knownSkills)) {
+        findings.push(`${relative}: dead reference "${ref}"`)
+      }
+    }
+  }
 }
 
 const readSkillText = (port: FsPort, skillDir: string, findings: string[]): string | undefined => {
@@ -151,6 +234,7 @@ export const validateSkill = (
   skillsDir: string,
   name: string,
   bundleRoot: string,
+  knownSkills: ReadonlySet<string>,
 ): SkillReport => {
   const findings: string[] = []
   const skillDir = `${skillsDir}/${name}`
@@ -189,22 +273,18 @@ export const validateSkill = (
     findings.push(`description is ${description.length} chars (limit ${SKILL_DESCRIPTION_MAX_CHARS})`)
   }
 
-  for (const ref of referencedFiles(split.body)) {
-    const candidates = referenceCandidates(ref, name, skillsDir, bundleRoot)
-    const resolved = candidates.find((candidate) => pathExists(port, candidate))
-    if (resolved === undefined) {
-      findings.push(`dead reference "${ref}"`)
-      continue
-    }
-    if (ref.startsWith('scripts/') && !startsWithShebang(port, resolved)) {
-      findings.push(`referenced script "${ref}" carries no shebang (executable requirement)`)
-    }
-  }
+  checkReferences(port, skillDir, name, skillsDir, bundleRoot, knownSkills, findings)
   return { name, findings }
 }
 
-const validateAll = (port: FsPort, bundlePath: string, skillsDir: string, names: readonly string[]): SkillsData => {
-  const results = names.map((name) => validateSkill(port, skillsDir, name, bundlePath))
+const validateAll = (
+  port: FsPort,
+  bundlePath: string,
+  skillsDir: string,
+  names: readonly string[],
+  knownSkills: ReadonlySet<string>,
+): SkillsData => {
+  const results = names.map((name) => validateSkill(port, skillsDir, name, bundlePath, knownSkills))
   const failed = results.filter((report) => report.findings.length > 0).length
   return {
     skillsDir,
@@ -249,12 +329,13 @@ export const skillsValidateData = (
   only: string | undefined,
 ): SkillsData => {
   const skillsDir = resolveSkillsDir(bundlePath)
-  let names = skillsDirOrThrow(port, skillsDir)
-  if (only !== undefined && !names.includes(only)) {
-    throw new CliError('not_found', `unknown skill "${only}"`, `available: ${names.join(', ')}`)
+  const allNames = skillsDirOrThrow(port, skillsDir)
+  let names = allNames
+  if (only !== undefined && !allNames.includes(only)) {
+    throw new CliError('not_found', `unknown skill "${only}"`, `available: ${allNames.join(', ')}`)
   }
   if (only !== undefined) names = [only]
-  return validateAll(port, bundlePath, skillsDir, names)
+  return validateAll(port, bundlePath, skillsDir, names, new Set(allNames))
 }
 
 /** `dks skills ...` subcommand dispatch. */

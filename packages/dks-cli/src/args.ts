@@ -18,11 +18,11 @@ export const MAX_RANGE_LIMIT = 200
 
 /** Global flag token list; value-taking flags expect the next argument. */
 export const GLOBAL_FLAG_NAMES = [
-  '--format <json|text>',
+  '--format JSON|TEXT',
   '--quiet',
   '--no-color',
-  '--limit <n>',
-  '--bundle <path>',
+  '--limit N',
+  '--bundle PATH',
 ] as const
 
 export interface GlobalFlags {
@@ -71,14 +71,22 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
   const args: string[] = []
   let command = ''
   let commandSeen = false
+  let helpRequested = false
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv.at(index)
     if (token === undefined) break
-    if (token === '--help' || token === '-h') {
-      command = 'help'
-      commandSeen = true
-      continue
+    switch (token) {
+      case '--help':
+      case '-h':
+        command = 'help'
+        commandSeen = true
+        helpRequested = true
+        // `dks search foo --help` asks for search help, not help for "foo".
+        args.length = 0
+        continue
+      default:
+        break
     }
     if (token.startsWith('--')) {
       if (VALUE_FLAGS.has(token)) {
@@ -87,23 +95,35 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
           throw new CliError('usage', `flag "${token}" is missing its value`, globalFlagsHint())
         }
         index += 1
-        if (token === '--format') {
-          if (value !== FORMAT_JSON && value !== FORMAT_TEXT) {
-            throw new CliError('usage', `--format expects "json" or "text", got "${value}"`, globalFlagsHint())
-          }
-          flags.format = value
-        } else if (token === '--limit') {
-          flags.limit = parseLimit(value)
-        } else {
-          flags.bundle = value
+        switch (token) {
+          case '--format':
+            switch (value) {
+              case FORMAT_JSON:
+              case FORMAT_TEXT:
+                flags.format = value
+                break
+              default:
+                throw new CliError('usage', `--format expects "json" or "text", got "${value}"`, globalFlagsHint())
+            }
+            break
+          case '--limit':
+            flags.limit = parseLimit(value)
+            break
+          default:
+            flags.bundle = value
         }
       } else if (BOOLEAN_FLAGS.has(token)) {
-        if (token === '--quiet') flags.quiet = true
-        else flags.noColor = true
+        switch (token) {
+          case '--quiet':
+            flags.quiet = true
+            break
+          default:
+            flags.noColor = true
+        }
       } else {
         // Not a global flag: hand it to the command, which knows its own
         // local flags and rejects everything else (unknown → usage).
-        args.push(token)
+        if (!helpRequested) args.push(token)
       }
       continue
     }
@@ -113,7 +133,7 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
     if (!commandSeen) {
       command = token
       commandSeen = true
-    } else {
+    } else if (!helpRequested) {
       args.push(token)
     }
   }

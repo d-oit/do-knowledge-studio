@@ -15,6 +15,7 @@
  * (single entry point for computed-path reads, LESSON-063).
  */
 
+import type { LoadedBundle } from 'dks-core'
 import { parseInvocation, globalFlagsHint, type Invocation } from './args.js'
 import { loadBundle, resolveBundlePath } from './bundle.js'
 import { backupVerifyData } from './commands/backup.js'
@@ -36,9 +37,8 @@ import { exitCodeFor, failureEnvelope, okEnvelope } from './envelope.js'
 import { CliError, errorText } from './errors.js'
 import { nodeFsPort } from './fs-port.js'
 import { renderErrorText, renderPayloadText, type CommandPayload } from './render.js'
-import { readStdinText } from './stdin.js'
 import { EXIT_INTERNAL, EXIT_OK } from './exit-codes.js'
-import { DEFAULT_LIMIT } from './args.js'
+import { DEFAULT_LIMIT, FORMAT_JSON, FORMAT_TEXT, type OutputFormat } from './args.js'
 
 const COMMAND_NAMES: readonly string[] = COMMAND_DOCS.map((doc) => doc.name)
 
@@ -52,18 +52,18 @@ const SUGGESTION_MAX_DISTANCE = 2
 const editDistance = (a: string, b: string): number => {
   const row: number[] = Array.from({ length: b.length + 1 }, (_unused, index) => index)
   for (let i = 1; i <= a.length; i += 1) {
-    let previous = row[0] ?? 0
-    row[0] = i
+    let previous = row.at(0) ?? 0
+    row.fill(i, 0, 1)
     for (let j = 1; j <= b.length; j += 1) {
-      const above = row[j] ?? 0
-      const left = row[j - 1] ?? 0
+      const above = row.at(j) ?? 0
+      const left = row.at(j - 1) ?? 0
       const diagonal = previous
       const substitutionCost = (a.charAt(i - 1) === b.charAt(j - 1)) ? 0 : 1
-      previous = row[j] ?? 0
-      row[j] = Math.min(diagonal + substitutionCost, above + 1, left + 1)
+      previous = row.at(j) ?? 0
+      row.fill(Math.min(diagonal + substitutionCost, above + 1, left + 1), j, j + 1)
     }
   }
-  return row[b.length] ?? 0
+  return row.at(b.length) ?? 0
 }
 
 /** Nearest known command within the suggestion distance, if any. */
@@ -119,8 +119,8 @@ const requireSingleArg = (args: readonly string[], usage: string): string => {
 /** Dispatches a parsed invocation to its command implementation. */
 const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPayload> => {
   const { command, args, flags } = invocation
-  const bundlePath = resolveBundlePath(flags.bundle, io.env)
-  const load = (): ReturnType<typeof loadBundle> => loadBundle(nodeFsPort, bundlePath)
+  const resolveBundle = (): string => resolveBundlePath(flags.bundle, io.env)
+  const load = (): LoadedBundle => loadBundle(nodeFsPort, resolveBundle())
   const limit = flags.limit ?? DEFAULT_LIMIT
 
   switch (command) {
@@ -138,30 +138,30 @@ const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPaylo
     }
     case 'doctor': {
       rejectUnknownFlags(args, command)
-      return doctorReport(nodeFsPort, resolveBundlePath(flags.bundle, io.env))
+      return doctorReport(nodeFsPort, resolveBundle())
     }
     case 'search': {
       rejectUnknownFlags(args, command)
       const query = args.join(' ').trim()
       if (query.length === 0) {
-        throw new CliError('usage', 'search needs a query', 'dks search <query...> — words are stemmed and prefix-matched')
+        throw new CliError('usage', 'search needs a query', 'dks search QUERY... — words are stemmed and prefix-matched')
       }
       return searchData(load(), query, limit)
     }
     case 'entity': {
-      const id = requireSingleArg(args, 'dks entity <id>')
+      const id = requireSingleArg(args, 'dks entity ID')
       return entityData(load(), id)
     }
     case 'claims': {
-      const id = requireSingleArg(args, 'dks claims <entityId>')
+      const id = requireSingleArg(args, 'dks claims ENTITY_ID')
       return claimsData(load(), id)
     }
     case 'aliases': {
-      const id = requireSingleArg(args, 'dks aliases <id>')
+      const id = requireSingleArg(args, 'dks aliases ID')
       return aliasesData(load(), id)
     }
     case 'relations': {
-      const id = requireSingleArg(args, 'dks relations <id>')
+      const id = requireSingleArg(args, 'dks relations ID')
       return relationsData(load(), id)
     }
     case 'index': {
@@ -179,15 +179,44 @@ const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPaylo
       return backupVerifyData(args.slice(1), { port: nodeFsPort, env: io.env, stdin: io.stdin })
     }
     case 'skills':
-      return skillsData(args, nodeFsPort, resolveBundlePath(flags.bundle, io.env))
+      return skillsData(args, nodeFsPort, resolveBundle())
     case 'export': {
       rejectUnknownFlags(args, command)
-      if (args.length > 0) throw new CliError('usage', 'export takes no arguments', 'dks export [--format md|json]')
+      if (args.length > 0) throw new CliError('usage', 'export takes no arguments', 'dks export [--format json]')
       return exportData(load(), flags.format)
     }
     default:
       throw unknownCommandError(command)
   }
+}
+
+/**
+ * `--format` survives a parse failure: `--limit abc` throws before the flag
+ * loop finishes, and a JSON caller still needs an envelope on stdout.
+ */
+const formatFromArgv = (argv: readonly string[]): OutputFormat => {
+  let format: OutputFormat = FORMAT_TEXT
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv.at(index)
+    switch (token) {
+      case '--format': {
+        const next = argv.at(index + 1)
+        switch (next) {
+          case FORMAT_JSON:
+          case FORMAT_TEXT:
+            format = next
+            break
+          default:
+            break
+        }
+        index += 1
+        break
+      }
+      default:
+        break
+    }
+  }
+  return format
 }
 
 /**
@@ -197,7 +226,7 @@ const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPaylo
 export const runCli = async (argv: readonly string[], io: RunIo): Promise<CliResult> => {
   const out: string[] = []
   const errLines: string[] = []
-  let invocation: Invocation = { command: '', args: [], flags: { format: 'text', quiet: false, noColor: false, limit: undefined, bundle: undefined } }
+  let invocation: Invocation = { command: '', args: [], flags: { format: formatFromArgv(argv), quiet: false, noColor: false, limit: undefined, bundle: undefined } }
   try {
     invocation = parseInvocation(argv)
     const data = await dispatch(invocation, io)
@@ -227,30 +256,3 @@ export const runCli = async (argv: readonly string[], io: RunIo): Promise<CliRes
   }
   return { exitCode: EXIT_OK, stdout: out.join('\n'), stderr: errLines.join('\n') }
 }
-
-const writeOut = (text: string): void => {
-  try {
-    process.stdout.write(`${text}\n`)
-  } catch {
-    // Downstream pipe closed (e.g. `| head`): exit quietly, pipes friendly.
-    process.exitCode = EXIT_OK
-  }
-}
-
-/** Real process entry point. */
-const main = (): void => {
-  const env = new Map(Object.entries(process.env).filter((pair): pair is [string, string] => pair[1] !== undefined))
-  void runCli(process.argv.slice(2), { env, stdin: readStdinText }).then((result) => {
-    if (result.stdout.length > 0) writeOut(result.stdout)
-    if (result.stderr.length > 0) {
-      try {
-        process.stderr.write(`${result.stderr}\n`)
-      } catch {
-        // stderr unavailable: nothing sensible left to do.
-      }
-    }
-    process.exitCode = result.exitCode
-  })
-}
-
-main()

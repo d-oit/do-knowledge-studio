@@ -185,7 +185,7 @@ export const graphData = (
     case 'neighbors': {
       const id = operands.at(1)
       if (id === undefined) {
-        throw new CliError('usage', 'graph neighbors needs an entity id', 'dks graph neighbors <id> [--depth n<=3]')
+        throw new CliError('usage', 'graph neighbors needs an entity id', 'dks graph neighbors ID [--depth N<=3]')
       }
       return neighborsData(load(), id, depth)
     }
@@ -193,7 +193,7 @@ export const graphData = (
       const fromId = operands.at(1)
       const toId = operands.at(2)
       if (fromId === undefined || toId === undefined) {
-        throw new CliError('usage', 'graph path needs a start and a goal entity id', 'dks graph path <from> <to>')
+        throw new CliError('usage', 'graph path needs a start and a goal entity id', 'dks graph path FROM TO')
       }
       return pathData(load(), fromId, toId)
     }

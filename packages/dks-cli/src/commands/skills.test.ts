@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { AGENTS_SUBDIR, SKILL_DESCRIPTION_MAX_CHARS, SKILLS_DIRNAME, SKILL_MD_NAME, SKILL_CHECKS, resolveSkillsDir, skillsData, skillsListData, skillsValidateData } from './skills.js'
 import { nodeFsPort } from '../fs-port.js'
-import { writeSkill, withTempDir } from '../fixtures.js'
+import { writeSkill, withTempDir } from '../fixtures.test.helpers.js'
 import { CliError } from '../errors.js'
 
 /** Captures the CliError code thrown synchronously by `run`. */
@@ -133,21 +134,63 @@ describe('skillsValidateData — findings', () => {
     })
   })
 
-  it('demands shebangs on referenced scripts (executable requirement)', async () => {
+  it('validates reference documents, not just SKILL.md', async () => {
     await withTempDir(async (dir) => {
-      await writeSkill(dir, 'sample')
-      const scripts = join(dir, '.agents', 'skills', 'sample', 'scripts')
-      await writeFile(join(scripts, 'sample.sh'), 'echo no shebang\n', 'utf8')
+      await writeSkill(dir, 'sample', { body: 'See `references/guide.md` for details.\n' })
+      const references = join(dir, '.agents', 'skills', 'sample', 'references')
+      await mkdir(references, { recursive: true })
+      await writeFile(join(references, 'guide.md'), 'Run scripts/missing.sh now.\n', 'utf8')
       const findings = skillsValidateData(nodeFsPort, dir, 'sample').results.at(0)?.findings ?? []
-      expect(findings.some((finding) => finding.includes('no shebang'))).toBe(true)
+      expect(findings.some((finding) => finding.includes('references/guide.md: dead reference "scripts/missing.sh"'))).toBe(true)
     })
   })
 
-  it('passes scripts that do carry a shebang', async () => {
+  it('scans references mentioned in frontmatter', async () => {
     await withTempDir(async (dir) => {
-      await writeSkill(dir, 'sample')
+      await writeSkill(dir, 'sample', {
+        skillMd: '---\nname: sample\ndescription: see references/gone.md for detail\n---\n\nBody long enough to pass the minimum.\n',
+      })
+      const findings = skillsValidateData(nodeFsPort, dir, 'sample').results.at(0)?.findings ?? []
+      expect(findings.some((finding) => finding.includes('dead reference "references/gone.md"'))).toBe(true)
+    })
+  })
+
+  it('ignores non-path code tokens and prose dots', async () => {
+    await withTempDir(async (dir) => {
+      await writeSkill(dir, 'sample', {
+        body: 'Use `JSON.parse`, `user@gmail.com`, `site:docs.rs`, and `vi.fn().mockResolvedValue`. See `.md`.\n',
+      })
       const findings = skillsValidateData(nodeFsPort, dir, 'sample').results.at(0)?.findings ?? []
       expect(findings).toEqual([])
+    })
+  })
+
+  it('resolves cross-skill references under the skills root', async () => {
+    await withTempDir(async (dir) => {
+      await writeSkill(dir, 'sample', { body: 'see `other/references/guide.md` for detail.\n' })
+      await writeSkill(dir, 'other')
+      await mkdir(join(dir, '.agents', 'skills', 'other', 'references'), { recursive: true })
+      await writeFile(join(dir, '.agents', 'skills', 'other', 'references', 'guide.md'), 'guide\n', 'utf8')
+      const findings = skillsValidateData(nodeFsPort, dir, 'sample').results.at(0)?.findings ?? []
+      expect(findings).toEqual([])
+    })
+  })
+
+  it('skips references inside example fences', async () => {
+    await withTempDir(async (dir) => {
+      await writeSkill(dir, 'sample', {
+        body: '```bash example\nscripts/missing.sh --now\n```\n\nProse only after the example.\n',
+      })
+      const findings = skillsValidateData(nodeFsPort, dir, 'sample').results.at(0)?.findings ?? []
+      expect(findings).toEqual([])
+    })
+  })
+
+  it('flags prefixed paths outside backticks', async () => {
+    await withTempDir(async (dir) => {
+      await writeSkill(dir, 'sample', { body: 'Run scripts/missing.sh before continuing.\n' })
+      const findings = skillsValidateData(nodeFsPort, dir, 'sample').results.at(0)?.findings ?? []
+      expect(findings.some((finding) => finding.includes('dead reference "scripts/missing.sh"'))).toBe(true)
     })
   })
 
@@ -157,6 +200,13 @@ describe('skillsValidateData — findings', () => {
       const findings = skillsValidateData(nodeFsPort, dir, 'hollow').results.at(0)?.findings ?? []
       expect(findings).toEqual([`missing ${SKILL_MD_NAME}`])
     })
+  })
+
+  it('parity: every skill in this repository passes', () => {
+    const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
+    const report = skillsValidateData(nodeFsPort, repoRoot, undefined)
+    expect({ failed: report.failed, results: report.results.filter((entry) => entry.findings.length > 0) })
+      .toEqual({ failed: 0, results: [] })
   })
 })
 

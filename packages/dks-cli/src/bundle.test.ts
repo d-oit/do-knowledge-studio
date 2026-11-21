@@ -12,9 +12,9 @@ import {
   resolveBundlePath,
 } from './bundle.js'
 import { nodeFsPort } from './fs-port.js'
-import { seedBundle, withTempDir } from './fixtures.js'
+import { seedBundle, withTempDir } from './fixtures.test.helpers.js'
 import { CliError } from './errors.js'
-import { SEED_BACKUPS_ID, SEED_GRAPH_PERF_ID, SEED_ORPHAN_ID } from './fixtures.js'
+import { SEED_BACKUPS_ID, SEED_GRAPH_PERF_ID, SEED_ORPHAN_ID } from './fixtures.test.helpers.js'
 
 describe('resolveBundlePath', () => {
   it('prefers the explicit flag', () => {
@@ -29,6 +29,10 @@ describe('resolveBundlePath', () => {
   it('defaults to ./knowledge', () => {
     expect(DEFAULT_BUNDLE_PATH).toBe('./knowledge')
     expect(resolveBundlePath(undefined, new Map())).toBe('./knowledge')
+  })
+
+  it('treats a blank DKS_BUNDLE as unset', () => {
+    expect(resolveBundlePath(undefined, new Map([[BUNDLE_ENV_VAR, '']]))).toBe(DEFAULT_BUNDLE_PATH)
   })
 
   it('validates whatever source won', () => {

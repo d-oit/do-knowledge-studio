@@ -17,6 +17,9 @@ import {
 import type { LoadedBundle } from './types.js'
 import { readZip } from './zip.js'
 
+/** Dot-prefixed entries are tooling metadata (e.g. `.agents`), not concepts. */
+const HIDDEN_PREFIX = '.'
+
 /** Decodes UTF-8 bytes; null when the payload is not valid UTF-8. */
 const decodeUtf8 = (bytes: Uint8Array): string | null => {
   try {
@@ -48,6 +51,7 @@ const readZipEntries = (buffer: Uint8Array): Map<string, string> => {
     }
     const stripped = name.startsWith(EXPORT_PREFIX) ? name.slice(EXPORT_PREFIX.length) : name
     if (!stripped || !isSafePath(stripped)) continue
+    if (stripped.split('/').some((segment) => segment.startsWith(HIDDEN_PREFIX))) continue
     if (!stripped.endsWith('.md')) continue
     // Decode only markdown entries; binary siblings (images, assets) are
     // ignored and must not fail the bundle over a non-UTF-8 payload.
@@ -64,6 +68,7 @@ const readDirectoryEntries = (port: FsPort, dir: string): Map<string, string> =>
   const walk = (current: string, prefix: string): void => {
     const names = port.readDirEntries(current)
     for (const entry of names) {
+      if (entry.name.startsWith(HIDDEN_PREFIX)) continue
       const rel = prefix ? `${prefix}/${entry.name}` : entry.name
       if (!isSafePath(rel)) continue
       if (entry.isDirectory) {

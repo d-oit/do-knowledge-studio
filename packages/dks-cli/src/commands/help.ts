@@ -24,24 +24,24 @@ export const COMMAND_DOCS: readonly CommandDoc[] = [
   { name: 'help', summary: 'show this help (dks help [command] · dks --help)' },
   { name: 'version', summary: 'print { version, name, node }' },
   { name: 'doctor', summary: 'corpus presence + integrity, okf_version, counts, engine health' },
-  { name: 'search', summary: 'dks search <query...> — BM25 retrieval over entities and claims' },
-  { name: 'entity', summary: 'dks entity <id> — one entity with claims and relations' },
-  { name: 'claims', summary: 'dks claims <entityId> — the entity\'s claims' },
-  { name: 'aliases', summary: 'dks aliases <id> — the entity\'s aliases' },
-  { name: 'relations', summary: 'dks relations <id> — related ids with resolved names' },
-  { name: 'graph', summary: 'dks graph neighbors <id> [--depth n<=3] | path <from> <to> | stats' },
+  { name: 'search', summary: 'dks search QUERY... — BM25 retrieval over entities and claims' },
+  { name: 'entity', summary: 'dks entity ID — one entity with claims and relations' },
+  { name: 'claims', summary: 'dks claims ENTITY_ID — the entity\'s claims' },
+  { name: 'aliases', summary: 'dks aliases ID — the entity\'s aliases' },
+  { name: 'relations', summary: 'dks relations ID — related ids with resolved names' },
+  { name: 'graph', summary: 'dks graph neighbors ID [--depth N<=3] | path FROM TO | stats' },
   { name: 'index', summary: 'list bundle entity ids + names (paginated by --limit)' },
-  { name: 'backup', summary: 'dks backup verify <archive|--passphrase-env VAR> — verify a .dksb archive' },
+  { name: 'backup', summary: 'dks backup verify ARCHIVE|--passphrase-env VAR — verify a .dksb archive' },
   { name: 'skills', summary: 'dks skills list | validate [name] | test — .agents/skills frontmatter checks' },
   { name: 'export', summary: 'print the bundle (text → markdown, --format json → bundle JSON)' },
 ]
 
 export const FLAG_DOCS: readonly FlagDoc[] = [
-  { flag: '--format <json|text>', description: 'output envelope as JSON (every command honors it) or human text' },
+  { flag: '--format JSON|TEXT', description: 'output envelope as JSON (every command honors it) or human text' },
   { flag: '--quiet', description: 'suppress stdout on success; failures still report' },
   { flag: '--no-color', description: 'accepted for pipeline parity; output is always plain' },
-  { flag: '--limit <n>', description: 'result cap for search/graph/index (default 20, allowed 1–200)' },
-  { flag: '--bundle <path>', description: 'OKF bundle directory or .zip (default ./knowledge or $DKS_BUNDLE)' },
+  { flag: '--limit N', description: 'result cap for search/index (default 20, allowed 1–200)' },
+  { flag: '--bundle PATH', description: 'OKF bundle directory or .zip (default ./knowledge or $DKS_BUNDLE)' },
 ]
 
 const HELP_NOTES: readonly string[] = [
@@ -51,8 +51,8 @@ const HELP_NOTES: readonly string[] = [
 ]
 
 const USAGE_LINES: readonly string[] = [
-  'dks [global flags] <command> [args] [global flags]',
-  'dks help [command] · dks --help · dks version',
+  'dks [global flags] COMMAND [args] [global flags]',
+  'dks help [COMMAND] · dks --help · dks version',
 ]
 
 const renderDocs = (): string => {

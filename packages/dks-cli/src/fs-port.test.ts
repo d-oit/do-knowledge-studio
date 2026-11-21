@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { mkdir, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { nodeFsPort, fsErrorCode, validateBundlePath } from './fs-port.js'
-import { withTempDir } from './fixtures.js'
+import { withTempDir } from './fixtures.test.helpers.js'
 import { CliError } from './errors.js'
 
 describe('validateBundlePath', () => {

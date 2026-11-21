@@ -111,6 +111,7 @@ const buildZip = (entries: Array<{ name: string; data: Uint8Array; method?: 0 | 
 const INDEX = `---\nokf_version: '0.2'\n---\n\n# Index\n`
 const ALPHA = `---\ntype: Project\ntitle: Alpha\nverified:\n  by: human:ada\n---\nAlpha body.\n# Claims\n\n- Alpha works\n`
 const BETA = `---\ntype: Concept\ntitle: Beta\n---\nBeta body.\n`
+const SKILL_MD = `---\nname: sample\ndescription: A sample skill.\n---\n\nSkill body.\n`
 
 describe('loadBundleFromDisk (directory)', () => {
   it('loads a directory tree with reserved-file handling', () => {
@@ -134,6 +135,16 @@ describe('loadBundleFromDisk (directory)', () => {
     })
     const loaded = loadBundleFromDisk(fs, '/bundle')
     expect(loaded.concepts.map((c) => c.id)).toEqual(['concepts/alpha'])
+  })
+
+  it('ignores hidden metadata directories such as .agents', () => {
+    const fs = makeMemoryFs({
+      '/bundle/index.md': INDEX,
+      '/bundle/notes/alpha.md': ALPHA,
+      '/bundle/.agents/skills/sample/SKILL.md': SKILL_MD,
+    })
+    const loaded = loadBundleFromDisk(fs, '/bundle')
+    expect(loaded.concepts.map((c) => c.id)).toEqual(['notes/alpha'])
   })
 
   it('throws when the target is missing', () => {
@@ -160,6 +171,17 @@ describe('loadBundleFromDisk (zip)', () => {
     const fs = makeMemoryFs({ '/bundle.zip': zipBytes })
     const loaded = loadBundleFromDisk(fs, '/bundle.zip')
     expect(loaded.concepts.map((c) => c.id)).toEqual(['concepts/alpha', 'concepts/beta'])
+  })
+
+  it('ignores hidden metadata directories inside zips', () => {
+    const withHidden = buildZip([
+      { name: 'okf-bundle/index.md', data: new TextEncoder().encode(INDEX) },
+      { name: 'okf-bundle/notes/alpha.md', data: new TextEncoder().encode(ALPHA) },
+      { name: 'okf-bundle/.agents/skills/sample/SKILL.md', data: new TextEncoder().encode(SKILL_MD) },
+    ])
+    const fs = makeMemoryFs({ '/hidden.zip': withHidden })
+    const loaded = loadBundleFromDisk(fs, '/hidden.zip')
+    expect(loaded.concepts.map((c) => c.id)).toEqual(['notes/alpha'])
   })
 
   it('rejects oversized zips', () => {

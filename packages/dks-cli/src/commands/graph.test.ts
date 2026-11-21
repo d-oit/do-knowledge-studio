@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadBundle } from '../bundle.js'
 import { nodeFsPort } from '../fs-port.js'
-import { SEED_BACKUPS_ID, SEED_GRAPH_PERF_ID, SEED_ORPHAN_ID, seedBundle, withTempDir } from '../fixtures.js'
+import { SEED_BACKUPS_ID, SEED_GRAPH_PERF_ID, SEED_ORPHAN_ID, seedBundle, withTempDir } from '../fixtures.test.helpers.js'
 import { DEFAULT_NEIGHBOR_DEPTH, MAX_NEIGHBOR_DEPTH, graphData, neighborsData, parseDepth, pathData, statsData } from './graph.js'
 import { CliError } from '../errors.js'
 

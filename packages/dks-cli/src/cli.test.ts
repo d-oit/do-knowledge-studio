@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { runCli } from './cli.js'
 import { CLI_VERSION } from './version.js'
-import { SEED_GRAPH_PERF_ID, seedBundle, withTempDir, writeBackupArchive, writeSkill } from './fixtures.js'
+import { SEED_GRAPH_PERF_ID, seedBundle, withTempDir, writeBackupArchive, writeSkill } from './fixtures.test.helpers.js'
 
 const noEnv: ReadonlyMap<string, string> = new Map()
 const envWith = (bundle: string): ReadonlyMap<string, string> => new Map([['DKS_BUNDLE', bundle]])
@@ -80,6 +80,51 @@ describe('runCli — envelope contract', () => {
     expect(code).toBe(3)
     expect(envelope.ok).toBe(false)
     expect((envelope.error as { code: string }).code).toBe('not_found')
+  })
+
+  it('keeps the JSON envelope when argument parsing itself fails', async () => {
+    const result = await runCli(['--format', 'json', '--limit', 'abc', 'search', 'x'], { env: noEnv, stdin: noStdin })
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toBe('')
+    const envelope = JSON.parse(result.stdout) as { ok: boolean; error: { code: string } }
+    expect(envelope.ok).toBe(false)
+    expect(envelope.error.code).toBe('usage')
+  })
+
+  it('shows help for cmd <operand> --help instead of rejecting the operand', async () => {
+    const result = await runCli(['search', 'graph', '--help'], { env: noEnv, stdin: noStdin })
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('commands:')
+    expect(result.stderr).toBe('')
+  })
+
+  it('does not resolve a malformed DKS_BUNDLE for commands that need none', async () => {
+    const env = new Map([['DKS_BUNDLE', 'bad\\path']])
+    const result = await runCli(['version'], { env, stdin: noStdin })
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('dks-cli')
+  })
+
+  it('keeps --passphrase-env values out of JSON diagnostics', async () => {
+    const result = await runCli(
+      ['--format', 'json', 'backup', 'verify', '--passphrase-env', 'hunter2', 'archive.dksb'],
+      { env: noEnv, stdin: noStdin },
+    )
+    expect(result.exitCode).toBe(2)
+    expect(result.stdout).not.toContain('hunter2')
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout)).toMatchObject({ ok: false, error: { code: 'usage' } })
+  })
+
+  it('keeps surplus positional secrets out of JSON diagnostics', async () => {
+    const result = await runCli(
+      ['--format', 'json', 'backup', 'verify', 'archive.dksb', 'hunter2'],
+      { env: noEnv, stdin: noStdin },
+    )
+    expect(result.exitCode).toBe(2)
+    expect(result.stdout).not.toContain('hunter2')
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout)).toMatchObject({ ok: false, error: { code: 'usage' } })
   })
 
   it('--quiet suppresses stdout on success but keeps the exit code', async () => {

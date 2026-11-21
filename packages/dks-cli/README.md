@@ -14,7 +14,7 @@ no MCP server, agent host, network access, or running app.
 ```bash
 pnpm install
 pnpm --filter dks-cli build
-node packages/dks-cli/dist/cli.js help
+node packages/dks-cli/dist/bin.js help
 # optional: pnpm --filter dks-cli link --global, then `dks help`
 ```
 
@@ -52,7 +52,7 @@ A bundle is an OKF directory (or zip) with `index.md` declaring
 | `dks skills list` | Discover `.agents/skills` entries |
 | `dks skills validate [name]` | Frontmatter, name, description, and reference checks |
 | `dks skills test` | Run every skill check and report per-skill findings |
-| `dks export [--format md\|json]` | Print the bundle as Markdown or OKF JSON |
+| `dks export [--format json]` | Print the bundle as Markdown (default) or OKF JSON |
 
 `-` in a path placeholder reads stdin, e.g.
 `cat backup.dksb | dks backup verify -`.

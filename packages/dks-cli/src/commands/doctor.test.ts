@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CHECK_BUNDLE_PARSED, CHECK_BUNDLE_PRESENT, CHECK_INTL_SEGMENTER, CHECK_OKF_VERSION, doctorReport, intlSegmenterAvailable } from './doctor.js'
 import { nodeFsPort } from '../fs-port.js'
-import { SEED_GRAPH_PERF_ID, seedBundle, seedBundleWithUnparsableConcept, withTempDir, writeBackupArchive } from '../fixtures.js'
+import { SEED_GRAPH_PERF_ID, seedBundle, seedBundleWithUnparsableConcept, withTempDir, writeBackupArchive } from '../fixtures.test.helpers.js'
 import { CliError } from '../errors.js'
 
 describe('doctorReport', () => {

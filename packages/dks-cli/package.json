@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Read-only `dks` operator CLI over an OKF knowledge bundle: search, entity/claim/graph queries, doctor, backup verify, and skill validation.",
   "bin": {
-    "dks": "./dist/cli.js"
+    "dks": "./dist/bin.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

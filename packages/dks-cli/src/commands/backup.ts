@@ -57,40 +57,61 @@ const parseBackupArgs = (
   args: readonly string[],
   env: ReadonlyMap<string, string>,
 ): ParsedArguments => {
-  const archivePath = args.at(0)
-  if (archivePath === undefined) {
-    throw new CliError('usage', 'backup verify needs an archive path', 'dks backup verify <archive> [--passphrase-env VARNAME]')
-  }
-  validateBundlePath(archivePath)
-
+  let archivePath: string | undefined
   let passphraseEnvName: string | undefined
-  for (let index = 1; index < args.length; index += 1) {
+  for (let index = 0; index < args.length; index += 1) {
     const token = args.at(index)
     if (token === undefined) break
-    if (token === PASSPHRASE_FLAG) {
-      const name = args.at(index + 1)
-      if (name === undefined) {
-        throw new CliError('usage', `${PASSPHRASE_FLAG} needs a variable name`, 'dks backup verify <archive> --passphrase-env VARNAME')
+    switch (token) {
+      case PASSPHRASE_FLAG: {
+        const name = args.at(index + 1)
+        if (name === undefined || name.startsWith('--')) {
+          throw new CliError('usage', `${PASSPHRASE_FLAG} needs a variable name`, 'dks backup verify ARCHIVE --passphrase-env VARNAME')
+        }
+        passphraseEnvName = name
+        index += 1
+        continue
       }
-      passphraseEnvName = name
-      index += 1
-      continue
+      default:
+        break
     }
     if (token.startsWith('--passphrase')) {
+      // Never interpolate the offending token: `--passphrase=hunter2` would
+      // echo the secret into diagnostics (and CI logs).
       throw new CliError(
         'usage',
         'passphrases are never accepted on the command line',
         `use ${PASSPHRASE_FLAG} VARNAME and put the secret in the environment`,
       )
     }
-    throw new CliError('usage', `unexpected argument "${token}"`, 'dks backup verify <archive> [--passphrase-env VARNAME]')
+    if (archivePath !== undefined) {
+      // Never interpolate the surplus token: a user may put the passphrase in
+      // the wrong argument position, and diagnostics must not echo it.
+      throw new CliError(
+        'usage',
+        'backup verify accepts one archive path; extra arguments are not allowed',
+        'dks backup verify ARCHIVE [--passphrase-env VARNAME]',
+      )
+    }
+    archivePath = token
+    validateBundlePath(token)
+  }
+
+  if (archivePath === undefined) {
+    throw new CliError('usage', 'backup verify needs an archive path', 'dks backup verify ARCHIVE [--passphrase-env VARNAME]')
   }
 
   let passphrase: string | undefined
   if (passphraseEnvName !== undefined) {
     const value = env.get(passphraseEnvName)
     if (value === undefined || value.length === 0) {
-      throw new CliError('usage', `environment variable "${passphraseEnvName}" is not set`, `set ${passphraseEnvName} before running dks backup verify`)
+      // Never echo the variable name: a user who mistakes the flag's value
+      // for the passphrase would leak it into diagnostics and JSON output.
+      throw new CliError(
+        'usage',
+        'the passphrase environment variable is not set',
+        `set the variable named by ${PASSPHRASE_FLAG} before running dks backup verify`,
+      )
     }
     passphrase = value
   }

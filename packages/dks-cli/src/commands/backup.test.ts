@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { PASSPHRASE_FLAG, backupVerifyData } from './backup.js'
 import { nodeFsPort } from '../fs-port.js'
-import { tamperBackupArchive, withTempDir, writeBackupArchive, writeEncryptedBackupArchive } from '../fixtures.js'
+import { tamperBackupArchive, withTempDir, writeBackupArchive, writeEncryptedBackupArchive } from '../fixtures.test.helpers.js'
 import { CliError } from '../errors.js'
 
 const envWith = (entries: Record<string, string>): ReadonlyMap<string, string> => new Map(Object.entries(entries))
@@ -117,6 +117,48 @@ describe('backupVerifyData — passphrase handling (#1171)', () => {
     })
   })
 
+  it('never echoes an unset --passphrase-env value', async () => {
+    await withTempDir(async () => {
+      const attempts = [
+        [PASSPHRASE_FLAG, 'hunter2', 'archive.dksb'],
+        ['archive.dksb', PASSPHRASE_FLAG, 'hunter2'],
+      ]
+      for (const argv of attempts) {
+        try {
+          await backupVerifyData(argv, { port: nodeFsPort, env: new Map(), stdin: noStdin })
+          expect.unreachable('expected usage failure')
+        } catch (err) {
+          const cliError = err as CliError
+          expect(cliError.code).toBe('usage')
+          expect(cliError.message).not.toContain('hunter2')
+          expect(cliError.hint ?? '').not.toContain('hunter2')
+        }
+      }
+    })
+  })
+
+  it('never echoes a surplus positional argument', async () => {
+    await withTempDir(async (dir) => {
+      const fixture = await writeBackupArchive(dir)
+      const attempts = [
+        ['archive.dksb', 'hunter2'],
+        [fixture.path, 'hunter2'],
+      ]
+      for (const argv of attempts) {
+        try {
+          await backupVerifyData(argv, { port: nodeFsPort, env: new Map(), stdin: noStdin })
+          expect.unreachable('expected usage failure')
+        } catch (err) {
+          const cliError = err as CliError
+          expect(cliError.code).toBe('usage')
+          expect(cliError.message).toBe('backup verify accepts one archive path; extra arguments are not allowed')
+          expect(cliError.message).not.toContain('hunter2')
+          expect(cliError.hint ?? '').not.toContain('hunter2')
+        }
+      }
+    })
+  })
+
   it('refuses passphrase argv outright (any --passphrase token)', async () => {
     await withTempDir(async (dir) => {
       const fixture = await writeBackupArchive(dir)
@@ -124,6 +166,41 @@ describe('backupVerifyData — passphrase handling (#1171)', () => {
         .rejects.toMatchObject({ code: 'usage' })
       await expect(backupVerifyData([fixture.path, '--passphrase=hunter2'], { port: nodeFsPort, env: new Map(), stdin: noStdin }))
         .rejects.toMatchObject({ code: 'usage' })
+    })
+  })
+
+  it('refuses passphrase argv before the archive without echoing the secret', async () => {
+    await withTempDir(async (dir) => {
+      const fixture = await writeBackupArchive(dir)
+      const attempts = [
+        ['--passphrase', 'hunter2'],
+        ['--passphrase=hunter2'],
+        ['--passphrase=hunter2', fixture.path],
+      ]
+      for (const argv of attempts) {
+        try {
+          await backupVerifyData(argv, { port: nodeFsPort, env: new Map(), stdin: noStdin })
+          expect.unreachable(`expected usage failure for ${argv[0]}`)
+        } catch (err) {
+          const cliError = err as CliError
+          expect(cliError.code).toBe('usage')
+          expect(cliError.message).not.toContain('hunter2')
+          expect(cliError.hint ?? '').not.toContain('hunter2')
+        }
+      }
+    })
+  })
+
+  it('accepts --passphrase-env before the archive', async () => {
+    await withTempDir(async (dir) => {
+      const fixture = await writeBackupArchive(dir)
+      const data = await backupVerifyData([PASSPHRASE_FLAG, 'PRESENT', fixture.path], {
+        port: nodeFsPort,
+        env: envWith({ PRESENT: 'hunter2' }),
+        stdin: noStdin,
+      })
+      expect(data.archive).toBe(fixture.path)
+      expect(data.verified).toBe(true)
     })
   })
 

@@ -35,12 +35,15 @@ export type EnvLike = ReadonlyMap<string, string>
  * Resolves the bundle path for a run: explicit flag → `DKS_BUNDLE` → the
  * documented default. Every result passes argv-path validation.
  */
-export const resolveBundlePath = (flagValue: string | undefined, env: EnvLike): string =>
-  validateBundlePath(flagValue ?? env.get(BUNDLE_ENV_VAR) ?? DEFAULT_BUNDLE_PATH)
+export const resolveBundlePath = (flagValue: string | undefined, env: EnvLike): string => {
+  const envValue = env.get(BUNDLE_ENV_VAR)
+  const fallback = envValue !== undefined && envValue.length > 0 ? envValue : DEFAULT_BUNDLE_PATH
+  return validateBundlePath(flagValue ?? fallback)
+}
 
 /** Detail recorded on every command that needs the corpus. */
 export const BUNDLE_HINT =
-  'pass --bundle <path> (or set DKS_BUNDLE) pointing at an OKF bundle directory or .zip archive'
+  'pass --bundle [path] (or set DKS_BUNDLE) pointing at an OKF bundle directory or .zip archive'
 
 /** Loads a bundle through the port; parse/size/safety failures become `io`. */
 export const loadBundle = (port: FsPort, bundlePath: string): LoadedBundle => {
