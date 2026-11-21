@@ -1,0 +1,163 @@
+/**
+ * `dks backup verify` — integrity verification of a `.dksb` archive via
+ * dks-core. Security posture (#1171): passphrases are never accepted as
+ * argv — only `--passphrase-env VARNAME` (environment) or empty. The
+ * archive itself may be a path or `-` (stdin).
+ */
+
+import {
+  verifyBackupArchive,
+  type BackupErrorCode,
+  type BackupVerifyResult,
+  type FsPort,
+  type VerifiedBackupSummary,
+} from 'dks-core'
+import { CliError, errorText } from '../errors.js'
+import { decodeUtf8Strict, fsErrorCode, validateBundlePath } from '../fs-port.js'
+
+/** The only passphrase channel: an environment variable name. */
+export const PASSPHRASE_FLAG = '--passphrase-env'
+/** stdin placeholder for the archive path. */
+export const STDIN_PATH = '-'
+
+export interface BackupSummaryData {
+  formatVersion: number
+  schemaVersion: number
+  appVersion: string
+  exportedAt: string
+  encrypted: boolean
+  entityCount: number
+  claimCount: number
+  graphEdgeCount: number
+  mindMapEdgeCount: number
+  linkCount: number
+  tagCount: number
+  graphViewCount: number
+}
+
+export interface BackupVerifyData {
+  archive: string
+  verified: boolean
+  summary: BackupSummaryData
+}
+
+/** Maps a core backup failure onto CLI failure codes. */
+const exitCodeForBackupFailure = (code: BackupErrorCode): 'conflict' | 'permission' | 'io' => {
+  if (code === 'passphrase-required' || code === 'decrypt-failed') return 'permission'
+  if (code === 'checksum') return 'conflict'
+  return 'io'
+}
+
+interface ParsedArguments {
+  archivePath: string
+  passphrase: string | undefined
+}
+
+const parseBackupArgs = (
+  args: readonly string[],
+  env: ReadonlyMap<string, string>,
+): ParsedArguments => {
+  const archivePath = args.at(0)
+  if (archivePath === undefined) {
+    throw new CliError('usage', 'backup verify needs an archive path', 'dks backup verify <archive> [--passphrase-env VARNAME]')
+  }
+  validateBundlePath(archivePath)
+
+  let passphraseEnvName: string | undefined
+  for (let index = 1; index < args.length; index += 1) {
+    const token = args.at(index)
+    if (token === undefined) break
+    if (token === PASSPHRASE_FLAG) {
+      const name = args.at(index + 1)
+      if (name === undefined) {
+        throw new CliError('usage', `${PASSPHRASE_FLAG} needs a variable name`, 'dks backup verify <archive> --passphrase-env VARNAME')
+      }
+      passphraseEnvName = name
+      index += 1
+      continue
+    }
+    if (token.startsWith('--passphrase')) {
+      throw new CliError(
+        'usage',
+        'passphrases are never accepted on the command line',
+        `use ${PASSPHRASE_FLAG} VARNAME and put the secret in the environment`,
+      )
+    }
+    throw new CliError('usage', `unexpected argument "${token}"`, 'dks backup verify <archive> [--passphrase-env VARNAME]')
+  }
+
+  let passphrase: string | undefined
+  if (passphraseEnvName !== undefined) {
+    const value = env.get(passphraseEnvName)
+    if (value === undefined || value.length === 0) {
+      throw new CliError('usage', `environment variable "${passphraseEnvName}" is not set`, `set ${passphraseEnvName} before running dks backup verify`)
+    }
+    passphrase = value
+  }
+  return { archivePath, passphrase }
+}
+
+const readArchiveText = (port: FsPort, archivePath: string): string => {
+  let bytes: Uint8Array
+  try {
+    bytes = port.readFileBytes(archivePath)
+  } catch (err) {
+    throw new CliError(fsErrorCode(err), `archive "${archivePath}" could not be read: ${errorText(err)}`)
+  }
+  return decodeUtf8Strict(bytes)
+}
+
+const summaryOf = (summary: VerifiedBackupSummary): BackupSummaryData => ({
+  formatVersion: summary.formatVersion,
+  schemaVersion: summary.schemaVersion,
+  appVersion: summary.appVersion,
+  exportedAt: summary.exportedAt,
+  encrypted: summary.encrypted,
+  entityCount: summary.entityCount,
+  claimCount: summary.claimCount,
+  graphEdgeCount: summary.graphEdgeCount,
+  mindMapEdgeCount: summary.mindMapEdgeCount,
+  linkCount: summary.linkCount,
+  tagCount: summary.tagCount,
+  graphViewCount: summary.graphViewCount,
+})
+
+/**
+ * Verifies an archive; verification failures (tamper, checksums, missing
+ * passphrase) surface as error envelopes with mapped exit codes.
+ */
+export const backupVerifyData = async (
+  args: readonly string[],
+  deps: {
+    port: FsPort
+    env: ReadonlyMap<string, string>
+    stdin: () => Promise<string>
+  },
+): Promise<BackupVerifyData> => {
+  const { archivePath, passphrase } = parseBackupArgs(args, deps.env)
+
+  let raw: string
+  if (archivePath === STDIN_PATH) {
+    try {
+      raw = await deps.stdin()
+    } catch (err) {
+      throw new CliError('io', `stdin could not be read: ${errorText(err)}`)
+    }
+  } else {
+    raw = readArchiveText(deps.port, archivePath)
+  }
+
+  const result: BackupVerifyResult =
+    passphrase === undefined ? await verifyBackupArchive(raw) : await verifyBackupArchive(raw, passphrase)
+
+  if (result.ok) {
+    return { archive: archivePath, verified: true, summary: summaryOf(result) }
+  }
+  const firstError = result.errors.at(0) ?? 'verification failed'
+  const hint = result.errors.slice(1).join('; ')
+  throw new CliError(
+    exitCodeForBackupFailure(result.code),
+    `backup verification failed (${result.code}): ${firstError}`,
+    hint.length > 0 ? hint : undefined,
+  )
+}

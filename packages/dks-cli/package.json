@@ -1,0 +1,26 @@
+{
+  "name": "dks-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only `dks` operator CLI over an OKF knowledge bundle: search, entity/claim/graph queries, doctor, backup verify, and skill validation.",
+  "bin": {
+    "dks": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dks-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^6",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": ">=22.12.0 <27.0.0"
+  }
+}
