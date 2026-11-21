@@ -154,7 +154,7 @@ export const parseLocalFlags = (
   const operands: string[] = []
   for (let index = 0; index < args.length; index += 1) {
     const token = args.at(index)
-    if (token === undefined) break
+    if (typeof token !== 'string') break
     if (token.startsWith('--')) {
       if (!allowed.includes(token)) {
         throw new CliError('usage', `unknown option "${token}"`, `known options: ${allowed.join(', ')}`)
