@@ -11,6 +11,10 @@ peerDependencyRules:
 overrides:
   postcss: ^8.5.23
   source-map-js: ^1.2.2
+  # Dependabot 110/113: typed-rest-client (stryker) pulls qs 6.15.1.
+  "qs@<6.16.1": ^6.17.1
+  # Dependabot 114: @eslint/config-array pulls minimatch 10.2.6.
+  "minimatch@>=7.0.0 <11.0.1": ^11.0.1
   brace-expansion@<1.1.18: 1.1.21
   brace-expansion@>=5: ^5.0.12
   picomatch: ^4.0.4
