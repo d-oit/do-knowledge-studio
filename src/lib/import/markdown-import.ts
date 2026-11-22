@@ -29,13 +29,6 @@ export {
   MARKDOWN_EXTENSIONS,
 } from 'dks-core/markdown'
 
-/** Maximum compressed bytes accepted for a vault `.zip`. */
-export const MAX_VAULT_ZIP_BYTES = 10_485_760
-/** Maximum decompressed bytes accepted for a vault `.zip` (zip-bomb guard). */
-export const MAX_VAULT_UNCOMPRESSED_BYTES = 52_428_800
-/** Maximum entries accepted from a vault `.zip`. */
-export const MAX_VAULT_ZIP_ENTRIES = 2_000
-
 /** Strips a Markdown extension from a vault path (shared helper). */
 export { stripMarkdownExtension } from 'dks-core/markdown'
 /** True when the path points at an importable note file (shared helper). */
