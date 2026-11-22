@@ -186,6 +186,17 @@ describe('validation', () => {
     expect(validateGraphQuery(q).some((issue) => issue.message === 'depth')).toBe(true)
   })
 
+  it('accepts exactly the maximum number of non-root clauses', () => {
+    let query = EMPTY_GRAPH_QUERY
+    for (let index = 0; index < MAX_QUERY_CLAUSES; index += 1) {
+      query = addQueryCondition(query, [], 'tag')
+      query = setQueryConditionValue(query, [index], `value-${index}`)
+    }
+    expect(query.children).toHaveLength(MAX_QUERY_CLAUSES)
+    expect(validateGraphQuery(query)).toEqual([])
+    expect(GraphQuerySchema.safeParse(query).success).toBe(true)
+  })
+
   it('rejects excessive clause counts', () => {
     let q = EMPTY_GRAPH_QUERY
     for (let index = 0; index < MAX_QUERY_CLAUSES + 1; index += 1) {
@@ -327,7 +338,7 @@ const conditionArb = fc.oneof(
   fc.record({ kind: fc.constant('tag'), value: fc.stringMatching(/^[a-z0-9-]{1,20}$/), exclude: fc.boolean() }),
   fc.record({ kind: fc.constant('text'), value: fc.stringMatching(/^[a-z0-9-]{1,20}$/), exclude: fc.boolean() }),
   fc.record({ kind: fc.constant('claimStatus'), value: fc.constantFrom('unverified', 'verified', 'disputed'), exclude: fc.boolean() }),
-  fc.record({ kind: fc.constant('minConfidence'), value: fc.float({ min: 0, max: 1 }), exclude: fc.boolean() }),
+  fc.record({ kind: fc.constant('minConfidence'), value: fc.float({ min: 0, max: 1, noNaN: true }), exclude: fc.boolean() }),
 )
 
 const clauseArb = (depth: number): fc.Arbitrary<GraphQueryClause> =>
@@ -342,11 +353,25 @@ const clauseArb = (depth: number): fc.Arbitrary<GraphQueryClause> =>
         }),
       )
 
-const queryArb: fc.Arbitrary<GraphQuery> = fc.record({
-  op: fc.constantFrom('and', 'or'),
-  exclude: fc.constant(false),
-  children: fc.array(clauseArb(3), { maxLength: 4 }),
-})
+/** Counts only non-root clauses (conditions and groups), matching validateGraphQuery. */
+const countQueryClause = (clause: GraphQueryClause): number =>
+  'children' in clause
+    ? 1 + clause.children.reduce((sum, child) => sum + countQueryClause(child), 0)
+    : 1
+
+const countQueryClauses = (query: GraphQuery): number =>
+  query.children.reduce((sum, child) => sum + countQueryClause(child), 0)
+
+const queryArb: fc.Arbitrary<GraphQuery> = fc
+  .record({
+    op: fc.constantFrom('and', 'or'),
+    exclude: fc.constant(false),
+    children: fc.array(clauseArb(3), { maxLength: 4 }),
+  })
+  // The nesting grammar can exceed MAX_QUERY_CLAUSES; such inputs are out of
+  // the model's domain (validateGraphQuery rightly reports them), so they are
+  // excluded rather than asserted valid.
+  .filter((query) => countQueryClauses(query) <= MAX_QUERY_CLAUSES)
 
 describe('property tests', () => {
   test.prop([queryArb], getPropertyTestParameters())(
