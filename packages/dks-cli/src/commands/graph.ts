@@ -175,10 +175,10 @@ const parseGraphArgs = (args: readonly string[]): { operands: string[]; depth: n
 }
 
 /** Dispatches `dks graph ...` to its subcommand implementation. */
-export const graphData = (
+export const graphData = async (
   args: readonly string[],
-  load: () => LoadedBundle,
-): GraphNeighborsData | GraphPathData | GraphStatsData => {
+  load: () => Promise<LoadedBundle>,
+): Promise<GraphNeighborsData | GraphPathData | GraphStatsData> => {
   const { operands, depth } = parseGraphArgs(args)
   const sub = operands.at(0)
   switch (sub) {
@@ -187,7 +187,7 @@ export const graphData = (
       if (id === undefined) {
         throw new CliError('usage', 'graph neighbors needs an entity id', 'dks graph neighbors ID [--depth N<=3]')
       }
-      return neighborsData(load(), id, depth)
+      return neighborsData(await load(), id, depth)
     }
     case 'path': {
       const fromId = operands.at(1)
@@ -195,10 +195,10 @@ export const graphData = (
       if (fromId === undefined || toId === undefined) {
         throw new CliError('usage', 'graph path needs a start and a goal entity id', 'dks graph path FROM TO')
       }
-      return pathData(load(), fromId, toId)
+      return pathData(await load(), fromId, toId)
     }
     case 'stats':
-      return statsData(load())
+      return statsData(await load())
     default:
       throw new CliError('usage', `unknown graph subcommand "${sub ?? ''}"`, GRAPH_SUBCOMMANDS)
   }

@@ -41,20 +41,20 @@ export const intlSegmenterAvailable = (): boolean =>
   typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function'
 
 /** Reports corpus presence + integrity for the bundle at `bundlePath`. */
-export const doctorReport = (port: FsPort, bundlePath: string): DoctorData => {
+export const doctorReport = async (port: FsPort, bundlePath: string): Promise<DoctorData> => {
   const isDir = port.isDirectory(bundlePath)
   if (!isDir) {
     // Not a directory: it may be a zip archive (readable file) or missing.
     try {
-      port.readFileBytes(bundlePath)
+      await port.readFileBytes(bundlePath)
     } catch {
       throw new CliError('not_found', `bundle not found at "${bundlePath}"`, BUNDLE_HINT)
     }
   }
-  const bundle = loadBundle(port, bundlePath)
+  const bundle = await loadBundle(port, bundlePath)
   const claims = bundleClaims(bundle)
   const kind = isDir ? KIND_DIRECTORY : KIND_ZIP
-  const declaredOkfVersion = isDir ? readRootIndexVersion(port, bundlePath) : null
+  const declaredOkfVersion = isDir ? await readRootIndexVersion(port, bundlePath) : null
   const segmenter = intlSegmenterAvailable()
 
   const checks: DoctorCheck[] = [

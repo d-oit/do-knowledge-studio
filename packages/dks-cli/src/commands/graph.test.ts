@@ -124,7 +124,7 @@ describe('graphData dispatch', () => {
   it('dispatches stats without operands', async () => {
     await withTempDir(async (dir) => {
       const bundle = await load(dir)
-      const data = graphData(['stats'], () => bundle)
+      const data = await graphData(['stats'], () => Promise.resolve(bundle))
       expect('nodes' in data && 'edges' in data).toBe(true)
     })
   })
@@ -132,15 +132,15 @@ describe('graphData dispatch', () => {
   it('requires an id for neighbors and two ids for path', async () => {
     await withTempDir(async (dir) => {
       const bundle = await load(dir)
-      expect(() => graphData(['neighbors'], () => bundle)).toThrowError(CliError)
-      expect(() => graphData(['path', 'a'], () => bundle)).toThrowError(/start and a goal/)
+      await expect(graphData(['neighbors'], () => Promise.resolve(bundle))).rejects.toThrowError(CliError)
+      await expect(graphData(['path', 'a'], () => Promise.resolve(bundle))).rejects.toThrowError(/start and a goal/)
     })
   })
 
   it('passes --depth through to neighbors', async () => {
     await withTempDir(async (dir) => {
       const bundle = await load(dir)
-      const data = graphData(['neighbors', SEED_GRAPH_PERF_ID, '--depth', '2'], () => bundle)
+      const data = await graphData(['neighbors', SEED_GRAPH_PERF_ID, '--depth', '2'], () => Promise.resolve(bundle))
       expect('depth' in data && data.depth === 2).toBe(true)
     })
   })
@@ -149,7 +149,7 @@ describe('graphData dispatch', () => {
     await withTempDir(async (dir) => {
       const bundle = await load(dir)
       try {
-        graphData(['edges'], () => bundle)
+        await graphData(['edges'], () => Promise.resolve(bundle))
         expect.unreachable('expected graphData to throw')
       } catch (err) {
         expect(err).toBeInstanceOf(CliError)

@@ -62,19 +62,20 @@ const readZipEntries = (buffer: Uint8Array): Map<string, string> => {
 }
 
 /** Reads a directory tree into a bundle-relative path → content map. */
-const readDirectoryEntries = (port: FsPort, dir: string): Map<string, string> => {
+const readDirectoryEntries = async (port: FsPort, dir: string): Promise<Map<string, string>> => {
   const files = new Map<string, string>()
   let total = 0
-  const walk = (current: string, prefix: string): void => {
+  // Depth-first and sequential: guard errors and totals keep bundle order.
+  const walk = async (current: string, prefix: string): Promise<void> => {
     const names = port.readDirEntries(current)
     for (const entry of names) {
       if (entry.name.startsWith(HIDDEN_PREFIX)) continue
       const rel = prefix ? `${prefix}/${entry.name}` : entry.name
       if (!isSafePath(rel)) continue
       if (entry.isDirectory) {
-        walk(`${current}/${entry.name}`, rel)
+        await walk(`${current}/${entry.name}`, rel)
       } else if (entry.name.endsWith('.md')) {
-        const content = decodeUtf8(port.readFileBytes(`${current}/${entry.name}`))
+        const content = decodeUtf8(await port.readFileBytes(`${current}/${entry.name}`))
         if (content === null) continue
         total += content.length
         if (content.length > MAX_CONCEPT_BYTES || total > MAX_BUNDLE_UNCOMPRESSED_BYTES) {
@@ -87,7 +88,7 @@ const readDirectoryEntries = (port: FsPort, dir: string): Map<string, string> =>
       }
     }
   }
-  walk(dir, '')
+  await walk(dir, '')
   return files
 }
 
@@ -99,9 +100,9 @@ const readDirectoryEntries = (port: FsPort, dir: string): Map<string, string> =>
  * @param target - Path to a `.zip` bundle or a directory of `.md` files.
  * @returns The loaded concepts plus non-fatal warnings.
  */
-export const loadBundleFromDisk = (port: FsPort, target: string): LoadedBundle => {
+export const loadBundleFromDisk = async (port: FsPort, target: string): Promise<LoadedBundle> => {
   const files = port.isDirectory(target)
-    ? readDirectoryEntries(port, target)
-    : readZipEntries(port.readFileBytes(target))
+    ? await readDirectoryEntries(port, target)
+    : readZipEntries(await port.readFileBytes(target))
   return parseBundleFiles(files)
 }

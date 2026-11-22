@@ -57,7 +57,7 @@ describe('entityData', () => {
 
   it('marks relation targets missing from the bundle', async () => {
     await withTempDir(async (dir) => {
-      const bundle = loadBundle(nodeFsPort, await seedBundle(dir))
+      const bundle = await loadBundle(nodeFsPort, await seedBundle(dir))
       const concept = bundle.concepts.find((entry) => entry.id === SEED_BACKUPS_ID)
       if (concept === undefined) throw new Error('fixture concept missing')
       concept.relatedIds = [...concept.relatedIds, 'notes/vanished']

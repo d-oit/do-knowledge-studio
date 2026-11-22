@@ -46,9 +46,9 @@ export const BUNDLE_HINT =
   'pass --bundle [path] (or set DKS_BUNDLE) pointing at an OKF bundle directory or .zip archive'
 
 /** Loads a bundle through the port; parse/size/safety failures become `io`. */
-export const loadBundle = (port: FsPort, bundlePath: string): LoadedBundle => {
+export const loadBundle = async (port: FsPort, bundlePath: string): Promise<LoadedBundle> => {
   try {
-    return loadBundleFromDisk(port, bundlePath)
+    return await loadBundleFromDisk(port, bundlePath)
   } catch (err) {
     throw new CliError('io', `bundle "${bundlePath}" could not be loaded: ${errorText(err)}`, BUNDLE_HINT)
   }
@@ -58,10 +58,10 @@ export const loadBundle = (port: FsPort, bundlePath: string): LoadedBundle => {
  * Best-effort read of the declared `okf_version` from a directory bundle's
  * root `index.md`; null when absent or kept inside a zip archive.
  */
-export const readRootIndexVersion = (port: FsPort, bundlePath: string): string | null => {
+export const readRootIndexVersion = async (port: FsPort, bundlePath: string): Promise<string | null> => {
   const root = bundlePath.replace(/\/+$/, '')
   try {
-    const text = decodeUtf8Strict(port.readFileBytes(`${root}/${INDEX_FILE_NAME}`))
+    const text = decodeUtf8Strict(await port.readFileBytes(`${root}/${INDEX_FILE_NAME}`))
     return parseIndexVersion(text)
   } catch {
     return null

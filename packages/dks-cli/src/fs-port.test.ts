@@ -84,16 +84,17 @@ describe('nodeFsPort via tmpdir', () => {
     await withTempDir(async (dir) => {
       const file = join(dir, 'bin.dat')
       await writeFile(file, new Uint8Array([104, 105, 0, 255]))
-      expect([...nodeFsPort.readFileBytes(file)]).toEqual([104, 105, 0, 255])
+      expect([...(await nodeFsPort.readFileBytes(file))]).toEqual([104, 105, 0, 255])
     })
   })
 
-  it('readFileBytes throws for missing files with errno detail', async () => {
+  it('readFileBytes rejects for missing files with errno detail', async () => {
     await withTempDir(async (dir) => {
       const missing = join(dir, 'missing.md')
-      expect(() => nodeFsPort.readFileBytes(missing)).toThrowError()
+      await expect(nodeFsPort.readFileBytes(missing)).rejects.toThrowError()
       try {
-        nodeFsPort.readFileBytes(missing)
+        await nodeFsPort.readFileBytes(missing)
+        expect.unreachable('expected readFileBytes to reject')
       } catch (err) {
         expect(fsErrorCode(err)).toBe('not_found')
       }
@@ -124,7 +125,7 @@ describe('tmpdir fixtures stay consistent with the port', () => {
     await withTempDir(async (dir) => {
       const file = join(dir, 'same.md')
       await writeFile(file, 'identical', 'utf8')
-      expect(new TextDecoder().decode(nodeFsPort.readFileBytes(file))).toBe(
+      expect(new TextDecoder().decode(await nodeFsPort.readFileBytes(file))).toBe(
         new TextDecoder().decode(readFileSync(file)),
       )
     })

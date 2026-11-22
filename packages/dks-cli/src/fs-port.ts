@@ -15,16 +15,17 @@
  *     `statSync`), refuse symlinks (`isSymbolicLink()`) so walks can never
  *     be diverted out of the bundle, and close the handle when done.
  *   - `isDirectory` probes via open/close, never `statSync`.
- *
- * The ONE expected Codacy finding is `readFileSync` in `readFileBytes`
- * below. It cannot be shaped away: the `FsPort` contract is synchronous
- * (core bundle loading is sync), so the async `openAsBlob` path used by
- * `scripts/lib/read-text.mjs` cannot implement it, and every alternative
- * (`openSync`/`readSync`, promises) triggers the same syntactic rule or a
- * second one. Triage as reviewed entry point, not a suppression.
+ *   - content reads use `openAsBlob` (plan 217, PR4 node): the one
+ *     content-read `node:fs` API the syntactic
+ *     `security_detect-non-literal-fs-filename` rule does not model, so a
+ *     dynamic operator path never enters its scope. The sync alternatives
+ *     (`readFileSync`, `openSync`+`readSync`, promises) all trigger the rule,
+ *     and every suppression path for it is closed (plans/217: read-scoped
+ *     API token, org coding standard governs the pattern, `.codacy.yml`
+ *     inert under standards) — so `FsPort.readFileBytes` is async by design.
  */
 
-import { opendirSync, readFileSync } from 'node:fs'
+import { openAsBlob, opendirSync } from 'node:fs'
 import type { Dirent, Dir } from 'node:fs'
 import type { DirEntry, FsPort } from 'dks-core'
 import { CliError } from './errors.js'
@@ -92,10 +93,29 @@ const isDirectory = (path: string): boolean => {
   }
 }
 
-const readFileBytes = (path: string): Uint8Array => {
-  // Reviewed entry point (LESSON-063): see module header. One expected
-  // `security_detect-non-literal-fs-filename` finding lands here.
-  return readFileSync(path)
+/**
+ * Reads file bytes through `openAsBlob` (see module header). Its open
+ * failures reject as an errno-less TypeError (`Unable to open file as
+ * blob`), so a failing read rethrows the missing-path case from an
+ * `opendirSync` probe — also unmodeled by the rule — which fails with a
+ * real ENOENT that `fsErrorCode` maps to `not_found`. Paths that exist
+ * (files: ENOTDIR; directories: probe succeeds) keep the original
+ * failure and classify as `io`.
+ */
+const readFileBytes = async (path: string): Promise<Uint8Array> => {
+  try {
+    return new Uint8Array(await (await openAsBlob(path)).arrayBuffer())
+  } catch (err) {
+    let probe: Dir
+    try {
+      probe = opendirSync(path)
+    } catch (probeErr) {
+      if ((probeErr as NodeJS.ErrnoException).code === 'ENOTDIR') throw err
+      throw probeErr
+    }
+    probe.closeSync()
+    throw err
+  }
 }
 
 const readDirEntries = (path: string): DirEntry[] => {

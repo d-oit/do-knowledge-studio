@@ -45,7 +45,7 @@ describe('loadBundle', () => {
   it('loads a well-formed bundle directory', async () => {
     await withTempDir(async (dir) => {
       const bundlePath = await seedBundle(dir)
-      const bundle = loadBundle(nodeFsPort, bundlePath)
+      const bundle = await loadBundle(nodeFsPort, bundlePath)
       expect(bundle.concepts.length).toBe(3)
       expect(bundle.warnings).toEqual([])
     })
@@ -55,7 +55,7 @@ describe('loadBundle', () => {
     await withTempDir(async (dir) => {
       const bundlePath = await seedBundle(dir, { skipIndex: true })
       try {
-        loadBundle(nodeFsPort, bundlePath)
+        await loadBundle(nodeFsPort, bundlePath)
         expect.unreachable('expected loadBundle to throw')
       } catch (err) {
         expect(err).toBeInstanceOf(CliError)
@@ -69,7 +69,7 @@ describe('loadBundle', () => {
 describe('bundle adapters', () => {
   it('bundleEntities exposes search-shaped documents', async () => {
     await withTempDir(async (dir) => {
-      const bundle = loadBundle(nodeFsPort, await seedBundle(dir))
+      const bundle = await loadBundle(nodeFsPort, await seedBundle(dir))
       const entities = bundleEntities(bundle)
       expect(entities.map((entity) => entity.id)).toEqual([SEED_BACKUPS_ID, SEED_GRAPH_PERF_ID, SEED_ORPHAN_ID])
       const graphPerf = entities.find((entity) => entity.id === SEED_GRAPH_PERF_ID)
@@ -80,7 +80,7 @@ describe('bundle adapters', () => {
 
   it('bundleClaims synthesizes stable ids `<entityId>#claim-<n>`', async () => {
     await withTempDir(async (dir) => {
-      const bundle = loadBundle(nodeFsPort, await seedBundle(dir))
+      const bundle = await loadBundle(nodeFsPort, await seedBundle(dir))
       const claims = bundleClaims(bundle)
       const claimIds = claims.map((claim) => claim.id)
       expect(claimIds).toContain(`${SEED_GRAPH_PERF_ID}#claim-1`)
@@ -96,7 +96,7 @@ describe('bundle adapters', () => {
 
   it('graphEntities exposes related links with the canonical relation', async () => {
     await withTempDir(async (dir) => {
-      const bundle = loadBundle(nodeFsPort, await seedBundle(dir))
+      const bundle = await loadBundle(nodeFsPort, await seedBundle(dir))
       const entities = graphEntities(bundle)
       const graphPerf = entities.find((entity) => entity.id === SEED_GRAPH_PERF_ID)
       expect(graphPerf?.links).toEqual([{ targetId: SEED_BACKUPS_ID, relation: 'related' }])
@@ -105,7 +105,7 @@ describe('bundle adapters', () => {
 
   it('conceptNameById resolves ids to display names', async () => {
     await withTempDir(async (dir) => {
-      const bundle = loadBundle(nodeFsPort, await seedBundle(dir))
+      const bundle = await loadBundle(nodeFsPort, await seedBundle(dir))
       expect(conceptNameById(bundle).get(SEED_BACKUPS_ID)).toBe('Backups')
       expect(conceptNameById(bundle).get('notes/missing')).toBeUndefined()
     })
@@ -113,7 +113,7 @@ describe('bundle adapters', () => {
 
   it('conceptById throws entity_not_found with an index hint', async () => {
     await withTempDir(async (dir) => {
-      const bundle = loadBundle(nodeFsPort, await seedBundle(dir))
+      const bundle = await loadBundle(nodeFsPort, await seedBundle(dir))
       try {
         conceptById(bundle, 'notes/missing')
         expect.unreachable('expected conceptById to throw')
@@ -131,14 +131,14 @@ describe('readRootIndexVersion', () => {
   it('reads the declared okf_version of a directory bundle', async () => {
     await withTempDir(async (dir) => {
       const bundlePath = await seedBundle(dir)
-      expect(readRootIndexVersion(nodeFsPort, bundlePath)).toBe('0.2')
+      expect(await readRootIndexVersion(nodeFsPort, bundlePath)).toBe('0.2')
     })
   })
 
   it('returns null when the index is missing', async () => {
     await withTempDir(async (dir) => {
       const bundlePath = await seedBundle(dir, { skipIndex: true })
-      expect(readRootIndexVersion(nodeFsPort, bundlePath)).toBeNull()
+      expect(await readRootIndexVersion(nodeFsPort, bundlePath)).toBeNull()
     })
   })
 })

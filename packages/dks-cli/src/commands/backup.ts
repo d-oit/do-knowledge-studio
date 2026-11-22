@@ -118,10 +118,10 @@ const parseBackupArgs = (
   return { archivePath, passphrase }
 }
 
-const readArchiveText = (port: FsPort, archivePath: string): string => {
+const readArchiveText = async (port: FsPort, archivePath: string): Promise<string> => {
   let bytes: Uint8Array
   try {
-    bytes = port.readFileBytes(archivePath)
+    bytes = await port.readFileBytes(archivePath)
   } catch (err) {
     throw new CliError(fsErrorCode(err), `archive "${archivePath}" could not be read: ${errorText(err)}`)
   }
@@ -165,7 +165,7 @@ export const backupVerifyData = async (
       throw new CliError('io', `stdin could not be read: ${errorText(err)}`)
     }
   } else {
-    raw = readArchiveText(deps.port, archivePath)
+    raw = await readArchiveText(deps.port, archivePath)
   }
 
   const result: BackupVerifyResult =

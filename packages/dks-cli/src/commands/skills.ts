@@ -82,10 +82,10 @@ const skillsDirOrThrow = (port: FsPort, skillsDir: string): string[] => {
   return names
 }
 
-const pathExists = (port: FsPort, path: string): boolean => {
+const pathExists = async (port: FsPort, path: string): Promise<boolean> => {
   if (port.isDirectory(path)) return true
   try {
-    port.readFileBytes(path)
+    await port.readFileBytes(path)
     return true
   } catch {
     return false
@@ -147,21 +147,21 @@ const collectReferences = (body: string): string[] => {
 }
 
 /** Canonical resolution order for one reference. */
-const referenceResolves = (
+const referenceResolves = async (
   port: FsPort,
   ref: string,
   skillName: string,
   skillsDir: string,
   bundleRoot: string,
   knownSkills: ReadonlySet<string>,
-): boolean => {
+): Promise<boolean> => {
   if (!isSafePath(ref)) return false
   const skillDir = `${skillsDir}/${skillName}`
   const first = ref.split('/').at(0) ?? ''
   if (knownSkills.has(first)) return pathExists(port, `${skillsDir}/${ref}`)
   if (ref.startsWith('scripts/')) {
     const sub = ref.slice('scripts/'.length)
-    return pathExists(port, `${bundleRoot}/scripts/${sub}`) || pathExists(port, `${skillDir}/scripts/${sub}`)
+    return (await pathExists(port, `${bundleRoot}/scripts/${sub}`)) || (await pathExists(port, `${skillDir}/scripts/${sub}`))
   }
   if (ref.startsWith('references/')) return pathExists(port, `${skillDir}/${ref}`)
   return pathExists(port, `${bundleRoot}/${ref}`)
@@ -189,7 +189,7 @@ const listMarkdownFiles = (port: FsPort, skillDir: string): string[] => {
  * Canonical parity: scan every Markdown file in the skill, including
  * reference documents and frontmatter, not only SKILL.md's body.
  */
-const checkReferences = (
+const checkReferences = async (
   port: FsPort,
   skillDir: string,
   skillName: string,
@@ -197,27 +197,27 @@ const checkReferences = (
   bundleRoot: string,
   knownSkills: ReadonlySet<string>,
   findings: string[],
-): void => {
+): Promise<void> => {
   for (const relative of listMarkdownFiles(port, skillDir)) {
     let text: string
     try {
-      text = decodeUtf8Strict(port.readFileBytes(`${skillDir}/${relative}`))
+      text = decodeUtf8Strict(await port.readFileBytes(`${skillDir}/${relative}`))
     } catch {
       findings.push(`${relative}: could not be read as UTF-8`)
       continue
     }
     for (const ref of collectReferences(text)) {
-      if (!referenceResolves(port, ref, skillName, skillsDir, bundleRoot, knownSkills)) {
+      if (!(await referenceResolves(port, ref, skillName, skillsDir, bundleRoot, knownSkills))) {
         findings.push(`${relative}: dead reference "${ref}"`)
       }
     }
   }
 }
 
-const readSkillText = (port: FsPort, skillDir: string, findings: string[]): string | undefined => {
+const readSkillText = async (port: FsPort, skillDir: string, findings: string[]): Promise<string | undefined> => {
   let bytes: Uint8Array
   try {
-    bytes = port.readFileBytes(`${skillDir}/${SKILL_MD_NAME}`)
+    bytes = await port.readFileBytes(`${skillDir}/${SKILL_MD_NAME}`)
   } catch {
     findings.push(`missing ${SKILL_MD_NAME}`)
     return undefined
@@ -230,16 +230,16 @@ const readSkillText = (port: FsPort, skillDir: string, findings: string[]): stri
   }
 }
 
-export const validateSkill = (
+export const validateSkill = async (
   port: FsPort,
   skillsDir: string,
   name: string,
   bundleRoot: string,
   knownSkills: ReadonlySet<string>,
-): SkillReport => {
+): Promise<SkillReport> => {
   const findings: string[] = []
   const skillDir = `${skillsDir}/${name}`
-  const text = readSkillText(port, skillDir, findings)
+  const text = await readSkillText(port, skillDir, findings)
   if (text === undefined) return { name, findings }
 
   if (Array.from(text).length < MIN_SKILL_MD_CHARS) {
@@ -274,18 +274,22 @@ export const validateSkill = (
     findings.push(`description is ${description.length} chars (limit ${SKILL_DESCRIPTION_MAX_CHARS})`)
   }
 
-  checkReferences(port, skillDir, name, skillsDir, bundleRoot, knownSkills, findings)
+  await checkReferences(port, skillDir, name, skillsDir, bundleRoot, knownSkills, findings)
   return { name, findings }
 }
 
-const validateAll = (
+const validateAll = async (
   port: FsPort,
   bundlePath: string,
   skillsDir: string,
   names: readonly string[],
   knownSkills: ReadonlySet<string>,
-): SkillsData => {
-  const results = names.map((name) => validateSkill(port, skillsDir, name, bundlePath, knownSkills))
+): Promise<SkillsData> => {
+  // Sequential: one report per name, in bundle order.
+  const results: SkillReport[] = []
+  for (const name of names) {
+    results.push(await validateSkill(port, skillsDir, name, bundlePath, knownSkills))
+  }
   const failed = results.filter((report) => report.findings.length > 0).length
   return {
     skillsDir,
@@ -298,14 +302,15 @@ const validateAll = (
 }
 
 /** `skills list` — inventory incl. parseable description, no validation. */
-export const skillsListData = (port: FsPort, bundlePath: string): SkillsListData => {
+export const skillsListData = async (port: FsPort, bundlePath: string): Promise<SkillsListData> => {
   const skillsDir = resolveSkillsDir(bundlePath)
   const names = skillsDirOrThrow(port, skillsDir)
-  const skills = names.map((name) => {
+  const skills: SkillsListEntry[] = []
+  for (const name of names) {
     let hasSkillMd = false
     let description: string | undefined
     try {
-      const text = decodeUtf8Strict(port.readFileBytes(`${skillsDir}/${name}/${SKILL_MD_NAME}`))
+      const text = decodeUtf8Strict(await port.readFileBytes(`${skillsDir}/${name}/${SKILL_MD_NAME}`))
       hasSkillMd = true
       const split = splitFrontmatter(text)
       const parsed = split.frontmatter === null ? undefined : parseFrontmatter(split.frontmatter)
@@ -318,17 +323,17 @@ export const skillsListData = (port: FsPort, bundlePath: string): SkillsListData
     }
     const entry: SkillsListEntry = { name, hasSkillMd }
     if (description !== undefined) entry.description = description
-    return entry
-  })
+    skills.push(entry)
+  }
   return { skillsDir, skills }
 }
 
 /** `skills validate [name]` / `skills test` — full validation report. */
-export const skillsValidateData = (
+export const skillsValidateData = async (
   port: FsPort,
   bundlePath: string,
   only: string | undefined,
-): SkillsData => {
+): Promise<SkillsData> => {
   const skillsDir = resolveSkillsDir(bundlePath)
   const allNames = skillsDirOrThrow(port, skillsDir)
   let names = allNames
@@ -342,7 +347,11 @@ export const skillsValidateData = (
 /** `dks skills ...` subcommand dispatch. */
 export type SkillsCommandData = SkillsListData | SkillsData
 
-export const skillsData = (args: readonly string[], port: FsPort, bundlePath: string): SkillsCommandData => {
+export const skillsData = async (
+  args: readonly string[],
+  port: FsPort,
+  bundlePath: string,
+): Promise<SkillsCommandData> => {
   const sub = args.at(0)
   switch (sub) {
     case 'list':

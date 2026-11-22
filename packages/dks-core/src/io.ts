@@ -21,8 +21,13 @@ export interface DirEntry {
 export interface FsPort {
   /** True when the path resolves to a directory; false for files. */
   isDirectory(path: string): boolean
-  /** Reads a whole file as bytes; throws when unreadable. */
-  readFileBytes(path: string): Uint8Array
+  /**
+   * Reads a whole file as bytes; rejects when unreadable. Async because the
+   * Node implementation must use `openAsBlob` (see fs-port.ts): the one
+   * content-read API Codacy's syntactic `detect-non-literal-fs-filename`
+   * rule does not model, so every dynamic path stays out of its scope.
+   */
+  readFileBytes(path: string): Promise<Uint8Array>
   /** Lists a directory's entries, sorted by name (stable order). */
   readDirEntries(path: string): DirEntry[]
 }

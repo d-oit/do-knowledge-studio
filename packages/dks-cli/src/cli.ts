@@ -120,7 +120,7 @@ const requireSingleArg = (args: readonly string[], usage: string): string => {
 const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPayload> => {
   const { command, args, flags } = invocation
   const resolveBundle = (): string => resolveBundlePath(flags.bundle, io.env)
-  const load = (): LoadedBundle => loadBundle(nodeFsPort, resolveBundle())
+  const load = (): Promise<LoadedBundle> => loadBundle(nodeFsPort, resolveBundle())
   const limit = flags.limit ?? DEFAULT_LIMIT
 
   switch (command) {
@@ -146,27 +146,27 @@ const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPaylo
       if (query.length === 0) {
         throw new CliError('usage', 'search needs a query', 'dks search QUERY... — words are stemmed and prefix-matched')
       }
-      return searchData(load(), query, limit)
+      return searchData(await load(), query, limit)
     }
     case 'entity': {
       const id = requireSingleArg(args, 'dks entity ID')
-      return entityData(load(), id)
+      return entityData(await load(), id)
     }
     case 'claims': {
       const id = requireSingleArg(args, 'dks claims ENTITY_ID')
-      return claimsData(load(), id)
+      return claimsData(await load(), id)
     }
     case 'aliases': {
       const id = requireSingleArg(args, 'dks aliases ID')
-      return aliasesData(load(), id)
+      return aliasesData(await load(), id)
     }
     case 'relations': {
       const id = requireSingleArg(args, 'dks relations ID')
-      return relationsData(load(), id)
+      return relationsData(await load(), id)
     }
     case 'index': {
       rejectUnknownFlags(args, command)
-      return indexData(load(), limit)
+      return indexData(await load(), limit)
     }
     case 'graph':
       return graphData(args, load)
@@ -183,7 +183,7 @@ const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPaylo
     case 'export': {
       rejectUnknownFlags(args, command)
       if (args.length > 0) throw new CliError('usage', 'export takes no arguments', 'dks export [--format json]')
-      return exportData(load(), flags.format)
+      return exportData(await load(), flags.format)
     }
     default:
       throw unknownCommandError(command)
