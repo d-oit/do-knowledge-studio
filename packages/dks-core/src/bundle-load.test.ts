@@ -21,7 +21,7 @@ const makeMemoryFs = (files: Record<string, string | Uint8Array>): FsPort => {
     isDirectory(path) {
       return dirs.has(path.endsWith('/') ? path : `${path}/`) || dirs.has(path)
     },
-    readFileBytes(path) {
+    async readFileBytes(path) {
       const bytes = blob.get(path)
       if (!bytes) throw new Error(`ENOENT: ${path}`)
       return bytes
@@ -111,9 +111,10 @@ const buildZip = (entries: Array<{ name: string; data: Uint8Array; method?: 0 | 
 const INDEX = `---\nokf_version: '0.2'\n---\n\n# Index\n`
 const ALPHA = `---\ntype: Project\ntitle: Alpha\nverified:\n  by: human:ada\n---\nAlpha body.\n# Claims\n\n- Alpha works\n`
 const BETA = `---\ntype: Concept\ntitle: Beta\n---\nBeta body.\n`
+const SKILL_MD = `---\nname: sample\ndescription: A sample skill.\n---\n\nSkill body.\n`
 
 describe('loadBundleFromDisk (directory)', () => {
-  it('loads a directory tree with reserved-file handling', () => {
+  it('loads a directory tree with reserved-file handling', async () => {
     const fs = makeMemoryFs({
       '/bundle/index.md': INDEX,
       '/bundle/log.md': '# Log\n',
@@ -121,29 +122,39 @@ describe('loadBundleFromDisk (directory)', () => {
       '/bundle/concepts/beta.md': BETA,
       '/bundle/assets/logo.png': 'not markdown',
     })
-    const loaded = loadBundleFromDisk(fs, '/bundle')
+    const loaded = await loadBundleFromDisk(fs, '/bundle')
     expect(loaded.concepts.map((c) => c.id)).toEqual(['concepts/alpha', 'concepts/beta'])
     expect(loaded.concepts[0]?.trustTier).toBe('human-reviewed')
   })
 
-  it('skips unsafe relative paths', () => {
+  it('skips unsafe relative paths', async () => {
     const fs = makeMemoryFs({
       '/bundle/index.md': INDEX,
       '/bundle/concepts/alpha.md': ALPHA,
       '/bundle/../escape.md': '# escape\n',
     })
-    const loaded = loadBundleFromDisk(fs, '/bundle')
+    const loaded = await loadBundleFromDisk(fs, '/bundle')
     expect(loaded.concepts.map((c) => c.id)).toEqual(['concepts/alpha'])
   })
 
-  it('throws when the target is missing', () => {
-    const fs = makeMemoryFs({})
-    expect(() => loadBundleFromDisk(fs, '/nope')).toThrow()
+  it('ignores hidden metadata directories such as .agents', async () => {
+    const fs = makeMemoryFs({
+      '/bundle/index.md': INDEX,
+      '/bundle/notes/alpha.md': ALPHA,
+      '/bundle/.agents/skills/sample/SKILL.md': SKILL_MD,
+    })
+    const loaded = await loadBundleFromDisk(fs, '/bundle')
+    expect(loaded.concepts.map((c) => c.id)).toEqual(['notes/alpha'])
   })
 
-  it('throws on bundles without a valid index', () => {
+  it('throws when the target is missing', async () => {
+    const fs = makeMemoryFs({})
+    await expect(loadBundleFromDisk(fs, '/nope')).rejects.toThrow()
+  })
+
+  it('throws on bundles without a valid index', async () => {
     const fs = makeMemoryFs({ '/bundle/concepts/alpha.md': ALPHA })
-    expect(() => loadBundleFromDisk(fs, '/bundle')).toThrow(/index\.md with okf_version/)
+    await expect(loadBundleFromDisk(fs, '/bundle')).rejects.toThrow(/index\.md with okf_version/)
   })
 })
 
@@ -156,15 +167,26 @@ describe('loadBundleFromDisk (zip)', () => {
     { name: 'okf-bundle/assets/logo.png', data: new TextEncoder().encode('PNG'), method: 0 },
   ])
 
-  it('loads a zip bundle and strips the export prefix', () => {
+  it('loads a zip bundle and strips the export prefix', async () => {
     const fs = makeMemoryFs({ '/bundle.zip': zipBytes })
-    const loaded = loadBundleFromDisk(fs, '/bundle.zip')
+    const loaded = await loadBundleFromDisk(fs, '/bundle.zip')
     expect(loaded.concepts.map((c) => c.id)).toEqual(['concepts/alpha', 'concepts/beta'])
   })
 
-  it('rejects oversized zips', () => {
+  it('ignores hidden metadata directories inside zips', async () => {
+    const withHidden = buildZip([
+      { name: 'okf-bundle/index.md', data: new TextEncoder().encode(INDEX) },
+      { name: 'okf-bundle/notes/alpha.md', data: new TextEncoder().encode(ALPHA) },
+      { name: 'okf-bundle/.agents/skills/sample/SKILL.md', data: new TextEncoder().encode(SKILL_MD) },
+    ])
+    const fs = makeMemoryFs({ '/hidden.zip': withHidden })
+    const loaded = await loadBundleFromDisk(fs, '/hidden.zip')
+    expect(loaded.concepts.map((c) => c.id)).toEqual(['notes/alpha'])
+  })
+
+  it('rejects oversized zips', async () => {
     const big = new Uint8Array(11_000_000)
     const fs = makeMemoryFs({ '/big.zip': big })
-    expect(() => loadBundleFromDisk(fs, '/big.zip')).toThrow(/too large/)
+    await expect(loadBundleFromDisk(fs, '/big.zip')).rejects.toThrow(/too large/)
   })
 })
