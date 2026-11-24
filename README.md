@@ -62,6 +62,60 @@ Your notes stay in this browser (IndexedDB + a small localStorage envelope). No 
 
 ---
 
+## Architecture: Skills → CLI → Shared Core
+
+The canonical architecture document is [`plans/ARCHITECTURE.md`](./plans/ARCHITECTURE.md); this section links to it instead of restating it. One layering rule ties the surfaces together:
+
+```text
+Agent Skills (.agents/skills/, portable in OKF bundles)
+             │  discover / invoke
+             ▼
+      dks CLI (packages/dks-cli)          dks-mcp (optional MCP adapter)
+             │                                        │
+             ▼                                        ▼
+        dks-core (packages/dks-core) ── shared TypeScript domain core
+```
+
+- **Agent Skills** are the primary reusable workflow/distribution layer.
+- **The `dks` CLI** is the primary executable interface for search, graph, import/export, validation, and automation.
+- **`dks-core`** is the single shared implementation of business logic, reused by the web app and the CLI.
+- **MCP is optional interoperability** — the adapter for MCP clients, never a required path.
+
+---
+
+## Agent Skills
+
+Skills package reusable agent workflows. Installation, discovery, and authoring conventions:
+
+- **Repository skills** live in `.agents/skills/` — the canonical source. After cloning, run `./scripts/setup-skills.sh` once to create the per-tool symlinks (Claude Code, Gemini CLI, Qwen Code, Cursor, Windsurf, OpenCode) and `./scripts/validate-skills.sh` to verify them.
+- **Discovery**: the catalog is auto-generated at [`agents-docs/AVAILABLE_SKILLS.md`](./agents-docs/AVAILABLE_SKILLS.md); regenerate with `./scripts/generate-skills-docs.py` after adding a skill.
+- **Authoring**: create `.agents/skills/<skill-name>/SKILL.md` with `name` and `description` frontmatter (name must equal the directory name, description is a single line within 300 characters) plus optional reference files beside it. Walkthrough: [`.agents/skills/README.md`](./.agents/skills/README.md).
+- **Portable skills in exports**: an OKF bundle can carry an `.agents/skills/` tree; `dks skills list`, `dks skills validate [name]` and `dks skills test` discover and validate them.
+
+---
+
+## dks CLI
+
+`dks` (`packages/dks-cli`) is a standalone, read-only operator CLI over an exported OKF v0.2 bundle: BM25 search, entity/claim/alias/relation inspection, graph neighborhoods and paths, bundle diagnostics, `.dksb` backup verification, and skills validation. It needs no server, browser, or network, which makes it suitable for agents, shell scripts, and CI.
+
+```bash
+pnpm install
+pnpm --filter dks-cli build
+node packages/dks-cli/dist/bin.js help
+node packages/dks-cli/dist/bin.js doctor
+node packages/dks-cli/dist/bin.js search "contradiction matrix"
+```
+
+Every command prints one envelope; `--format json` emits `{ ok, data | error, meta }` to stdout with diagnostics on stderr, so pipelines can consume stdout directly. The full command table, flag reference, and exit codes: [`packages/dks-cli/README.md`](./packages/dks-cli/README.md).
+
+---
+
+## MCP Server (optional)
+
+`dks-mcp` exposes the same exported OKF bundle to MCP clients (Claude Code, Cursor, Claude Desktop) over stdio — offline and read-only. MCP is an **optional interoperability adapter**, not a required path; prefer the `dks` CLI unless your client is MCP-only. Setup, tool list, and trust notes: [`packages/dks-mcp/README.md`](./packages/dks-mcp/README.md); decision record: [ADR 050](./plans/ADRs/050-mcp-bridge.md).
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -112,7 +166,7 @@ pnpm run docs:check   # Verify public docs against source (scripts, views, stora
 │   ├── app/                 # Next.js App Router (layout, page shell, globals.css tokens)
 │   ├── components/
 │   │   ├── studio/          # Studio shell, topbar, sidebar, right panel, dialogs
-│   │   │   ├── views/       # The 11 view implementations and view-specific handlers
+│   │   │   ├── views/       # The 12 view implementations and view-specific handlers
 │   │   │   └── ui/          # Shared studio UI primitives
 │   │   └── ui/              # shadcn/ui accessible components (Radix primitives)
 │   ├── hooks/               # Reusable React hooks (reduced motion, speech, keyboard)
@@ -125,6 +179,11 @@ pnpm run docs:check   # Verify public docs against source (scripts, views, stora
 │   │   └── sync/            # WebRTC sync bridge, Yjs CRDT documents, presence, conflict logic
 │   └── test/                # Test utilities, fixtures, and builder helpers
 ├── plans/                   # GOAP plans, research, task decomposition, and architecture decision records (ADRs)
+├── packages/
+│   ├── dks-core/            # Shared TypeScript domain core (single business-logic implementation)
+│   ├── dks-cli/             # Standalone read-only `dks` operator CLI
+│   └── dks-mcp/             # Optional MCP adapter over an exported OKF bundle
+├── docs/                    # User-facing guides (self-hosting, cache inventory, bookmarklet)
 ├── scripts/                 # Reusable validation, quality gates, and automated repair scripts
 ├── agents-docs/             # Multi-agent coordination guides, rules, and hook documentation
 └── public/                  # Static assets and PWA service worker manifest

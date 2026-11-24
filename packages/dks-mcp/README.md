@@ -1,8 +1,14 @@
-# dks-mcp — Offline Read-Only MCP Server
+# dks-mcp — Optional Read-Only MCP Server
 
-Exposes an exported do-knowledge-studio OKF v0.2 bundle to MCP agent clients
-(Claude Code, Cursor, Claude Desktop) over stdio. No network, no writes, no
-live sync: point it at a bundle file and it serves what the export contains.
+`dks-mcp` is an **optional interoperability adapter**, not a required
+interface. The standalone [`dks` CLI](../dks-cli/README.md) is the primary
+executable interface for the same data; reach for `dks-mcp` only when your
+agent host speaks MCP and cannot run the CLI.
+
+It exposes an exported do-knowledge-studio OKF v0.2 bundle to MCP agent
+clients (Claude Code, Cursor, Claude Desktop) over stdio. No network, no
+writes, no live sync: point it at a bundle file and it serves what the export
+contains. Decision record: [`plans/ADRs/050-mcp-bridge.md`](../../plans/ADRs/050-mcp-bridge.md).
 
 ## Install
 
@@ -45,7 +51,9 @@ Claude Desktop (`claude_desktop_config.json`):
 }
 ```
 
-## Tools (all read-only)
+## Tools
+
+Core tools are read-only:
 
 | Tool | Arguments | Returns |
 | --- | --- | --- |
@@ -53,12 +61,23 @@ Claude Desktop (`claude_desktop_config.json`):
 | `get_entity` | `ref` (id or unique name) | Content, sources, related ids, trust tier |
 | `get_claims` | `ref`, `verifiedOnly?` | Claims with verification + source provenance |
 | `neighborhood` | `ref` | One-hop outgoing/incoming related concepts |
+| `find_path` | `from`, `to` | Shortest relation path between two concepts |
 | `list_tags` | — | Tag census by usage count |
+
+Opt-in bridge tools (set `DKS_MCP_BRIDGE=propose`; off by default, per ADR 054)
+return append-only proposals for studio-side review and never write to the
+bundle:
+
+| Tool | Arguments | Returns |
+| --- | --- | --- |
+| `propose_claim` | `entityRef`, `statement`, `confidence?`, `source?` | Claim proposal (`requiresReview: true`) |
+| `propose_entity` | `name`, `type?`, `description?`, `content?`, `tags?` | New-entity proposal |
+| `propose_link` | `from`, `to`, `relation` | Relation proposal between two concepts |
 
 Ambiguous names resolve to an error naming the candidate ids; every result
 carries `trustTier` (`human-reviewed` only with a `human:` verifier, else
 `machine-confirmed`/`unverified`) and source `resource`/`title` where the
-bundle records them. `find_path` arrives with the graph-queries issue (#1058).
+bundle records them.
 
 ## Trust notes
 

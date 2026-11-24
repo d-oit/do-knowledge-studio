@@ -15,6 +15,18 @@
  * - every export format in `export-types.ts` is named in the README;
  * - optional data-egress capabilities are labelled;
  * - PHASES history lines that mention SQLite are marked historical;
+ * - the dks CLI commands in `packages/dks-cli/README.md` match `COMMAND_DOCS`,
+ *   and `README.md`/`PRODUCT.md` present the CLI (Issue #1161);
+ * - every MCP tool advertised in `tool-definitions.ts` is documented in
+ *   `packages/dks-mcp/README.md` (Issue #1161);
+ * - every repository skill directory is listed in the generated skills catalog
+ *   and `.agents/skills/README.md` (Issue #1161);
+ * - the dks CLI commands documented in `packages/dks-cli/README.md` match
+ *   `COMMAND_DOCS`, and `README.md`/`PRODUCT.md` present the CLI (Issue #1161);
+ * - every MCP tool advertised in `tool-definitions.ts` is documented in
+ *   `packages/dks-mcp/README.md` (Issue #1161);
+ * - every repository skill directory appears in the skills catalog and the
+ *   skills README (Issue #1161);
  * - `VERSION` matches the `package.json` version;
  * - README, `LICENSE` and `NOTICE` agree on the MIT license and name the
  *   project owner rather than the template's placeholder holder.
@@ -65,6 +77,7 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 const scripts = new Set(Object.keys(packageJson.scripts ?? {}))
 const scriptFiles = new Set(readdirSync('scripts'))
 const readme = readFileSync('README.md', 'utf8')
+const product = readFileSync('PRODUCT.md', 'utf8')
 const agents = readFileSync('AGENTS.md', 'utf8')
 const architecture = readFileSync('plans/ARCHITECTURE.md', 'utf8')
 const goal = readFileSync('plans/GOAL.md', 'utf8')
@@ -131,6 +144,7 @@ if (!viewBlock) {
 // --- Storage truth ---------------------------------------------------------
 for (const [name, text] of [
   ['README.md', readme],
+  ['PRODUCT.md', product],
   ['AGENTS.md', agents],
   ['plans/ARCHITECTURE.md', architecture],
   ['plans/GOAL.md', goal],
@@ -330,6 +344,53 @@ for (const file of citingFiles) {
     if (!knownLessons.has(match[0])) {
       fail(`${file} cites unknown lesson ${match[0]}`)
     }
+  }
+}
+
+// --- CLI command inventory (#1161) -------------------------------------------
+// Every command in the CLI's own COMMAND_DOCS must be documented in the
+// package README, and both top-level docs must present the CLI.
+const cliReadme = readFileSync('packages/dks-cli/README.md', 'utf8')
+const cliHelp = readFileSync('packages/dks-cli/src/commands/help.ts', 'utf8')
+const cliCommands = [...cliHelp.matchAll(/\{ name: '([a-z]+)', summary:/g)].map((m) => m[1])
+if (cliCommands.length === 0) {
+  fail('could not read COMMAND_DOCS from packages/dks-cli/src/commands/help.ts')
+}
+for (const command of cliCommands) {
+  if (!cliReadme.includes(`dks ${command}`)) {
+    fail(`packages/dks-cli/README.md does not document CLI command: dks ${command}`)
+  }
+}
+if (!/dks CLI|`dks`/.test(readme) || !/dks/.test(product)) {
+  fail('top-level docs do not present the dks CLI')
+}
+
+// --- MCP tool inventory (#1161) ------------------------------------------------
+// Every tool advertised by dks-mcp must be documented in its README.
+const mcpToolSource = readFileSync('packages/dks-mcp/src/tool-definitions.ts', 'utf8')
+const mcpToolDefs = mcpToolSource.slice(mcpToolSource.indexOf('export const toolDefinitions'))
+const mcpTools = [...mcpToolDefs.matchAll(/name: '([a-z_]+)'/g)].map((m) => m[1])
+const mcpReadme = readFileSync('packages/dks-mcp/README.md', 'utf8')
+for (const tool of mcpTools) {
+  if (!mcpReadme.includes(`\`${tool}\``)) {
+    fail(`packages/dks-mcp/README.md does not document MCP tool: ${tool}`)
+  }
+}
+
+// --- Skills catalog freshness (#1161) ------------------------------------------
+// Every repository skill directory must be listed in the generated catalog
+// (agents-docs/AVAILABLE_SKILLS.md) and in .agents/skills/README.md.
+const skillDirs = readdirSync('.agents/skills', { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && !entry.isSymbolicLink())
+  .map((entry) => entry.name)
+const skillsCatalog = readFileSync('agents-docs/AVAILABLE_SKILLS.md', 'utf8')
+const skillsReadme = readFileSync('.agents/skills/README.md', 'utf8')
+for (const skill of skillDirs) {
+  if (!skillsCatalog.includes(`\`${skill}\``)) {
+    fail(`agents-docs/AVAILABLE_SKILLS.md does not list skill: ${skill}`)
+  }
+  if (!skillsReadme.includes(`\`${skill}/\``)) {
+    fail(`.agents/skills/README.md does not list skill: ${skill}`)
   }
 }
 

@@ -76,6 +76,40 @@ from the canonical persistence blob (ADR 023).
 
 ---
 
+## Packages & surfaces
+
+One layering rule ties the surfaces together: **Agent Skills → `dks` CLI → shared core**,
+with MCP as an optional adapter — never a required path.
+
+```text
+Agent Skills (.agents/skills/, portable in OKF bundles)
+             │ discover / invoke
+             ▼
+      dks CLI (packages/dks-cli)          dks-mcp (optional MCP adapter)
+             │                                        │
+             ▼                                        ▼
+        dks-core (packages/dks-core) ── shared TypeScript domain core
+```
+
+- **`dks-core`** is the single implementation of shared business logic (bundle
+  loading, frontmatter, graph paths, markdown scan/export). The CLI and the web
+  app consume it instead of maintaining parallel implementations.
+- **The `dks` CLI** is the primary executable interface for search, graph,
+  import/export, validation, and automation over an exported OKF bundle. It is
+  read-only and needs no MCP server, agent host, network access, or running app.
+- **Agent Skills** are the primary reusable workflow/distribution layer.
+  Repository skills live in `.agents/skills/` (catalog:
+  `agents-docs/AVAILABLE_SKILLS.md`); exported OKF bundles can carry portable
+  skills validated by `dks skills list|validate|test`.
+- **MCP (`dks-mcp`) is optional interoperability**, not a required interface:
+  any MCP client can read the same exported bundle offline that the CLI and the
+  web app already serve (ADR 050). An opt-in bridge mode (`DKS_MCP_BRIDGE=propose`)
+  additionally exposes `propose_claim`/`propose_entity`/`propose_link`, which
+  return append-only proposals for studio-side review and never write to the
+  bundle.
+
+---
+
 ## AI Harness
 
 Client-side, bring-your-own-key (ADR 019, ADR 025).
@@ -223,3 +257,5 @@ CI runs on push/PR via GitHub Actions.
 | 045 | Sync Threat Model and Room Membership | Implemented |
 | 046 | IndexedDB Canonical Persistence | Implemented |
 | 047 | Verifiable Backup Archive | Implemented |
+| 048 | At-Rest Encryption of the Local Corpus | Proposed — prototype exists, not wired into persistence |
+| 050 | Read-Only MCP Bridge via an Offline Bundle Server | Accepted — optional adapter |
