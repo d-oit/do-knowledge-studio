@@ -31,8 +31,14 @@ Local-first knowledge studio built with Next.js 16 / React 19 / Tailwind 4 / sha
 - `src/lib/studio` - Zustand store, types, seed data, utilities
 - `src/lib/ai` - AI provider adapters · `src/lib/search` - retrieval engine
 - `src/lib/export` - JSON, MD, HTML, encrypted export
+- `packages/dks-core` - shared TypeScript domain core (single business-logic implementation)
+- `packages/dks-cli` - standalone read-only `dks` CLI · `packages/dks-mcp` - optional MCP adapter
 - `scripts/` - repository automation · `plans/` - GOAP plans, ADRs, audits
 - `agents-docs/` - harness, workflow, config, hooks (`agents-docs/HOOKS.md`), skill docs
+
+Canonical architecture document: `plans/ARCHITECTURE.md` (layering: Agent
+Skills → `dks` CLI → shared core, MCP as optional adapter). Link to it instead
+of duplicating architecture in other docs.
 
 ## Planning Workflow
 
