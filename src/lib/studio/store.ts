@@ -245,9 +245,17 @@ export const useStudioStore = create<StudioState>()(
       onRehydrateStorage: () => (_state, error) => {
         if (!error) return
         log.warn('Studio hydration failed', { error })
-        if (getHydrationRefusal() === null) {
-          recordHydrationRefusal(UNREADABLE_ENVELOPE_REASON, null, false)
-        }
+        if (getHydrationRefusal() !== null) return
+        // Preserve whatever bytes could be read. An encrypted workspace caches
+        // ciphertext, so the copy is safe to keep and offer for download; a
+        // blocked read returns null and the refusal then truthfully says no
+        // copy exists. Quarantine itself refuses plaintext while encryption is
+        // enabled (ADR 048 §5), so this can never leak a readable corpus.
+        const raw = readRawEnvelope()
+        // `quarantinePayload(null)` means "nothing to preserve"; for the refusal
+        // flag that is the same as "no copy exists", so require real bytes.
+        const preserved = raw !== null && quarantinePayload(UNREADABLE_ENVELOPE_REASON, raw)
+        recordHydrationRefusal(UNREADABLE_ENVELOPE_REASON, raw, preserved)
       },
     },
   ),

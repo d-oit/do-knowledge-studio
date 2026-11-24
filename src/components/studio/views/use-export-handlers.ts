@@ -20,6 +20,7 @@ const NO_BACKUP_COPY: Record<RecoveryPersistFailure, string> = {
   'too-large': exportT('export.import.noBackupTooLarge'),
   unserializable: exportT('export.import.noBackupUnserializable'),
   'storage-unavailable': exportT('export.import.noBackupStorageUnavailable'),
+  encrypted: exportT('export.import.noBackupEncrypted'),
 }
 
 

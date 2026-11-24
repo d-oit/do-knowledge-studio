@@ -7,6 +7,7 @@ import { getSignalingServers, SIGNALING_SERVERS } from './discovery'
 import { sameIceServers, toRtcIceServers, type IceServerConfig } from './ice-config'
 import { bindCursorAwareness, unbindCursorAwareness } from './cursors'
 import { bindPresenceAwareness, unbindPresenceAwareness } from './presence'
+import { isAtRestEncryptionEnabled } from '@/lib/studio/at-rest-session'
 /** WebRTC provider for an active collaboration room. */
 export type RoomProvider = WebrtcProvider
 
@@ -92,12 +93,26 @@ export const getSyncDoc = (): SyncDoc => {
   return currentSync
 }
 
+/**
+ * Creates the plaintext Yjs replica, unless at-rest encryption is on.
+ *
+ * `y-indexeddb` stores the whole document as plaintext, which would defeat
+ * workspace encryption for every entity and claim (ADR 048 §5). With encryption
+ * enabled the document stays in memory for this session only; the canonical
+ * corpus remains the durable copy.
+ */
+const createPersistence = (): IndexeddbPersistence | null => {
+  if (isAtRestEncryptionEnabled()) return null
+  return new IndexeddbPersistence(DB_NAME, getDoc())
+}
+
 /** Initialize IndexedDB persistence for the Yjs document and local room context. */
 export const initPersistence = async (): Promise<void> => {
   if (!currentPersistence) {
-    currentPersistence = new IndexeddbPersistence(DB_NAME, getDoc())
+    currentPersistence = createPersistence()
   }
   const persistence = currentPersistence
+  if (persistence === null) return
   await persistence.whenSynced
 
   let persistedRoomId: string | null = null
@@ -135,13 +150,43 @@ export const isPersistenceSynced = (): boolean => {
   return currentPersistence?.synced ?? false
 }
 
-/** Ensure persistence is initialized and fully synchronized. */
-export const ensurePersistenceReady = async (): Promise<IndexeddbPersistence> => {
+/**
+ * Ensure persistence is initialized and fully synchronized.
+ *
+ * Returns null for an encrypted workspace, where no plaintext replica is kept.
+ */
+export const ensurePersistenceReady = async (): Promise<IndexeddbPersistence | null> => {
   if (!currentPersistence) {
-    currentPersistence = new IndexeddbPersistence(DB_NAME, getDoc())
+    currentPersistence = createPersistence()
   }
+  if (currentPersistence === null) return null
   await currentPersistence.whenSynced
   return currentPersistence
+}
+
+/**
+ * Deletes the plaintext Yjs replica.
+ *
+ * Called when encryption is enabled: a replica written before the setting
+ * existed holds the whole document in the clear. The canonical corpus is the
+ * source of truth (ADR 027), so deleting a replica loses no note.
+ */
+export const purgeSyncReplica = async (): Promise<void> => {
+  if (currentPersistence !== null) {
+    try {
+      await currentPersistence.destroy()
+    } catch (error) {
+      console.error('Failed to destroy the plaintext sync replica', error)
+    }
+    currentPersistence = null
+  }
+  if (typeof indexedDB === 'undefined') return
+  await new Promise<void>((resolve) => {
+    const request = indexedDB.deleteDatabase(DB_NAME)
+    request.onsuccess = () => resolve()
+    request.onerror = () => resolve()
+    request.onblocked = () => resolve()
+  })
 }
 
 /** Join a WebRTC signaling room for peer-to-peer sync. */

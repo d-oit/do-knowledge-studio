@@ -23,6 +23,7 @@ import {
   resetSemanticCache,
   SEMANTIC_INDEX_MAX_BYTES,
 } from '@/lib/search/vector-store'
+import { WorkspaceEncryptionPanel } from './workspace-encryption-panel'
 
 /** Snapshot of the semantic index, read on demand rather than subscribed. */
 interface SemanticUsage {
@@ -184,6 +185,8 @@ export const SettingsView = () => {
           {t('settings.unavailable')}
         </p>
       )}
+      <WorkspaceEncryptionPanel />
+
       <section
         aria-labelledby="settings-origin-title"
         className="mb-6 rounded-lg border border-border bg-card p-5"

@@ -9,6 +9,15 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 214 — At-rest encryption for the complete local workspace (2026-11-24)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| Decide | Threat model, opt-in vs mandatory, plaintext-surface inventory | Done | [ADR 048](ADRs/048-at-rest-encryption.md) moved to **Accepted** with 12 surfaces each encrypted, excluded with a reason, or disclosed |
+| Implement | Encrypt canonical corpus + revision history; fail closed on wrong key, tampering and version mismatch; verify before deleting plaintext | Done | AES-256-GCM envelopes with AAD-bound headers, in-memory-only key, locked mode that refuses reads and writes, transactional revision migration with restore |
+| Lifecycle | Enable/disable/unlock/lock, settings panel and blocking lock screen | Done (unit) | Purges/suppresses the plaintext side surfaces (Yjs replica, drafts, recovery snapshots) and states the irreversible-loss warning before enabling |
+| Field-check | Real-browser shadow/canary, kill-tab and quota tests, e2e unlock/refusal/reload | **Open** | Unit-verified only; see [Plan 214](214-at-rest-encryption-1162-2026-11-24.md) |
+
 ### Plan 213 — Graph keyboard navigation (2026-11-13)
 
 | Wave | Goal | Status | Outcome |

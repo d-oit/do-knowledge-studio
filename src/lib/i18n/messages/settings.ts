@@ -102,6 +102,65 @@ const messages = {
     `Your browser reports this site is using about ${percent}% of its estimated storage quota. Near the limit the browser may evict data — back up anything you cannot recreate.`,
   /** Settings persist failure toast. */
   'settings.save.failed': 'Failed to save settings. Your changes may not persist.',
+  /** Section heading for at-rest encryption. */
+  'settings.encryption.title': 'Workspace encryption',
+  /** Explains what at-rest encryption covers. */
+  'settings.encryption.description':
+    'Seal the library on this device with a passphrase. The corpus, its revision history and everything else that holds note text are stored as ciphertext.',
+  /** Status when encryption is off. */
+  'settings.encryption.statusOff': 'Off — the library is stored unencrypted in this browser.',
+  /** Status when encryption is on and unlocked. */
+  'settings.encryption.statusUnlocked': 'On — unlocked for this tab only.',
+  /** Status when encryption is on and locked. */
+  'settings.encryption.statusLocked':
+    'On — locked. The library cannot be read or changed until you unlock it.',
+  /** What at-rest encryption does not protect against. */
+  'settings.encryption.threatModel':
+    'At-rest encryption protects the stored bytes on this device: a lost or shared computer, a copied browser profile, or disk forensics. It does not protect a running, compromised browser — malicious script in this page can read the library while it is unlocked.',
+  /** Irreversible loss warning. */
+  'settings.encryption.lossWarning':
+    'There is no recovery key. If you forget this passphrase, the library cannot be opened again on this device — keep a passphrase you can remember and export a backup you control.',
+  /** Label for the passphrase field. */
+  'settings.encryption.passphrase': 'Passphrase',
+  /** Hint under the passphrase field. */
+  'settings.encryption.passphraseHint': (min: string) =>
+    `At least ${min} characters. It is never stored or sent anywhere.`,
+  /** Label for the confirmation field. */
+  'settings.encryption.confirm': 'Confirm passphrase',
+  /** Button that encrypts the workspace. */
+  'settings.encryption.enable': 'Encrypt this workspace',
+  /** Confirmation after enabling. */
+  'settings.encryption.enabled': 'Workspace encrypted',
+  /** Button that unlocks a locked workspace. */
+  'settings.encryption.unlock': 'Unlock',
+  /** Confirmation after unlocking. */
+  'settings.encryption.unlocked': 'Workspace unlocked',
+  /** Button that locks the workspace now. */
+  'settings.encryption.lock': 'Lock now',
+  /** Confirmation after locking. */
+  'settings.encryption.locked': 'Workspace locked',
+  /** Button that removes encryption. */
+  'settings.encryption.disable': 'Turn encryption off',
+  /** Confirmation after disabling. */
+  'settings.encryption.disabled': 'Encryption turned off',
+  /** Explains what turning encryption off does to the stored bytes. */
+  'settings.encryption.disableHint':
+    'Turning encryption off rewrites the library and its history as plaintext. Only do this if you accept that.',
+  /** Explains the excluded surfaces, honestly. */
+  'settings.encryption.exclusions':
+    'While encryption is on: editor draft recovery is off, pre-import recovery snapshots are not kept in plaintext, and the derived semantic index is dropped whenever you lock. The encrypted backup export is the recovery route.',
+  /** Link/instruction for the backup route. */
+  'settings.encryption.backupHint':
+    'Before enabling, export a backup and keep the passphrase for it separately.',
+  /** Shown when an operation fails. */
+  'settings.encryption.failed': 'That did not work',
+  /** Lock screen title. */
+  'settings.encryption.lockScreenTitle': 'This workspace is locked',
+  /** Lock screen description. */
+  'settings.encryption.lockScreenBody':
+    'Enter your passphrase to open the encrypted library. Nothing is read from storage until it unlocks.',
+  /** Lock screen submit button. */
+  'settings.encryption.lockScreenSubmit': 'Unlock workspace',
 } as const
 
 /** Typed `translate` helper bound to the settings message scope. */

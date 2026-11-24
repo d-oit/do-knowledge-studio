@@ -29,6 +29,7 @@ import {
 import { QuarantineBanner } from './views/quarantine-banner'
 import { RecoveryBanner } from './views/recovery-banner'
 import { OnboardingGate } from './views/onboarding-gate'
+import { WorkspaceLockGate } from './views/workspace-lock-gate'
 import {
   describeRecoverySnapshot,
   subscribeToRecoveryAvailability,
@@ -358,6 +359,7 @@ export const AppShell = () => {
       />
       <MobileDrawer />
       <ShortcutsDialog />
+      <WorkspaceLockGate />
       <OnboardingGate />
     </div>
   )

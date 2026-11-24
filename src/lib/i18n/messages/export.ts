@@ -112,6 +112,8 @@ const messages = {
     'Your previous library could not be captured as a recovery copy (an internal serialization error), so it cannot be restored from here. Export a JSON backup before your next import.',
   'export.import.noBackupStorageUnavailable':
     'This browser refused to store a recovery copy, so your previous library cannot be restored from here. Export a JSON backup before your next import.',
+  'export.import.noBackupEncrypted':
+    'Workspace encryption is on, so no plaintext recovery copy was kept. Restore from an encrypted backup instead.',
   /** The import threw and the store rolled back. */
   'export.import.failedTitle': 'Import failed — state restored',
   /** Export downloaded toasts. */

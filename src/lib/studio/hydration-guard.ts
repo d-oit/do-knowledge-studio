@@ -100,6 +100,23 @@ export const recordHydrationRefusal = (
   notifyRefusalListeners()
 }
 
+/**
+ * Releases the refusal latch after this page has independently verified that
+ * the stored corpus is readable.
+ *
+ * The only legitimate caller is the at-rest interrupted-setup recovery: it
+ * decrypted the stored record with the user's passphrase and rehydrated the
+ * corpus before calling this. The ordering is the guarantee — releasing while
+ * the store still held seed data would let the next keystroke write that seed
+ * workspace over the library. A rehydrate that did not replace the state must
+ * leave the latch in place, so callers check first.
+ */
+export const clearHydrationRefusalForVerifiedRecovery = (): void => {
+  lastRefusal = null
+  writeBlocked = false
+  notifyRefusalListeners()
+}
+
 /** Notifies refusal subscribers. Isolated so a throwing listener cannot stop
  *  the others, nor abort the refusal that triggered the notification. */
 const notifyRefusalListeners = (): void => {
