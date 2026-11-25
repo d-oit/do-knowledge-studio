@@ -17,6 +17,50 @@ ADR 028 defines validated persistence boundaries; ADR 046 moves the canonical
 corpus to IndexedDB. Historical Vite/SQLite-era records remain in `plans/PHASES.md`
 and are labelled historical, not current architecture.
 
+## Runtime Boundaries & Workspace Packages (ADR 056)
+
+Domain rules (search, graph traversal, OKF import/validation, export, backup,
+safety caps) live once in the dependency-free `dks-core` workspace package.
+Runtimes are thin adapters on top:
+
+```mermaid
+graph TD
+    subgraph dks-core["dks-core (dependency-free domain)"]
+        RETRIEVAL["pwa-retrieval (search)"]
+        GRAPHPATH["graph-path (traversal)"]
+        OKF["ok-parse / bundle-load / zip / types (import + caps)"]
+        EXPORT["markdown-export / okf-export"]
+        BACKUPCORE["backup"]
+        IO["ports: FsPort / FsWriterPort"]
+    end
+    PWA["PWA (src/) — React hooks, Zustand slices, IndexedDB & localStorage adapters, rendering"]
+    CLI["dks-cli — argv, envelopes, Node FsPort"]
+    MCP["dks-mcp (optional, P3) — stdio server, Zod input schemas"]
+    PWA --> RETRIEVAL
+    PWA --> GRAPHPATH
+    PWA --> OKF
+    PWA --> EXPORT
+    PWA --> BACKUPCORE
+    CLI --> IO
+    MCP --> IO
+    CLI --> RETRIEVAL
+    CLI --> GRAPHPATH
+    CLI --> OKF
+    CLI --> EXPORT
+    CLI --> BACKUPCORE
+    MCP --> RETRIEVAL
+    MCP --> OKF
+```
+
+- **Browser-only APIs** (IndexedDB, localStorage, BroadcastChannel, crypto
+  subtleties) stay in `src/lib/studio` adapters; `dks-core` never imports them
+  or React/Next.js (`dks-core` has zero runtime dependencies except `yaml`).
+- **Node filesystem** exists only behind `FsPort`, implemented solely in
+  `dks-cli` (reviewed entry point, plan 217); CLI code never assumes
+  IndexedDB, MCP never assumes either.
+- Studio-only persisters (`canonical-storage*`, `cross-tab*`) are PWA
+  infrastructure, not shared domain rules.
+
 ---
 
 ## Data Model
@@ -257,5 +301,9 @@ CI runs on push/PR via GitHub Actions.
 | 045 | Sync Threat Model and Room Membership | Implemented |
 | 046 | IndexedDB Canonical Persistence | Implemented |
 | 047 | Verifiable Backup Archive | Implemented |
+<<<<<<< HEAD
+| 056 | Shared Domain Services (PWA/CLI/MCP) | Accepted |
+=======
 | 048 | At-Rest Encryption of the Local Corpus | Proposed — prototype exists, not wired into persistence |
 | 050 | Read-Only MCP Bridge via an Offline Bundle Server | Accepted — optional adapter |
+>>>>>>> origin/main

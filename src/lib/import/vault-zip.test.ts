@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { strToU8, zipSync } from 'fflate'
-import { MAX_VAULT_UNCOMPRESSED_BYTES, MAX_VAULT_ZIP_BYTES } from './markdown-import'
+import { MAX_BUNDLE_UNCOMPRESSED_BYTES, MAX_BUNDLE_ZIP_BYTES } from 'dks-core'
 import { readVaultZip, sanitizeZipPath } from './vault-zip'
 
 /** Zips an in-memory path → content map the way a vault archive would hold it. */
@@ -32,15 +32,15 @@ describe('readVaultZip', () => {
   })
 
   it('rejects an over-compressed-size archive before reading', async () => {
-    const result = await readVaultZip(new Uint8Array(MAX_VAULT_ZIP_BYTES + 1).buffer)
+    const result = await readVaultZip(new Uint8Array(MAX_BUNDLE_ZIP_BYTES + 1).buffer)
     expect(result.success).toBe(false)
   })
 
   // Deflating a >50 MB payload is legitimately expensive and exceeds the 5 s
   // default once coverage instrumentation is on, so it gets an explicit budget.
   it('fails closed on a zip bomb instead of materializing it', async () => {
-    const bomb = makeZip({ 'bomb.md': '0'.repeat(MAX_VAULT_UNCOMPRESSED_BYTES + 1_048_576) })
-    expect(bomb.byteLength).toBeLessThan(MAX_VAULT_ZIP_BYTES)
+    const bomb = makeZip({ 'bomb.md': '0'.repeat(MAX_BUNDLE_UNCOMPRESSED_BYTES + 1_048_576) })
+    expect(bomb.byteLength).toBeLessThan(MAX_BUNDLE_ZIP_BYTES)
     const result = await readVaultZip(bomb)
     expect(result.success).toBe(false)
     if (result.success) throw new Error('zip bomb was accepted')

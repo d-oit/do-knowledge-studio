@@ -1,9 +1,9 @@
 import {
   isMarkdownPath,
-  MAX_VAULT_UNCOMPRESSED_BYTES,
-  MAX_VAULT_ZIP_BYTES,
-  MAX_VAULT_ZIP_ENTRIES,
-} from './markdown-import'
+  MAX_BUNDLE_ENTRIES,
+  MAX_BUNDLE_UNCOMPRESSED_BYTES,
+  MAX_BUNDLE_ZIP_BYTES,
+} from 'dks-core'
 
 /**
  * Vault `.zip` reading (issue #1054) — pure except for the dynamic `fflate`
@@ -12,7 +12,7 @@ import {
  * The zip-bomb guard is structural, not post-hoc: entries stream through
  * `fflate`'s `Unzip` + `UnzipInflate` chunk by chunk, and both the per-file
  * and running totals abort the batch the moment they pass
- * `MAX_VAULT_UNCOMPRESSED_BYTES`. A fully-buffered `unzipSync` would have to
+ * `MAX_BUNDLE_UNCOMPRESSED_BYTES`. A fully-buffered `unzipSync` would have to
  * hold the bomb in memory before any cap could fire.
  */
 
@@ -56,10 +56,10 @@ export type VaultZipResult =
  * Never throws: every failure mode becomes a `success: false` error string.
  */
 export const readVaultZip = async (buffer: ArrayBuffer): Promise<VaultZipResult> => {
-  if (buffer.byteLength > MAX_VAULT_ZIP_BYTES) {
+  if (buffer.byteLength > MAX_BUNDLE_ZIP_BYTES) {
     return {
       success: false,
-      error: `Zip is too large (${buffer.byteLength} bytes); vault zips are limited to ${MAX_VAULT_ZIP_BYTES} bytes compressed.`,
+      error: `Zip is too large (${buffer.byteLength} bytes); vault zips are limited to ${MAX_BUNDLE_ZIP_BYTES} bytes compressed.`,
     }
   }
   let fflate: typeof import('fflate')
@@ -79,8 +79,8 @@ export const readVaultZip = async (buffer: ArrayBuffer): Promise<VaultZipResult>
     unzip.register(fflate.UnzipInflate)
     unzip.onfile = (entry) => {
       entryCount += 1
-      if (entryCount > MAX_VAULT_ZIP_ENTRIES) {
-        failure = `Too many entries in the zip; vault zips are limited to ${MAX_VAULT_ZIP_ENTRIES} files.`
+      if (entryCount > MAX_BUNDLE_ENTRIES) {
+        failure = `Too many entries in the zip; vault zips are limited to ${MAX_BUNDLE_ENTRIES} files.`
         resolve()
         return
       }
@@ -101,10 +101,10 @@ export const readVaultZip = async (buffer: ArrayBuffer): Promise<VaultZipResult>
         }
         fileBytes += data.length
         decompressedTotal += data.length
-        if (fileBytes > MAX_VAULT_UNCOMPRESSED_BYTES || decompressedTotal > MAX_VAULT_UNCOMPRESSED_BYTES) {
+        if (fileBytes > MAX_BUNDLE_UNCOMPRESSED_BYTES || decompressedTotal > MAX_BUNDLE_UNCOMPRESSED_BYTES) {
           // Zip-bomb guard: abort before the batch — nothing parsed yet, so
           // there is no partial state to roll back.
-          failure = `Decompressed content exceeds the ${MAX_VAULT_UNCOMPRESSED_BYTES}-byte safety limit; refusing to import.`
+          failure = `Decompressed content exceeds the ${MAX_BUNDLE_UNCOMPRESSED_BYTES}-byte safety limit; refusing to import.`
           resolve()
           return
         }
