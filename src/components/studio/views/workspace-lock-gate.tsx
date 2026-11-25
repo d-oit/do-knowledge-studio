@@ -68,7 +68,9 @@ export const WorkspaceLockGate = () => {
           type="password"
           autoComplete="current-password"
           value={passphrase}
-          onChange={(event) => setPassphrase(event.target.value)}
+          onChange={(event) => {
+            setPassphrase(event.target.value)
+          }}
           className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-body-lg text-ink focus-ring"
         />
 

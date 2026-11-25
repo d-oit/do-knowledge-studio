@@ -50,7 +50,9 @@ const PassphraseField = ({
       id={id}
       type="password"
       value={value}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => {
+        onChange(event.target.value)
+      }}
       autoComplete={autoComplete}
       aria-describedby={hint ? `${id}-hint` : undefined}
       className={INPUT_CLASS}
