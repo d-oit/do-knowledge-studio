@@ -18,6 +18,11 @@ export type ToolResult = CallToolResult
 /** Unhandled-handler guard message (never exposes stack traces). */
 const INTERNAL_ERROR = 'Internal tool error.'
 
+/** Smallest `limit` the `search` tool accepts (0 would be a no-op query). */
+const SEARCH_LIMIT_MIN = 1
+/** Largest `limit` the `search` tool accepts (guards oversized tool responses). */
+const SEARCH_LIMIT_MAX = 50
+
 /** Serializes a payload as a successful text result. */
 const ok = (payload: unknown): ToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
@@ -55,7 +60,7 @@ const conceptView = (concept: BundleConcept): Record<string, unknown> => ({
 /** Zod schema for the `search` tool. */
 const SearchArgsSchema = z.object({
   query: z.string().min(1).max(500),
-  limit: z.number().int().min(1).max(50).optional(),
+  limit: z.number().int().min(SEARCH_LIMIT_MIN).max(SEARCH_LIMIT_MAX).optional(),
 })
 
 /** Zod schema for single-reference tools (`get_entity`, `neighborhood`). */
@@ -294,7 +299,10 @@ export const toolDefinitions = [
       type: 'object' as const,
       properties: {
         query: { type: 'string', description: 'Search keywords.' },
-        limit: { type: 'number', description: 'Max results (1-50, default 5).' },
+        limit: {
+          type: 'number',
+          description: `Max results (${SEARCH_LIMIT_MIN}-${SEARCH_LIMIT_MAX}, default ${DEFAULT_LIMIT}).`,
+        },
       },
       required: ['query'],
     },
