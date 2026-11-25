@@ -138,17 +138,20 @@ const additionalData = (
   )
 
 /**
- * Encrypts a JSON-serializable value into an authenticated envelope.
+ * Encrypts a JSON-serializable value with an already-derived corpus key.
+ *
+ * Persistence holds one derived key per session, so deriving it again for every
+ * write would both be wasteful and make the stored envelope's salt drift. The
+ * salt is therefore supplied by the caller and bound into the header as usual.
  *
  * @throws when the value cannot be serialized or WebCrypto rejects the input;
  *   this is the write path, where a failure must surface rather than be stored.
  */
-export const encryptAtRestEnvelope = async (
+export const encryptAtRestWithKey = async (
   value: unknown,
-  passphrase: string,
+  key: CryptoKey,
+  salt: Uint8Array,
 ): Promise<AtRestEnvelope> => {
-  const salt = createAtRestSalt()
-  const key = await deriveAtRestKey(passphrase, salt)
   const iv = crypto.getRandomValues(new Uint8Array(AT_REST_IV_BYTES))
   const header: Pick<
     AtRestEnvelope,
@@ -178,6 +181,21 @@ export const encryptAtRestEnvelope = async (
   return { ...header, ciphertext: toBase64(new Uint8Array(ciphertext)) }
 }
 
+/**
+ * Encrypts a value by deriving a key from a passphrase and a fresh salt.
+ *
+ * @throws when the value cannot be serialized or WebCrypto rejects the input;
+ *   this is the write path, where a failure must surface rather than be stored.
+ */
+export const encryptAtRestEnvelope = async (
+  value: unknown,
+  passphrase: string,
+): Promise<AtRestEnvelope> => {
+  const salt = createAtRestSalt()
+  const key = await deriveAtRestKey(passphrase, salt)
+  return encryptAtRestWithKey(value, key, salt)
+}
+
 /** Narrows an unknown record without trusting its contents. */
 const parseEnvelope = (candidate: unknown): AtRestEnvelope | null => {
   const parsed = AtRestEnvelopeSchema.safeParse(candidate)
@@ -185,15 +203,15 @@ const parseEnvelope = (candidate: unknown): AtRestEnvelope | null => {
 }
 
 /**
- * Decrypts an envelope, refusing rather than guessing.
+ * Decrypts an envelope with an already-derived corpus key.
  *
  * Every failure mode — unknown shape, newer format, unsupported KDF parameters,
- * wrong passphrase, tampered ciphertext — returns `ok: false`. The caller must
- * block canonical writes on failure instead of falling back to plaintext.
+ * tampered ciphertext — returns `ok: false`. The caller must block canonical
+ * writes on failure instead of falling back to plaintext.
  */
-export const decryptAtRestEnvelope = async (
+export const decryptAtRestWithKey = async (
   candidate: unknown,
-  passphrase: string,
+  key: CryptoKey,
 ): Promise<AtRestDecryptResult> => {
   const envelope = parseEnvelope(candidate)
   if (envelope === null) {
@@ -220,7 +238,6 @@ export const decryptAtRestEnvelope = async (
     if (salt.length !== AT_REST_SALT_BYTES || iv.length !== AT_REST_IV_BYTES) {
       return { ok: false, reason: 'format', message: 'envelope has an invalid salt or IV length' }
     }
-    const key = await deriveAtRestKey(passphrase, salt)
     const plaintext = await crypto.subtle.decrypt(
       {
         name: 'AES-GCM',
@@ -239,5 +256,68 @@ export const decryptAtRestEnvelope = async (
       reason: 'decrypt',
       message: error instanceof Error ? error.message : 'at-rest decryption failed',
     }
+  }
+}
+
+/**
+ * Decrypts an envelope, refusing rather than guessing.
+ *
+ * Derives the key from the envelope's own salt; callers that already hold a
+ * session key use {@link decryptAtRestWithKey} instead.
+ */
+export const decryptAtRestEnvelope = async (
+  candidate: unknown,
+  passphrase: string,
+): Promise<AtRestDecryptResult> => {
+  const envelope = parseEnvelope(candidate)
+  if (envelope === null) {
+    return { ok: false, reason: 'format', message: 'envelope does not match the at-rest format' }
+  }
+  try {
+    const key = await deriveAtRestKey(passphrase, fromBase64(envelope.salt))
+    return await decryptAtRestWithKey(envelope, key)
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'format',
+      message: error instanceof Error ? error.message : 'at-rest envelope salt is malformed',
+    }
+  }
+}
+
+/** Whether a stored record is an at-rest envelope rather than plaintext. */
+export const isAtRestEnvelope = (candidate: unknown): boolean =>
+  parseEnvelope(candidate) !== null
+
+/**
+ * The public corpus salt carried in an envelope header, or null.
+ *
+ * A salt is not key material: it exists so the same passphrase derives the same
+ * key. Reading it from the record is what lets a setup interrupted before its
+ * settings were stored be finished with the original passphrase.
+ */
+export const atRestEnvelopeSalt = (candidate: unknown): Uint8Array | null => {
+  const envelope = parseEnvelope(candidate)
+  if (envelope === null) return null
+  try {
+    const salt = fromBase64(envelope.salt)
+    return salt.length === AT_REST_SALT_BYTES ? salt : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Cheap check for a serialized record that looks like an envelope.
+ *
+ * Used by the quarantine path, which must not copy plaintext aside while the
+ * workspace is encrypted. Never throws: unparseable bytes are "not an
+ * envelope", which leaves them in their existing key untouched.
+ */
+export const isSerializedAtRestEnvelope = (raw: string): boolean => {
+  try {
+    return isAtRestEnvelope(JSON.parse(raw))
+  } catch {
+    return false
   }
 }

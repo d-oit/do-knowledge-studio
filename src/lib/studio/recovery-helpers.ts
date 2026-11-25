@@ -13,6 +13,7 @@ import { pruneDanglingCanvasRefs } from './canvas-refs'
 import { useStudioStore } from './store'
 import { reconcileSnapshot, type HistorySnapshot } from './history-snapshot'
 import { isSyncBlocked } from './hydration-guard'
+import { isAtRestEncryptionEnabled } from './at-rest-session'
 import { logger } from '@/lib/logging/logger'
 
 /** Subsystem tag for recovery-snapshot store logs. */
@@ -100,8 +101,19 @@ export const subscribeToRecoveryAvailability = (listener: () => void): (() => vo
   availabilitySubscribers.add(listener)
   return () => { availabilitySubscribers.delete(listener) }
 }
-/** Why a recovery snapshot could not be written. */
-export type RecoveryPersistFailure = 'too-large' | 'storage-unavailable' | 'unserializable'
+/**
+ * Why a recovery snapshot could not be written.
+ *
+ * `encrypted` is deliberate, not a failure to fix: while the workspace is
+ * encrypted, this synchronous localStorage surface would hold the whole corpus
+ * in plaintext, so it is suppressed and the encrypted `.dksb` backup is the
+ * recovery route instead (ADR 048 §5).
+ */
+export type RecoveryPersistFailure =
+  | 'too-large'
+  | 'storage-unavailable'
+  | 'unserializable'
+  | 'encrypted'
 
 /**
  * Outcome of persisting a pre-import recovery snapshot.
@@ -145,6 +157,14 @@ export type RecoveryPersistResult =
  * `log.warn` stays because these paths are hard to reach from a UI test.
  */
 export const persistRecoverySnapshot = (snapshot: RecoverySnapshot): RecoveryPersistResult => {
+  // Encrypted workspace: no plaintext rollback copy. The import still reports
+  // `backupPersisted: false`, so the toast tells the user no safety net was
+  // kept rather than claiming a clean swap.
+  if (isAtRestEncryptionEnabled()) {
+    log.warn('Recovery snapshots are disabled while the workspace is encrypted')
+    return { persisted: false, reason: 'encrypted' }
+  }
+
   const timestamp = Date.now()
   let serialized: string
   try {
@@ -233,6 +253,14 @@ type RecoveryReadResult =
   | { ok: false; error: string }
 
 /**
+ * Removes any stored recovery snapshot (enable-encryption purge).
+ *
+ * Exported so the migration can clear the plaintext copy it is about to make
+ * obsolete; returns whether the keys are definitely gone.
+ */
+export const clearStoredRecoverySnapshot = (): boolean => clearRecoverySnapshot()
+
+/**
  * Removes the recovery snapshot from localStorage.
  *
  * Returns whether the key is definitely gone. Callers that promise the snapshot
@@ -265,6 +293,15 @@ const clearRecoverySnapshot = (): boolean => {
  *   is cleared rather than left to fail every future attempt.
  */
 export const readRecoverySnapshot = (): RecoveryReadResult => {
+  // Never read (or clear) a plaintext snapshot while encryption is enabled: the
+  // bytes may predate the setting, and offering them would restore a corpus the
+  // user asked to keep encrypted at rest.
+  if (isAtRestEncryptionEnabled()) {
+    return {
+      ok: false,
+      error: 'Recovery snapshots are not kept while the workspace is encrypted.',
+    }
+  }
   let raw: string | null
   try {
     raw = localStorage.getItem(RECOVERY_KEY)
