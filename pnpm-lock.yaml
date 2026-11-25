@@ -491,12 +491,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
         version: 1.32.2(supports-color@7.2.0)(zod@4.6.7)
-      fflate:
-        specifier: ^0.8.3
-        version: 0.8.3
-      yaml:
-        specifier: ^2.9.1
-        version: 2.9.1
+      dks-core:
+        specifier: workspace:*
+        version: link:../dks-core
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -504,6 +501,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.5
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       typescript:
         specifier: ^6
         version: 6.0.3

@@ -38,18 +38,24 @@ rendering/transport, not domain rules.
    `MAX_BUNDLE_ZIP_BYTES` / `MAX_BUNDLE_UNCOMPRESSED_BYTES` / `MAX_BUNDLE_ENTRIES`
    from `dks-core` (values were identical; cutover removes the drift risk).
    Import suites green (45 tests).
-4. **PG4 — MCP reader delegates to core** (P0, deps: PG2): rewrite
-   `bundle-reader.ts` over `dks-core` (`bundle-load`/`okf-parse`/`zip`/`types`);
-   delete the local parser+caps; `fflate`/`yaml` deps leave `dks-mcp` if
-   unreferenced.
-5. **PG5 — MCP ranking delegates to core** (P0, deps: PG4): `library-index.ts`
-   becomes a thin adapter over core `LibraryIndex`; equivalence asserted in the
-   MCP contract tests. Result-shape changes are called out to MCP consumers in
-   the PR body (ranking parity with CLI, per #1170 acceptance row 6).
-6. **PG6 — Verification sweep** (P0, deps: PG2–PG5): root gate green
-   (lint/typecheck/test/build), studio e2e green (import surface touched),
-   core tests runnable without browser/MCP runtime (exists), PWA diff-free
-   behavior check on import.
+4. **PG4 — MCP reader delegates to core** (P0, deps: PG2): DONE 2026-11-25 —
+   `bundle-reader.ts` is now a Node `FsPort` adapter (92 LOC) whose
+   `loadBundle` returns `loadBundleFromDisk(port, target)`. The local
+   frontmatter/claim/related parser, path guard, index-version check, and the
+   fourth copy of the caps are deleted; `yaml` left the package and `fflate`
+   is dev-only (zip fixtures). `loadBundle` is async, so `cli.ts` awaits it.
+5. **PG5 — MCP ranking delegates to core** (P0, deps: PG4): DONE 2026-11-25 —
+   `library-index.ts` (+ its test) deleted; tools import `LibraryIndex` /
+   `DEFAULT_LIMIT` / concept types straight from `dks-core`, so MCP now runs
+   the shared BM25 + BFS engines (no adapter shim left to drift). Ranking
+   parity with the CLI is intentional (#1170 acceptance row 6) and the
+   `search` tool description says so. Limit clamping is the Zod schema's job
+   (`1..50`) rather than a second copy inside the index.
+6. **PG6 — Verification sweep** (P0, deps: PG2–PG5): DONE 2026-11-25 — root
+   gate green (lint/typecheck/test/build) including the MCP package suite
+   (17 tests), core suites unchanged, CLI suites unchanged. Studio code was
+   not touched in PR B, so the PWA import-surface e2e from PR A still covers
+   the only studio-facing delta.
 
 ## Strategy
 
@@ -68,6 +74,20 @@ PG2+PG3. One branch, stacked PRs in the plan-217 pattern (`PR A`: PG1–PG3;
 | A5 | PR opened; CI + Codacy zero-new + adversarial review | PR merge rules |
 
 PR B carries PG4–PG6 after PR A lands.
+
+## Execution Plan — PR B (this pass)
+
+| Step | Action | Quality gate |
+|---|---|---|
+| B1 | PG4: core-backed `loadBundle` + Node `FsPort`; delete local parser/caps | MCP loader suite (8 tests) green; async call site awaited |
+| B2 | PG5: drop `library-index.ts`, import core `LibraryIndex` in tools/server/CLI | MCP contract suite green (6 tool calls, bridge gate) |
+| B3 | Dependency hygiene: `dks-core` workspace dep; `yaml` removed; `fflate` dev-only | lockfile diff limited to the `dks-mcp` importer |
+| B4 | PG6: root gate + e2e decision | lint/typecheck/test/build green; MCP build emits `dist/` |
+
+Result-shape note for MCP consumers: `search` scores now come from the shared
+BM25 engine (studio/CLI parity) instead of the deleted BM25-lite copy, and
+`list_tags` breaks count ties by name descending. Tool payload shapes are
+unchanged.
 
 ## Acceptance mapping (issue #1170)
 

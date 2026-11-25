@@ -1,9 +1,16 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+/**
+ * MCP bundle loader: the adapter's only own logic is the Node `FsPort`, so
+ * these tests drive the real filesystem through `dks-core`'s loader and pin
+ * the OKF semantics MCP clients observe (claims, sources, reserved files,
+ * path guards, fail-closed guards).
+ */
+import { chmodSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { MAX_BUNDLE_ZIP_BYTES } from 'dks-core'
 import { afterEach, describe, expect, it } from 'vitest'
 import { zipSync, strToU8 } from 'fflate'
-import { deriveTrustTier, loadBundle } from './bundle-reader.js'
+import { loadBundle } from './bundle-reader.js'
 
 /** Temporary directories created during the suite. */
 const tempDirs: string[] = []
@@ -28,62 +35,13 @@ const INDEX = `---\nokf_version: '0.2'\n---\n\n# Index\n`
 const LOG = `# Log\n`
 
 /** Concept reviewed by a human, with claims, sources, and a related link. */
-const ALPHA = `---
-type: Project
-title: Alpha Project
-description: First project
-tags:
-  - research
-  - alpha
-sources:
-  - id: src-1
-    resource: https://example.com/alpha
-    title: Alpha paper
-    author: human:ada
-verified:
-  by: human:ada
-  at: '2026-01-02T00:00:00.000Z'
-unknown_future_key: tolerated
----
-
-Body text about alpha.
-
-# Claims
-
-- Alpha scales linearly[^src-1]
-- Alpha is cheap
-
-[^src-1]: Alpha paper
-
-# Related
-
-* [Beta](/concepts/beta)
-* [Ghost](/concepts/ghost)
-`
+const ALPHA = `---\ntype: Project\ntitle: Alpha Project\ndescription: First project\ntags:\n  - research\n  - alpha\nsources:\n  - id: src-1\n    resource: https://example.com/alpha\n    title: Alpha paper\n    author: human:ada\nverified:\n  by: human:ada\n  at: '2026-01-02T00:00:00.000Z'\nunknown_future_key: tolerated\n---\n\nBody text about alpha.\n\n# Claims\n\n- Alpha scales linearly[^src-1]\n- Alpha is cheap\n\n[^src-1]: Alpha paper\n\n# Related\n\n* [Beta](/concepts/beta)\n* [Ghost](/concepts/ghost)\n`
 
 /** Machine-confirmed concept with no claims. */
-const BETA = `---
-type: Concept
-title: Beta
-verified:
-  - by: process:do-knowledge-studio/0.2.0
----
-
-Beta body.
-`
-
-describe('deriveTrustTier', () => {
-  it('maps missing, empty, human, and machine verifiers', () => {
-    expect(deriveTrustTier(undefined)).toBe('unverified')
-    expect(deriveTrustTier([])).toBe('unverified')
-    expect(deriveTrustTier({ by: 'human:ada' })).toBe('human-reviewed')
-    expect(deriveTrustTier([{ by: 'process:x/1' }])).toBe('machine-confirmed')
-    expect(deriveTrustTier('human:ada')).toBe('unverified')
-  })
-})
+const BETA = `---\ntype: Concept\ntitle: Beta\nverified:\n  - by: process:do-knowledge-studio/0.2.0\n---\n\nBeta body.\n`
 
 describe('loadBundle from a directory', () => {
-  it('loads concepts, claims, sources, and related ids', () => {
+  it('loads concepts, claims, sources, and related ids', async () => {
     const dir = makeTempDir()
     mkdirSync(join(dir, 'concepts'), { recursive: true })
     writeFileSync(join(dir, 'index.md'), INDEX)
@@ -91,7 +49,7 @@ describe('loadBundle from a directory', () => {
     writeFileSync(join(dir, 'concepts', 'alpha.md'), ALPHA)
     writeFileSync(join(dir, 'concepts', 'beta.md'), BETA)
 
-    const { concepts, warnings } = loadBundle(dir)
+    const { concepts, warnings } = await loadBundle(dir)
     expect(warnings).toEqual([])
     expect(concepts).toHaveLength(2)
 
@@ -115,40 +73,66 @@ describe('loadBundle from a directory', () => {
     expect(beta?.claims).toEqual([])
   })
 
-  it('warns on frontmatter-less files and rejects empty bundles', () => {
+  it('warns on frontmatter-less files and rejects empty bundles', async () => {
     const dir = makeTempDir()
     writeFileSync(join(dir, 'index.md'), INDEX)
     writeFileSync(join(dir, 'broken.md'), 'no frontmatter here\n')
 
-    expect(() => loadBundle(dir)).toThrow(/no parseable concepts/)
+    await expect(loadBundle(dir)).rejects.toThrow(/no parseable concepts/)
   })
 
-  it('rejects bundles without a versioned index', () => {
+  it('rejects bundles without a versioned index', async () => {
     const dir = makeTempDir()
     writeFileSync(join(dir, 'index.md'), '# no version\n')
     writeFileSync(join(dir, 'a.md'), ALPHA)
 
-    expect(() => loadBundle(dir)).toThrow(/index\.md with okf_version/)
+    await expect(loadBundle(dir)).rejects.toThrow(/index\.md with okf_version/)
   })
 
-  it('rejects unsupported bundle versions', () => {
+  it('rejects unsupported bundle versions', async () => {
     const dir = makeTempDir()
     writeFileSync(join(dir, 'index.md'), `---\nokf_version: '9.9'\n---\n`)
     writeFileSync(join(dir, 'a.md'), ALPHA)
 
-    expect(() => loadBundle(dir)).toThrow(/Unsupported okf_version/)
+    await expect(loadBundle(dir)).rejects.toThrow(/Unsupported okf_version/)
   })
 
-  it('loads nested directories with bundle-relative ids', () => {
+  it('loads nested directories with bundle-relative ids', async () => {
     const dir = makeTempDir()
     mkdirSync(join(dir, 'sub'), { recursive: true })
     writeFileSync(join(dir, 'index.md'), INDEX)
     writeFileSync(join(dir, 'sub', 'nested.md'), BETA)
     writeFileSync(join(dir, 'ok.md'), ALPHA)
 
-    const { concepts } = loadBundle(dir)
+    const { concepts } = await loadBundle(dir)
     expect(concepts.map((c) => c.id).sort()).toEqual(['ok', 'sub/nested'])
   })
+
+  it('rejects a missing path', async () => {
+    const dir = makeTempDir()
+
+    await expect(loadBundle(join(dir, 'absent'))).rejects.toThrow(/ENOENT|no such file/i)
+  })
+
+  it.skipIf(process.getuid?.() === 0)(
+    'keeps the read error for an existing file instead of the probe ENOTDIR',
+    async () => {
+      // An unreadable existing file used to surface the opendir probe's
+      // "not a directory" (ENOTDIR) instead of the failed read itself.
+      const dir = makeTempDir()
+      const target = join(dir, 'bundle.zip')
+      writeFileSync(target, 'not a zip')
+      chmodSync(target, 0o000)
+
+      try {
+        await loadBundle(target)
+        expect.unreachable('expected the unreadable bundle to reject')
+      } catch (err) {
+        expect((err as NodeJS.ErrnoException).code).not.toBe('ENOTDIR')
+        expect(String((err as Error).message)).not.toMatch(/not a directory/i)
+      }
+    },
+  )
 })
 
 describe('loadBundle from a zip', () => {
@@ -161,7 +145,7 @@ describe('loadBundle from a zip', () => {
     return Buffer.from(zipSync(prefixed))
   }
 
-  it('reads prefixed entries and skips zip-slip names', () => {
+  it('reads prefixed entries and skips zip-slip names', async () => {
     const dir = makeTempDir()
     const zip = zipOf({
       'index.md': INDEX,
@@ -172,16 +156,16 @@ describe('loadBundle from a zip', () => {
     const target = join(dir, 'bundle.zip')
     writeFileSync(target, zip)
 
-    const { concepts, warnings } = loadBundle(target)
+    const { concepts, warnings } = await loadBundle(target)
     expect(concepts.map((c) => c.id)).toEqual(['concepts/alpha'])
     expect(warnings).toEqual([])
   })
 
-  it('rejects oversized zips fail-closed', () => {
+  it('rejects oversized zips fail-closed', async () => {
     const dir = makeTempDir()
     const target = join(dir, 'bundle.zip')
-    writeFileSync(target, Buffer.alloc(10_485_760 + 1))
+    writeFileSync(target, Buffer.alloc(MAX_BUNDLE_ZIP_BYTES + 1))
 
-    expect(() => loadBundle(target)).toThrow(/too large/)
+    await expect(loadBundle(target)).rejects.toThrow(/too large/)
   })
 })
