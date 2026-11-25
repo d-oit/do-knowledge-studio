@@ -6,8 +6,8 @@
  * reason on stderr and never serves partial state.
  */
 
+import { LibraryIndex } from 'dks-core'
 import { loadBundle } from './bundle-reader.js'
-import { LibraryIndex } from './library-index.js'
 import { createServer, serveStdio } from './server.js'
 
 /** CLI usage text (placeholders are not HTML, so no angle brackets). */
@@ -22,7 +22,7 @@ const main = async (): Promise<number> => {
   }
   let loaded
   try {
-    loaded = loadBundle(target)
+    loaded = await loadBundle(target)
   } catch (err) {
     console.error(`dks-mcp: ${err instanceof Error ? err.message : 'failed to load bundle'}`)
     return 1

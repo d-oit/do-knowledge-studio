@@ -9,9 +9,8 @@
  */
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { DEFAULT_LIMIT, LibraryIndex, type BundleClaim, type BundleConcept } from 'dks-core'
 import { z } from 'zod'
-import type { BundleClaim, BundleConcept } from './bundle-reader.js'
-import { DEFAULT_LIMIT, LibraryIndex } from './library-index.js'
 
 /** Tool result envelope: SDK call result with text content. */
 export type ToolResult = CallToolResult
@@ -100,7 +99,7 @@ const validated = <T>(
   }
 }
 
-/** `search`: BM25-lite ranking over names, descriptions, content, and claims. */
+/** `search`: shared BM25 ranking over names, descriptions, content, and claims. */
 const searchTool: ToolHandler = (args, index) =>
   validated(SearchArgsSchema, args, index, (parsed, idx) => {
     const hits = idx.search(parsed.query, parsed.limit ?? DEFAULT_LIMIT)
@@ -285,12 +284,12 @@ export const callTool = (name: string, args: unknown, index: LibraryIndex): Tool
   }
 }
 
-/** MCP `tools/list` definitions (search is bundle-scale BM25-lite). */
+/** MCP `tools/list` definitions (search uses the shared BM25 retrieval engine). */
 export const toolDefinitions = [
   {
     name: 'search',
     description:
-      'Full-text search over concept names, descriptions, content, and claim statements using bundle-scale BM25-lite ranking (lighter than the studio app search).',
+      'Full-text search over concept names, descriptions, content, and claim statements using the shared BM25 retrieval engine (same ranking as the dks CLI and studio search).',
     inputSchema: {
       type: 'object' as const,
       properties: {

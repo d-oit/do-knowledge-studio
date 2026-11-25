@@ -4,9 +4,8 @@
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { LibraryIndex, type BundleConcept } from 'dks-core'
 import { describe, expect, it } from 'vitest'
-import type { BundleConcept } from './bundle-reader.js'
-import { LibraryIndex } from './library-index.js'
 import { createServer } from './server.js'
 
 /** Single human-reviewed concept with a sourced claim and a neighbor. */

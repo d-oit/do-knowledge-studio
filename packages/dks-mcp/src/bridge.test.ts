@@ -2,9 +2,8 @@
  * Bridge contract (#1139): propose_* tools are opt-in, validated, and never
  * write to the bundle. Proposals are append-only payloads for studio review.
  */
+import { LibraryIndex, type BundleConcept } from 'dks-core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { BundleConcept } from './bundle-reader.js'
-import { LibraryIndex } from './library-index.js'
 import { bridgeToolDefinitions, callTool, isBridgeEnabled } from './tool-definitions.js'
 
 const concepts: BundleConcept[] = [
