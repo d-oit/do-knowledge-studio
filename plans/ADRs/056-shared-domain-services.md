@@ -46,3 +46,31 @@ second runtime needs today.
 - New runtime-facing features land as core services + tests first; adapters add
   presentation only. Services stay unit-testable headless (no browser, no MCP
   runtime).
+
+## Implementation status (2026-11-25)
+
+PR B landed as #1195 (`refactor(dks-mcp): delegate bundle loading and indexing
+to dks-core`), closing plan 220's PG4–PG6:
+
+- `dks-mcp/src/bundle-reader.ts` is a Node `FsPort` adapter over
+  `loadBundleFromDisk` (~90 LOC); the parallel parser, path guard, version
+  check, and fourth copy of the safety caps are gone. `loadBundle` is async.
+- `dks-mcp/src/library-index.ts` is deleted; tools, server, and CLI import
+  `LibraryIndex` from `dks-core`, so both adapters run the same BM25
+  (`pwa-retrieval`) and BFS (`graph-path`) engines.
+- `tests/mcp-cli-parity.test.ts` drives both adapter modules on one on-disk
+  bundle and asserts identical loaded concepts, identical entity ranking, and
+  the shared tag census (including the descending name tie-break).
+
+Deliberate adaptations that remain (not duplication):
+
+- Each runtime owns its `FsPort` implementation (`dks-cli/src/fs-port.ts`,
+  `dks-mcp/src/bundle-reader.ts`). Sharing it would put `node:fs` behind a
+  `dks-core` subpath, weakening the browser-safety guarantee this ADR makes; the
+  two implementations are small and both are pinned by their own tests.
+- MCP folds a concept's claim statements into its search document and returns
+  concept hits, while the CLI also returns claim rows. Same engine, different
+  adaptation for different consumers; the parity harness scopes its ranking
+  assertion to claim-free bundles and both packages test their claim handling.
+- MCP tool schemas, Zod validation, and the proposal envelope stay in
+  `dks-mcp`: they describe a transport contract, not a domain rule.
