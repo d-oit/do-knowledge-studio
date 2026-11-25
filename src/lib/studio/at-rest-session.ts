@@ -171,7 +171,7 @@ export const installAtRestSessionKey = (key: CryptoKey, salt: Uint8Array): void 
  *
  * @param passphrase - Never persisted or logged.
  * @param salt - The corpus salt; the persisted one is used when omitted, and a
- *   fresh one is generated (and persisted) only when none exists yet.
+ *   fresh one is generated (memory only, never written back) when none exists yet.
  */
 export const unlockAtRestSession = async (
   passphrase: string,

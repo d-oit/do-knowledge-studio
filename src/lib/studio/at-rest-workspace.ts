@@ -214,9 +214,15 @@ export const enableWorkspaceEncryption = async (
     const revisions = await encryptStoredRevisions()
     if (!revisions.ok) throw new Error(revisions.error)
 
-    // Plaintext side surfaces that cannot hold ciphertext are cleared now, not
-    // earlier: until this point the migration could still roll back. The Yjs
-    // replica is loaded dynamically so the settings bundle does not pull the
+    if (!persistSessionSettings(salt)) {
+      throw new Error('the browser refused to store the encryption settings')
+    }
+
+    // Plaintext side surfaces that cannot hold ciphertext are cleared only
+    // after the settings write landed: until then the migration could still
+    // roll back, and a rollback that also lost the drafts and recovery
+    // snapshot would not leave the library unchanged. The Yjs replica is
+    // loaded dynamically so the settings bundle does not pull the
     // whole sync stack in just to delete a database.
     clearAllDrafts()
     clearStoredRecoverySnapshot()
@@ -227,9 +233,6 @@ export const enableWorkspaceEncryption = async (
         log.warn('The plaintext Yjs replica could not be removed', { error: purgeError })
       })
 
-    if (!persistSessionSettings(salt)) {
-      throw new Error('the browser refused to store the encryption settings')
-    }
     return { ok: true }
   } catch (error) {
     log.error('Enabling workspace encryption failed; rolling back', { error })
@@ -298,7 +301,27 @@ export const disableWorkspaceEncryption = async (): Promise<WorkspaceEncryptionR
     }
   }
 
-  setAtRestEncryptionEnabled(false)
+  if (!setAtRestEncryptionEnabled(false)) {
+    // The flag could not be removed, so the corpus just turned plaintext under
+    // a flag that makes the reader refuse it. The key is still held: rewrite
+    // the ciphertext so the next load can still open the library.
+    log.error('The at-rest flag could not be removed; restoring the encrypted corpus')
+    try {
+      await canonicalStudioStorage.setItem(STUDIO_STORAGE_KEY, value)
+      const reencrypted = await encryptStoredRevisions()
+      if (!reencrypted.ok) throw new Error(reencrypted.error)
+    } catch (restoreError) {
+      log.error('The encrypted library could not be restored after a failed disable', {
+        error: restoreError,
+      })
+    }
+    lockAtRestSession()
+    return {
+      ok: false,
+      error: 'The browser refused to store the encryption settings.',
+    }
+  }
+
   clearAtRestSalt()
   lockAtRestSession()
   return { ok: true }
@@ -333,8 +356,22 @@ export const unlockWorkspace = async (passphrase: string): Promise<WorkspaceEncr
     return { ok: false, error: 'The encryption settings for this workspace are missing.' }
   }
 
+  // Same refusals as the reader (see `decodeCanonicalRecord`): a plaintext
+  // record while the flag is on is fail-closed data, not something a passphrase
+  // can open — and installing a key over it would close the lock gate without
+  // the passphrase ever being checked. An absent record is different: the
+  // reader hydrates an empty encrypted workspace, so unlocking may too.
+  if (record !== null && !isAtRestEnvelope(record)) {
+    return {
+      ok: false,
+      error:
+        'The stored library is not encrypted, but encryption is enabled for this ' +
+        'workspace. Nothing was changed.',
+    }
+  }
+
   const key = await deriveAtRestKey(passphrase, salt)
-  if (isAtRestEnvelope(record)) {
+  if (record !== null) {
     const outcome = await decryptAtRestWithKey(record, key)
     if (!outcome.ok) {
       return {

@@ -1,12 +1,16 @@
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CURRENT_SCHEMA_VERSION, STUDIO_STORAGE_KEY, partializePersistedState } from './hydration'
 import {
   canonicalStudioStorage,
   readCanonicalEnvelope,
   resetCanonicalStorageForTests,
 } from './canonical-storage'
-import { readAllRevisionRecords, readIndexedRawRecord } from './canonical-storage-idb'
+import {
+  readAllRevisionRecords,
+  readIndexedRawRecord,
+  writeIndexedRawRecord,
+} from './canonical-storage-idb'
 import { corpusFingerprint } from './canonical-storage-at-rest'
 import { isAtRestEnvelope } from './at-rest-crypto'
 import {
@@ -298,5 +302,105 @@ describe('workspace encryption lifecycle', () => {
     saveDraft({ ...draftFixture('draft-after-enable'), content: MARKER_NAME })
     expect(localStorage.getItem('draft:draft-after-enable')).toBeNull()
     expect(loadDraft('draft-after-enable')).toBeNull()
+  })
+
+  /**
+   * Runs `body` with `localStorage` replaced by a proxy to the real storage
+   * whose `method` throws for `keys`. The jsdom instance resolves `localStorage`
+   * through the global, so stubbing the global is what the module under test
+   * actually reads. The stub is confined to `body` so it cannot leak into the
+   * next test.
+   */
+  const withThrowingStorageKey = async (
+    keys: readonly string[],
+    method: 'setItem' | 'removeItem',
+    body: () => Promise<void>,
+  ): Promise<void> => {
+    const real = window.localStorage
+    const fallback = real[method].bind(real) as (...args: unknown[]) => void
+    vi.stubGlobal('localStorage', {
+      getItem: real.getItem.bind(real),
+      setItem: real.setItem.bind(real),
+      removeItem: real.removeItem.bind(real),
+      clear: real.clear.bind(real),
+      key: real.key.bind(real),
+      get length() {
+        return real.length
+      },
+      [method]: (...args: unknown[]) => {
+        if (keys.includes(args[0] as string)) {
+          throw new DOMException('The quota has been exceeded.', 'QuotaExceededError')
+        }
+        return fallback(...args)
+      },
+    } as unknown as Storage)
+    try {
+      await body()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  }
+
+  it('keeps plaintext side surfaces when the settings write fails at the end of enable', async () => {
+    saveDraft({ ...draftFixture('draft-1162'), content: MARKER_NAME })
+
+    // Fault injection at the browser boundary: the flag/salt writes fail the
+    // way a full quota does, so the migration rolls back after the ciphertext
+    // landed and the revisions moved.
+    await withThrowingStorageKey(
+      [AT_REST_SALT_KEY, AT_REST_ENCRYPTION_FLAG_KEY],
+      'setItem',
+      async () => {
+        const result = await enableWorkspaceEncryption(PASSPHRASE, PASSPHRASE)
+
+        expect(result.ok).toBe(false)
+        if (result.ok) throw new Error('expected the settings write to fail')
+        expect(result.error).toMatch(/refused to store the encryption settings/i)
+        expect(isAtRestEncryptionEnabled()).toBe(false)
+        // The rollback returns a library that is unchanged, side surfaces included.
+        expect(localStorage.getItem('draft:draft-1162')).not.toBeNull()
+        expect(loadDraft('draft-1162')?.content).toBe(MARKER_NAME)
+        expect(JSON.stringify(await readIndexedRawRecord())).toContain(MARKER_NAME)
+        expect(getAtRestSessionStatus()).toBe('off')
+      },
+    )
+  })
+
+  it('refuses to unlock when the flag is on but the stored record is plaintext', async () => {
+    installMarker()
+    expect((await enableWorkspaceEncryption(PASSPHRASE, PASSPHRASE)).ok).toBe(true)
+    const plaintext = persistedValue()
+    await writeIndexedRawRecord(plaintext)
+    lockAtRestSession()
+
+    const result = await unlockWorkspace(PASSPHRASE)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('expected the unlock to be refused')
+    expect(result.error).toMatch(/not encrypted/i)
+    expect(getAtRestSessionStatus()).toBe('locked')
+    // The record was neither opened nor rewritten by the unlock attempt.
+    expect(await readIndexedRawRecord()).toEqual(plaintext)
+    expect(getHydrationRefusal()).toBeNull()
+  })
+
+  it('keeps the corpus encrypted when the enable flag cannot be removed during disable', async () => {
+    installMarker()
+    expect((await enableWorkspaceEncryption(PASSPHRASE, PASSPHRASE)).ok).toBe(true)
+
+    // Fault injection at the browser boundary: the flag refuses to be removed.
+    await withThrowingStorageKey([AT_REST_ENCRYPTION_FLAG_KEY], 'removeItem', async () => {
+      const result = await disableWorkspaceEncryption()
+
+      expect(result.ok).toBe(false)
+      if (result.ok) throw new Error('expected the flag removal to fail')
+      // The flag stayed on, and the readable corpus just written was put back
+      // under ciphertext: the next load stays gated, never plaintext-off-guard.
+      expect(isAtRestEncryptionEnabled()).toBe(true)
+      expect(getAtRestSessionStatus()).toBe('locked')
+      const raw = await readIndexedRawRecord()
+      expect(isAtRestEnvelope(raw)).toBe(true)
+      expect(JSON.stringify(raw)).not.toContain(MARKER_NAME)
+    })
   })
 })
