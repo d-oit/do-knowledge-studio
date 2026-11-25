@@ -20,6 +20,8 @@
  * next write cannot touch — then tell the user it exists.
  */
 import type { Claim, Entity } from './types'
+import { isSerializedAtRestEnvelope } from './at-rest-crypto'
+import { isAtRestEncryptionEnabled } from './at-rest-session'
 import { logger } from '@/lib/logging/logger'
 
 /** Subsystem tag for hydration-quarantine store logs. */
@@ -126,6 +128,19 @@ export const quarantinePayload = (reason: string, raw: string | null): boolean =
   if (raw === null) {
     // Nothing to preserve (e.g. first run with no stored payload).
     return true
+  }
+  // While the workspace is encrypted, only ciphertext may be preserved. Copying
+  // a plaintext envelope aside would leave a fully readable corpus in
+  // localStorage, which is the exact surface at-rest encryption protects
+  // (ADR 048 §5). The refused bytes stay in the store key, and the caller is
+  // told that no copy was made.
+  if (isAtRestEncryptionEnabled() && !isSerializedAtRestEnvelope(raw)) {
+    log.warn(
+      'A plaintext payload was refused while the workspace is encrypted; it was ' +
+        'not copied to quarantine, because that would store readable library data ' +
+        'outside the encrypted corpus.',
+    )
+    return false
   }
   const size = utf8Bytes(raw)
   if (size > MAX_QUARANTINE_BYTES) {

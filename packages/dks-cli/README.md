@@ -9,6 +9,13 @@ shell scripts and CI.
 Read-only by design: the CLI never writes to the bundle it inspects. It needs
 no MCP server, agent host, network access, or running app.
 
+The CLI is the **primary executable interface** to an exported bundle: Agent
+Skills invoke it, shared business logic lives in
+[`dks-core`](../dks-core/README.md), and MCP
+([`dks-mcp`](../dks-mcp/README.md)) is only an optional adapter for MCP-only
+clients. See [`plans/ARCHITECTURE.md`](../../plans/ARCHITECTURE.md) for the
+canonical architecture document.
+
 ## Install
 
 ```bash

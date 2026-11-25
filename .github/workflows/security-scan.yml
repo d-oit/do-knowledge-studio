@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload ShellCheck SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+        uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea  # v4.39.4
         # allow-continue-on-error: SARIF upload is best-effort; the scan itself already ran
         continue-on-error: true
         with:
@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+        uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea  # v4.39.4
         with:
           sarif_file: trivy-results.sarif
           category: trivy-fs
@@ -159,7 +159,7 @@ jobs:
 
       - name: Fallback Secret Scan with TruffleHog
         if: steps.gitleaks.outcome == 'failure'
-        uses: trufflesecurity/trufflehog@3bd2b5887eb0efb8fa18bfd1d296032924e4ffdc  # v3.99.9
+        uses: trufflesecurity/trufflehog@4ef51f69ca6347aaa76a5e64a87eac9c0c909f71  # v3.100.1
         # allow-continue-on-error: fallback only; Gitleaks is the primary gate
         continue-on-error: true
         with:
@@ -230,7 +230,7 @@ jobs:
 
       - name: Upload IaC Scan SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+        uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea  # v4.39.4
         with:
           sarif_file: trivy-config-results.sarif
           category: trivy-config

@@ -186,6 +186,17 @@ describe('validation', () => {
     expect(validateGraphQuery(q).some((issue) => issue.message === 'depth')).toBe(true)
   })
 
+  it('accepts exactly the maximum number of non-root clauses', () => {
+    let query = EMPTY_GRAPH_QUERY
+    for (let index = 0; index < MAX_QUERY_CLAUSES; index += 1) {
+      query = addQueryCondition(query, [], 'tag')
+      query = setQueryConditionValue(query, [index], `value-${index}`)
+    }
+    expect(query.children).toHaveLength(MAX_QUERY_CLAUSES)
+    expect(validateGraphQuery(query)).toEqual([])
+    expect(GraphQuerySchema.safeParse(query).success).toBe(true)
+  })
+
   it('rejects excessive clause counts', () => {
     let q = EMPTY_GRAPH_QUERY
     for (let index = 0; index < MAX_QUERY_CLAUSES + 1; index += 1) {
@@ -342,9 +353,14 @@ const clauseArb = (depth: number): fc.Arbitrary<GraphQueryClause> =>
         }),
       )
 
-/** Counts every clause (conditions and groups, root included), as the validator does. */
-const countQueryClauses = (clause: GraphQueryClause): number =>
-  'children' in clause ? 1 + clause.children.reduce((sum, child) => sum + countQueryClauses(child), 0) : 1
+/** Counts only non-root clauses (conditions and groups), matching validateGraphQuery. */
+const countQueryClause = (clause: GraphQueryClause): number =>
+  'children' in clause
+    ? 1 + clause.children.reduce((sum, child) => sum + countQueryClause(child), 0)
+    : 1
+
+const countQueryClauses = (query: GraphQuery): number =>
+  query.children.reduce((sum, child) => sum + countQueryClause(child), 0)
 
 const queryArb: fc.Arbitrary<GraphQuery> = fc
   .record({

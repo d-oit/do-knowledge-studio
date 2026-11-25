@@ -67,6 +67,22 @@ export const openCanonicalDatabase = (): Promise<IDBDatabase> => {
 
 /** Read the canonical envelope, or null when no record exists. */
 export const readIndexedEnvelope = async (): Promise<StorageValue<unknown> | null> => {
+  const value = await readIndexedRawRecord()
+  if (value === null) return null
+  if (typeof value !== 'object' || !('state' in value)) {
+    throw new Error('canonical record is not a { state, version } object')
+  }
+  return value as StorageValue<unknown>
+}
+
+/**
+ * Read the stored canonical record verbatim, whatever its shape.
+ *
+ * The at-rest layer needs the raw record because an encrypted workspace stores
+ * an envelope, not a `{ state, version }` value, and deciding which it is must
+ * happen before validation rather than instead of it.
+ */
+export const readIndexedRawRecord = async (): Promise<unknown> => {
   const db = await openCanonicalDatabase()
   const { promise, resolve, reject } = Promise.withResolvers<unknown>()
   const transaction = db.transaction(CANONICAL_OBJECT_STORE, 'readonly')
@@ -75,15 +91,11 @@ export const readIndexedEnvelope = async (): Promise<StorageValue<unknown> | nul
   request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed'))
   transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'))
   const value = await promise
-  if (value === undefined) return null
-  if (typeof value !== 'object' || value === null || !('state' in value)) {
-    throw new Error('canonical record is not a { state, version } object')
-  }
-  return value as StorageValue<unknown>
+  return value === undefined ? null : value
 }
 
-/** Write the canonical envelope in one atomic transaction. */
-export const writeIndexedEnvelope = async (value: StorageValue<unknown>): Promise<void> => {
+/** Write the canonical record verbatim (plaintext value or at-rest envelope). */
+export const writeIndexedRawRecord = async (value: unknown): Promise<void> => {
   const db = await openCanonicalDatabase()
   const { promise, resolve, reject } = Promise.withResolvers<void>()
   let transaction: IDBTransaction
@@ -101,6 +113,43 @@ export const writeIndexedEnvelope = async (value: StorageValue<unknown>): Promis
   } catch (error) {
     reject(error)
   }
+  return promise
+}
+
+/** Write the canonical envelope in one atomic transaction. */
+export const writeIndexedEnvelope = async (value: StorageValue<unknown>): Promise<void> => {
+  await writeIndexedRawRecord(value)
+}
+
+/** Every revision record verbatim, for the at-rest migration. */
+export const readAllRevisionRecords = async (): Promise<unknown[]> => {
+  const db = await openCanonicalDatabase()
+  const { promise, resolve, reject } = Promise.withResolvers<unknown[]>()
+  const transaction = db.transaction(REVISIONS_OBJECT_STORE, 'readonly')
+  const request = transaction.objectStore(REVISIONS_OBJECT_STORE).getAll()
+  request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : [])
+  request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed'))
+  transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'))
+  return promise
+}
+
+/**
+ * Writes revision records verbatim in one transaction.
+ *
+ * Atomic on purpose: the at-rest migration replaces plaintext history with
+ * ciphertext, so a partial write would leave a corpus whose history is half
+ * readable and half not.
+ */
+export const writeRevisionRecords = async (records: readonly unknown[]): Promise<void> => {
+  if (records.length === 0) return
+  const db = await openCanonicalDatabase()
+  const { promise, resolve, reject } = Promise.withResolvers<void>()
+  const transaction = db.transaction(REVISIONS_OBJECT_STORE, 'readwrite')
+  transaction.oncomplete = () => resolve()
+  transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'))
+  transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB transaction failed'))
+  const store = transaction.objectStore(REVISIONS_OBJECT_STORE)
+  for (const record of records) store.put(record)
   return promise
 }
 

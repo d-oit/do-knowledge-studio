@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: do-knowledge-studio
+    runtime: node
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /
