@@ -4,7 +4,7 @@
  * the OKF semantics MCP clients observe (claims, sources, reserved files,
  * path guards, fail-closed guards).
  */
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MAX_BUNDLE_ZIP_BYTES } from 'dks-core'
@@ -113,6 +113,26 @@ describe('loadBundle from a directory', () => {
 
     await expect(loadBundle(join(dir, 'absent'))).rejects.toThrow(/ENOENT|no such file/i)
   })
+
+  it.skipIf(process.getuid?.() === 0)(
+    'keeps the read error for an existing file instead of the probe ENOTDIR',
+    async () => {
+      // An unreadable existing file used to surface the opendir probe's
+      // "not a directory" (ENOTDIR) instead of the failed read itself.
+      const dir = makeTempDir()
+      const target = join(dir, 'bundle.zip')
+      writeFileSync(target, 'not a zip')
+      chmodSync(target, 0o000)
+
+      try {
+        await loadBundle(target)
+        expect.unreachable('expected the unreadable bundle to reject')
+      } catch (err) {
+        expect((err as NodeJS.ErrnoException).code).not.toBe('ENOTDIR')
+        expect(String((err as Error).message)).not.toMatch(/not a directory/i)
+      }
+    },
+  )
 })
 
 describe('loadBundle from a zip', () => {

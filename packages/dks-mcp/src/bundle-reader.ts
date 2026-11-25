@@ -33,15 +33,26 @@ const isDirectory = (path: string): boolean => {
 
 /**
  * Reads file bytes through `openAsBlob`. Its failures reject as an errno-less
- * TypeError (`Unable to open file as blob`), so a failing read probes the
- * path first — the probe's ENOENT/ENOTDIR is what actually explains the
- * failure — and then rethrows the original error.
+ * TypeError (`Unable to open file as blob`), so a failing read probes the path
+ * for a message that explains the failure. The probe only replaces the
+ * original error when the path itself is missing (ENOENT/ENOTDIR on a missing
+ * path): an existing file that failed to read keeps its own error rather than
+ * a misleading "not a directory".
  */
 const readFileBytes = async (path: string): Promise<Uint8Array> => {
   try {
     return new Uint8Array(await (await openAsBlob(path)).arrayBuffer())
   } catch (err) {
-    opendirSync(path).closeSync()
+    let probe: Dir
+    try {
+      probe = opendirSync(path)
+    } catch (probeErr) {
+      // ENOTDIR here means the path is a file, not that the read failed for
+      // that reason; only a missing path is a better explanation.
+      if ((probeErr as NodeJS.ErrnoException).code === 'ENOTDIR') throw err
+      throw probeErr
+    }
+    probe.closeSync()
     throw err
   }
 }
