@@ -16,6 +16,7 @@ import { join } from 'node:path'
 import { LibraryIndex } from 'dks-core'
 import { afterEach, describe, expect, it } from 'vitest'
 import { loadBundle as loadBundleViaCli } from '../packages/dks-cli/src/bundle.js'
+import { neighborsData, pathData } from '../packages/dks-cli/src/commands/graph.js'
 import { searchData } from '../packages/dks-cli/src/commands/queries.js'
 import { nodeFsPort } from '../packages/dks-cli/src/fs-port.js'
 import { loadBundle as loadBundleViaMcp } from '../packages/dks-mcp/src/bundle-reader.js'
@@ -46,7 +47,7 @@ const writeFixtureBundle = (): string => {
   )
   writeFileSync(
     join(dir, 'concepts', 'beta.md'),
-    `---\ntype: Concept\ntitle: Beta\ntags: [shared, beta]\n---\n\nA graph query planner.\n`,
+    `---\ntype: Concept\ntitle: Beta\ntags: [shared, beta]\n---\n\nA graph query planner.\n\n# Related\n\n* [Gamma](/concepts/gamma)\n`,
   )
   writeFileSync(
     join(dir, 'concepts', 'gamma.md'),
@@ -93,6 +94,43 @@ describe('dks CLI ↔ dks-mcp parity', () => {
     expect(cliIds.length).toBeGreaterThan(1)
     expect(mcpIds).toEqual(cliIds)
     expect(mcpHits.map((hit) => hit.concept.id)).toEqual(cliIds)
+  })
+
+  it('agrees on shortest paths and one-hop neighborhoods', async () => {
+    const dir = writeFixtureBundle()
+    const viaCli = await loadBundleViaCli(nodeFsPort, dir)
+    const index = new LibraryIndex((await loadBundleViaMcp(dir)).concepts)
+
+    const cliPath = pathData(viaCli, 'concepts/alpha', 'concepts/gamma')
+    const mcpPath = payloadOf(
+      callTool('find_path', { from: 'concepts/alpha', to: 'concepts/gamma' }, index),
+    ) as { found: boolean; hops: number; path: Array<{ id: string }> }
+
+    expect(cliPath.nodes.map((node) => node.id)).toEqual([
+      'concepts/alpha',
+      'concepts/beta',
+      'concepts/gamma',
+    ])
+    expect(mcpPath.path.map((node) => node.id)).toEqual(cliPath.nodes.map((node) => node.id))
+    expect(mcpPath.hops).toBe(cliPath.hops.length)
+
+    const cliHood = neighborsData(viaCli, 'concepts/beta', 1)
+    const mcpHood = payloadOf(callTool('neighborhood', { ref: 'concepts/beta' }, index)) as {
+      outgoing: Array<{ id: string }>
+      incoming: Array<{ id: string }>
+    }
+    const mcpNeighbors = [...mcpHood.outgoing, ...mcpHood.incoming].map((c) => c.id).sort()
+    const cliNeighbors = cliHood.nodes
+      .filter((node) => node.id !== 'concepts/beta')
+      .map((node) => node.id)
+      .sort()
+
+    expect(mcpNeighbors).toEqual(['concepts/alpha', 'concepts/gamma'])
+    expect(mcpNeighbors).toEqual(cliNeighbors)
+    expect(cliHood.edges.map((edge) => `${edge.source}|${edge.target}`).sort()).toEqual([
+      'concepts/alpha|concepts/beta',
+      'concepts/beta|concepts/gamma',
+    ])
   })
 
   it('reports the shared tag census, including the descending name tie-break', async () => {

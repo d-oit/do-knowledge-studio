@@ -42,14 +42,18 @@ export interface Invocation {
 const VALUE_FLAGS = new Set(['--format', '--limit', '--bundle'])
 const BOOLEAN_FLAGS = new Set(['--quiet', '--no-color'])
 
+/** Hint shown for an unusable `--limit`, derived from the bounds above. */
+const limitHint = (): string =>
+  `default ${DEFAULT_LIMIT} · allowed range ${MIN_LIMIT}–${MAX_RANGE_LIMIT}`
+
 /** Parses `--limit`; non-integers are usage errors, ranges clamp. */
 export const parseLimit = (raw: string): number => {
   const value = Number(raw)
   if (!Number.isInteger(value)) {
-    throw new CliError('usage', `--limit expects an integer, got "${raw}"`, 'default 20 · allowed range 1–200')
+    throw new CliError('usage', `--limit expects an integer, got "${raw}"`, limitHint())
   }
-  if (value < 1) return MIN_LIMIT
-  if (value > 200) return MAX_RANGE_LIMIT
+  if (value < MIN_LIMIT) return MIN_LIMIT
+  if (value > MAX_RANGE_LIMIT) return MAX_RANGE_LIMIT
   return value
 }
 

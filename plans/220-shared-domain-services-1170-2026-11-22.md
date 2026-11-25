@@ -96,7 +96,9 @@ PR B merged as #1195; a docs-only #1196 corrected the MCP README's stale
 
 - `tests/mcp-cli-parity.test.ts` — cross-adapter harness driving the CLI and
   MCP adapter modules on one on-disk bundle: identical loaded concepts,
-  identical entity ranking, shared tag census (with the descending tie-break).
+  identical entity ranking, shared tag census (with the descending tie-break),
+  and equal shortest-path / one-hop-neighborhood results (node order, hop
+  count, neighbor set, canonical edges).
 - ADR 056 gains an implementation-status section naming the two deliberate
   per-runtime adaptations (own `FsPort`; MCP folds claims into its search doc).
 - MCP search limit bounds are named (`SEARCH_LIMIT_MIN`/`_MAX`) so the Zod
@@ -104,6 +106,39 @@ PR B merged as #1195; a docs-only #1196 corrected the MCP README's stale
 - Duplication audit after the merge: no caps, parser, trust, ranking, or
   traversal rule remains in `dks-mcp` source; only tool transport validation
   and the Node port, both intentional per ADR 056.
+
+## Duplication audit — post-merge (2026-11-25)
+
+| Surface | Result |
+|---|---|
+| `dks-mcp` | Clean: parser, caps, trust, ranking, traversal all from `dks-core`. Remaining: Zod/tool schemas (transport) and the Node `FsPort`. |
+| `dks-cli` queries/graph/export/backup | Clean: `searchData` → `pwaSearch`; `pathData`/`neighborsData`/`statsData` → `graph-path` + `buildUndirectedAdjacency`; export → `okf-export`/`markdown-export`; backup → `verifyBackupArchive`; bundle loading → `loadBundleFromDisk`. |
+| `dks-cli` skills | Reference scanner deliberately mirrors `scripts/agent-surface.py` (canonical Python implementation, no second TS consumer); frontmatter goes through core's `splitFrontmatter`/`parseFrontmatter`. |
+| `dks-cli` args | **Drift found and fixed**: `MIN_LIMIT`/`MAX_RANGE_LIMIT`/`DEFAULT_LIMIT` existed but `parseLimit` compared literal `1`/`200` and the hint repeated "default 20 · allowed range 1–200". Both now derive from the constants. |
+
+## Ranking-change measurement (2026-11-25)
+
+Method: the studio seed corpus exported through `dks-core`'s `buildOkfBundle`
+and re-parsed by `parseBundleFiles` (8 concepts, 23 claims) — the same input
+`dks-mcp serve` consumes. 20 queries (10 concept names + 10 thematic), `limit 5`,
+scored by the deleted BM25-lite index (`packages/dks-mcp/src/library-index.ts` at
+`eda0a670`) and by `dks-core`'s shared `LibraryIndex`.
+
+| Metric | Value |
+|---|---|
+| Queries with any result | 18 / 20 |
+| Identical top-1 | 15 / 18 |
+| Identical result lists | 11 / 20 |
+| Mean containment (overlap ÷ shorter list) | 0.967 |
+| Mean absolute rank shift (shared ids) | 0.29 |
+| Mean result count (old → new) | 3.00 → 3.10 |
+| Queries gaining a result the old index lacked | 4 (5 ids) |
+
+Reading: rankings are stable for name-shaped queries; the deltas concentrate on
+multi-word intent queries, where stop-word filtering and prefix matching change
+the winner — `why does search fail` moves from `triz-contradiction-matrix` to
+`semantic-search`. Caveat: the seed corpus is small, so this is a directional
+comparison, not a large-bundle benchmark.
 
 ## Acceptance mapping (issue #1170)
 
