@@ -59,8 +59,9 @@ to dks-core`), closing plan 220's PG4–PG6:
   `LibraryIndex` from `dks-core`, so both adapters run the same BM25
   (`pwa-retrieval`) and BFS (`graph-path`) engines.
 - `tests/mcp-cli-parity.test.ts` drives both adapter modules on one on-disk
-  bundle and asserts identical loaded concepts, identical entity ranking, and
-  the shared tag census (including the descending name tie-break).
+  bundle and asserts identical loaded concepts, identical entity ranking, the
+  shared tag census (including the descending name tie-break), and equal
+  shortest-path / one-hop-neighborhood results.
 
 Deliberate adaptations that remain (not duplication):
 
