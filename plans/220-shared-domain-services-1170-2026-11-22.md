@@ -89,6 +89,22 @@ BM25 engine (studio/CLI parity) instead of the deleted BM25-lite copy, and
 `list_tags` breaks count ties by name descending. Tool payload shapes are
 unchanged.
 
+## Post-merge follow-ups (2026-11-25)
+
+PR B merged as #1195; a docs-only #1196 corrected the MCP README's stale
+"BM25-lite" description. Follow-ups landed in the same pass:
+
+- `tests/mcp-cli-parity.test.ts` — cross-adapter harness driving the CLI and
+  MCP adapter modules on one on-disk bundle: identical loaded concepts,
+  identical entity ranking, shared tag census (with the descending tie-break).
+- ADR 056 gains an implementation-status section naming the two deliberate
+  per-runtime adaptations (own `FsPort`; MCP folds claims into its search doc).
+- MCP search limit bounds are named (`SEARCH_LIMIT_MIN`/`_MAX`) so the Zod
+  schema and the tool description cannot drift apart.
+- Duplication audit after the merge: no caps, parser, trust, ranking, or
+  traversal rule remains in `dks-mcp` source; only tool transport validation
+  and the Node port, both intentional per ADR 056.
+
 ## Acceptance mapping (issue #1170)
 
 - Diagram/boundaries → A1; no React/Next/MCP imports in core → checked in A4
