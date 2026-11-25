@@ -57,7 +57,7 @@ Core tools are read-only:
 
 | Tool | Arguments | Returns |
 | --- | --- | --- |
-| `search` | `query`, `limit?` (1–50, default 5) | Ranked concepts (bundle-scale BM25-lite, lighter than app search) |
+| `search` | `query`, `limit?` (1–50, default 5) | Ranked concepts (shared BM25 engine: same ranking as the studio app and `dks` CLI) |
 | `get_entity` | `ref` (id or unique name) | Content, sources, related ids, trust tier |
 | `get_claims` | `ref`, `verifiedOnly?` | Claims with verification + source provenance |
 | `neighborhood` | `ref` | One-hop outgoing/incoming related concepts |
