@@ -37,6 +37,10 @@ export default defineConfig({
         '**/dist/**',
         '**/*.config.*',
         '**/__tests__/**',
+        // Workspace packages are measured by their own suites
+        // (`pnpm --filter <pkg> test`); only root-run imports via the
+        // `dks-core` alias can leak them into this window.
+        'packages/**',
         // Test files colocated with source must not inflate coverage —
         // only production modules count toward thresholds (Plan 131 G7).
         'src/**/*.test.ts',
