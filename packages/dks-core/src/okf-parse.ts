@@ -241,6 +241,8 @@ export interface ImportedEntityLike {
   tags: string[]
   createdAt: string
   updatedAt: string
+  /** Bundle ids this concept links to from its `# Related` section. */
+  relatedIds: string[]
 }
 
 /** Neutral claim produced by the shared OKF import service. */
@@ -313,6 +315,7 @@ export const parseOkfImportBundle = (
       tags: concept.tags,
       createdAt: nowIso,
       updatedAt: nowIso,
+      relatedIds: concept.relatedIds,
     }
     result.entities.push(entity)
     for (const claim of concept.claims) {

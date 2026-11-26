@@ -20,6 +20,7 @@ export const MAX_RANGE_LIMIT = 200
 export const GLOBAL_FLAG_NAMES = [
   '--format JSON|TEXT',
   '--quiet',
+  '--verbose',
   '--no-color',
   '--limit N',
   '--bundle PATH',
@@ -28,6 +29,7 @@ export const GLOBAL_FLAG_NAMES = [
 export interface GlobalFlags {
   format: OutputFormat
   quiet: boolean
+  verbose: boolean
   noColor: boolean
   limit: number | undefined
   bundle: string | undefined
@@ -40,7 +42,7 @@ export interface Invocation {
 }
 
 const VALUE_FLAGS = new Set(['--format', '--limit', '--bundle'])
-const BOOLEAN_FLAGS = new Set(['--quiet', '--no-color'])
+const BOOLEAN_FLAGS = new Set(['--quiet', '--verbose', '--no-color'])
 
 /** Hint shown for an unusable `--limit`, derived from the bounds above. */
 const limitHint = (): string =>
@@ -57,6 +59,21 @@ export const parseLimit = (raw: string): number => {
   return value
 }
 
+/**
+ * True when `flag` appears in argv as a standalone boolean flag.
+ * Value-taking flags are skipped together with their value, so a token that
+ * only looks like the flag (`--format --verbose`) does not count.
+ */
+export const argvHasFlag = (argv: readonly string[], flag: string): boolean => {
+  const wanted = new Set([flag])
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv.at(index)
+    if (token !== undefined && VALUE_FLAGS.has(token)) index += 1
+    else if (token !== undefined && wanted.has(token)) return true
+  }
+  return false
+}
+
 /** Hint listing the global flags for any unrecognized option. */
 export const globalFlagsHint = (): string => `known global flags: ${GLOBAL_FLAG_NAMES.join(' · ')}`
 
@@ -68,6 +85,7 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
   const flags: GlobalFlags = {
     format: FORMAT_TEXT,
     quiet: false,
+    verbose: false,
     noColor: false,
     limit: undefined,
     bundle: undefined,
@@ -120,6 +138,9 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
         switch (token) {
           case '--quiet':
             flags.quiet = true
+            break
+          case '--verbose':
+            flags.verbose = true
             break
           default:
             flags.noColor = true

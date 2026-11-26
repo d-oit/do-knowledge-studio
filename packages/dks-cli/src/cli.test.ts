@@ -133,6 +133,34 @@ describe('runCli — envelope contract', () => {
     expect(result.stdout).toBe('')
   })
 
+  it('--verbose writes one diagnostic line to stderr and leaves stdout untouched', async () => {
+    const text = await runCli(['--verbose', 'version'], { env: noEnv, stdin: noStdin })
+    expect(text.exitCode).toBe(0)
+    expect(text.stdout).toContain('dks-cli')
+    expect(text.stderr.split('\n')).toHaveLength(1)
+    expect(text.stderr).toContain('dks verbose: command=version')
+    expect(text.stderr).toContain('bundle=')
+
+    const json = await runCli(['--verbose', '--format', 'json', 'version'], { env: noEnv, stdin: noStdin })
+    expect(json.exitCode).toBe(0)
+    expect(() => JSON.parse(json.stdout)).not.toThrow()
+    expect(json.stderr).toContain('format=json')
+  })
+
+  it('--verbose diagnostics accompany failures without changing the exit code', async () => {
+    const result = await runCli(['--verbose', '--bundle', './no-such-bundle', 'doctor'], { env: noEnv, stdin: noStdin })
+    expect(result.exitCode).toBe(3)
+    expect(result.stderr).toContain('dks verbose: command=doctor')
+    expect(result.stderr).toContain('dks doctor: bundle not found')
+  })
+
+  it('--verbose still reports when argument parsing itself fails', async () => {
+    const result = await runCli(['--verbose', '--format', 'yaml', 'doctor'], { env: noEnv, stdin: noStdin })
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain('dks verbose:')
+    expect(result.stderr).toContain('arguments could not be fully parsed')
+  })
+
   it('--limit clamps into the 1–200 window', async () => {
     await withTempDir(async (dir) => {
       const bundle = await seedBundle(dir)

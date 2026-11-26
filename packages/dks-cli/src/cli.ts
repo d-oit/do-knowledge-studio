@@ -16,7 +16,7 @@
  */
 
 import type { LoadedBundle } from 'dks-core'
-import { parseInvocation, globalFlagsHint, type Invocation } from './args.js'
+import { argvHasFlag, parseInvocation, globalFlagsHint, type Invocation } from './args.js'
 import { loadBundle, resolveBundlePath } from './bundle.js'
 import { backupVerifyData } from './commands/backup.js'
 import { doctorReport } from './commands/doctor.js'
@@ -44,6 +44,8 @@ const COMMAND_NAMES: readonly string[] = COMMAND_DOCS.map((doc) => doc.name)
 
 const HELP_COMMAND = 'help'
 const NO_COMMAND = '(none)'
+/** Prefix of the single `--verbose` diagnostic line written to stderr. */
+const VERBOSE_PREFIX = 'dks verbose:'
 
 /** Suggestion distance for "did you mean" hints on unknown commands. */
 const SUGGESTION_MAX_DISTANCE = 2
@@ -100,6 +102,23 @@ export interface CliResult {
   exitCode: number
   stdout: string
   stderr: string
+}
+
+/**
+ * One `--verbose` line: what ran, how output was shaped, and which bundle
+ * path would resolve. Bundle validation failures are reported inline so the
+ * diagnostic itself can never turn a readable error into a different one.
+ */
+const verboseDiagnostic = (invocation: Invocation, io: RunIo): string => {
+  const { command, flags } = invocation
+  let bundle: string
+  try {
+    bundle = resolveBundlePath(flags.bundle, io.env)
+  } catch (err) {
+    bundle = `<invalid: ${errorText(err)}>`
+  }
+  const label = command === '' ? HELP_COMMAND : command
+  return `${VERBOSE_PREFIX} command=${label} format=${flags.format} limit=${flags.limit ?? DEFAULT_LIMIT} bundle=${bundle}`
 }
 
 /** Commands take no local flags besides their own; rejects leftovers. */
@@ -226,9 +245,12 @@ const formatFromArgv = (argv: readonly string[]): OutputFormat => {
 export const runCli = async (argv: readonly string[], io: RunIo): Promise<CliResult> => {
   const out: string[] = []
   const errLines: string[] = []
-  let invocation: Invocation = { command: '', args: [], flags: { format: formatFromArgv(argv), quiet: false, noColor: false, limit: undefined, bundle: undefined } }
+  let invocation: Invocation = { command: '', args: [], flags: { format: formatFromArgv(argv), quiet: false, verbose: false, noColor: false, limit: undefined, bundle: undefined } }
+  let verboseEmitted = false
   try {
     invocation = parseInvocation(argv)
+    if (invocation.flags.verbose) errLines.push(verboseDiagnostic(invocation, io))
+    verboseEmitted = invocation.flags.verbose
     const data = await dispatch(invocation, io)
     const command = invocation.command === '' ? HELP_COMMAND : invocation.command
     if (invocation.flags.format === 'json') {
@@ -238,6 +260,12 @@ export const runCli = async (argv: readonly string[], io: RunIo): Promise<CliRes
     }
   } catch (err) {
     const label = invocation.command === '' ? NO_COMMAND : invocation.command
+    // A usage error can be thrown before the flag loop separates `--verbose`
+    // from the operand stream, so an unparsed request still reports that it
+    // asked for diagnostics.
+    if (!verboseEmitted && argvHasFlag(argv, '--verbose')) {
+      errLines.push(`${VERBOSE_PREFIX} format=${formatFromArgv(argv)} arguments could not be fully parsed`)
+    }
     if (err instanceof CliError) {
       if (invocation.flags.format === 'json') {
         out.push(JSON.stringify(failureEnvelope(label, err.code, err.message, err.hint)))

@@ -12,6 +12,9 @@
 import { parseOkfImportBundle } from 'dks-core/okf-parse'
 import type { Entity, Claim } from '@/lib/studio/types'
 
+/** Relation label minted for round-tripped `# Related` concept links. */
+const OKF_RELATED_RELATION = 'related'
+
 /**
  * Generates a UUID v4. Uses the Web Crypto API when available (browsers and
  * modern Node), falling back to a crypto.getRandomValues-based v4 for runtimes
@@ -56,7 +59,7 @@ export const parseOkfBundle = (files: Map<string, string>): OkfImportResult => {
     tags: e.tags,
     createdAt: e.createdAt,
     updatedAt: e.updatedAt,
-    links: [],
+    links: e.relatedIds.map((targetId) => ({ targetId, relation: OKF_RELATED_RELATION })),
   }))
   const claims: Claim[] = imported.claims.map((c) => ({
     id: uuid(),

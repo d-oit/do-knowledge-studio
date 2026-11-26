@@ -3,6 +3,7 @@ import {
   DEFAULT_LIMIT,
   MAX_RANGE_LIMIT,
   MIN_LIMIT,
+  argvHasFlag,
   globalFlagsHint,
   parseInvocation,
   parseLimit,
@@ -36,6 +37,14 @@ describe('parseInvocation', () => {
     expect(invocation.flags.format).toBe('json')
     expect(invocation.flags.quiet).toBe(true)
     expect(invocation.flags.noColor).toBe(true)
+  })
+
+  it('accepts --verbose as a global boolean without consuming a value', () => {
+    const invocation = parseInvocation(['--verbose', 'search', 'graph'])
+    expect(invocation.command).toBe('search')
+    expect(invocation.flags.verbose).toBe(true)
+    expect(invocation.args).toEqual(['graph'])
+    expect(parseInvocation(['search', 'graph']).flags.verbose).toBe(false)
   })
 
   it('treats --help and -h as the help command anywhere', () => {
@@ -114,6 +123,18 @@ describe('parseLocalFlags', () => {
 
   it('errors on a local flag missing its value', () => {
     expect(() => parseLocalFlags(['--depth'], ['--depth'])).toThrowError(/missing its value/)
+  })
+})
+
+describe('argvHasFlag', () => {
+  it('finds a standalone boolean flag', () => {
+    expect(argvHasFlag(['--verbose', 'doctor'], '--verbose')).toBe(true)
+    expect(argvHasFlag(['doctor', '--verbose'], '--verbose')).toBe(true)
+    expect(argvHasFlag(['doctor'], '--verbose')).toBe(false)
+  })
+
+  it('ignores a token that is only another flag\'s value', () => {
+    expect(argvHasFlag(['--format', '--verbose'], '--verbose')).toBe(false)
   })
 })
 

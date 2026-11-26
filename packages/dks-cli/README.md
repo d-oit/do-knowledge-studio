@@ -84,8 +84,27 @@ default. Diagnostics go to stderr, so pipelines can consume stdout directly.
 | 6 | Permission failure (e.g. bad passphrase) |
 | 7 | Internal failure |
 
-Other global flags: `--quiet` (suppress stdout on success), `--no-color`
-(accepted for pipeline parity), `--limit <n>` (1–200, default 20).
+Other global flags: `--quiet` (suppress stdout on success), `--verbose` (one
+`dks verbose:` diagnostic line on stderr; stdout and JSON data are unchanged),
+`--no-color` (accepted for pipeline parity), `--limit <n>` (1–200, default 20).
+
+### Schema compatibility policy
+
+`meta.version` carries the CLI build that produced the envelope, so a consumer
+can record which contract it parsed against.
+
+- **Additive changes** — a new optional field, command, `error.code`, or exit
+  code — ship in a minor version. Consumers must ignore unknown object keys
+  and treat an unrecognized `error.code` as a failure with the printed message.
+- **Breaking changes** — removing or renaming a field, changing a field's type,
+  moving data between `data`/`meta`/`error`, or redefining an existing exit
+  code — are never silent. Before 1.0 they are called out in the release notes;
+  from 1.0 they require a major version bump.
+- **The stream split never moves**: `--format json` writes exactly one JSON
+  object to stdout, on success and on failure. Diagnostics — including
+  `--verbose` — always go to stderr, so piping stdout stays parseable.
+- **Golden tests**: `envelope.test.ts`, `exit-codes.test.ts` and `cli.test.ts`
+  pin the shapes above. Editing them is a contract change, not a refactor.
 
 ## Filesystem boundary
 

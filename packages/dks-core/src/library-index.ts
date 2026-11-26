@@ -22,15 +22,29 @@ export interface SearchHit {
   score: number
 }
 
+/**
+ * Claims whose statement is not already inside the concept body.
+ *
+ * Exported bundles keep claim bullets in the body, so appending every claim
+ * indexed the same sentence twice: BM25 then counted each claim term twice
+ * and length-normalised the document as if it were longer. On this repo's
+ * own corpus that cost 4 of 17 labelled queries their only top-5 hit.
+ */
+const claimsOutsideBody = (c: BundleConcept): string[] =>
+  c.claims.map((claim) => claim.statement).filter((statement) => !c.content.includes(statement))
+
 /** Adapts a concept to the shared retrieval engine's entity shape. */
-const toEntityDoc = (c: BundleConcept): PwaEntityLike => ({
-  id: c.id,
-  name: c.name,
-  type: c.type,
-  description: c.description,
-  content: `${c.content}\n${c.claims.map((cl) => cl.statement).join('\n')}`,
-  tags: c.tags,
-})
+const toEntityDoc = (c: BundleConcept): PwaEntityLike => {
+  const claimText = claimsOutsideBody(c).join('\n')
+  return {
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    description: c.description,
+    content: claimText.length === 0 ? c.content : `${c.content}\n${claimText}`,
+    tags: c.tags,
+  }
+}
 
 /** Read-only index over bundle concepts. */
 export class LibraryIndex {
