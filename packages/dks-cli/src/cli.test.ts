@@ -154,6 +154,13 @@ describe('runCli — envelope contract', () => {
     expect(result.stderr).toContain('dks doctor: bundle not found')
   })
 
+  it('--verbose still reports when argument parsing itself fails', async () => {
+    const result = await runCli(['--verbose', '--format', 'yaml', 'doctor'], { env: noEnv, stdin: noStdin })
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain('dks verbose:')
+    expect(result.stderr).toContain('arguments could not be fully parsed')
+  })
+
   it('--limit clamps into the 1–200 window', async () => {
     await withTempDir(async (dir) => {
       const bundle = await seedBundle(dir)

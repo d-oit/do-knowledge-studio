@@ -3,6 +3,7 @@ import {
   DEFAULT_LIMIT,
   MAX_RANGE_LIMIT,
   MIN_LIMIT,
+  argvHasFlag,
   globalFlagsHint,
   parseInvocation,
   parseLimit,
@@ -122,6 +123,18 @@ describe('parseLocalFlags', () => {
 
   it('errors on a local flag missing its value', () => {
     expect(() => parseLocalFlags(['--depth'], ['--depth'])).toThrowError(/missing its value/)
+  })
+})
+
+describe('argvHasFlag', () => {
+  it('finds a standalone boolean flag', () => {
+    expect(argvHasFlag(['--verbose', 'doctor'], '--verbose')).toBe(true)
+    expect(argvHasFlag(['doctor', '--verbose'], '--verbose')).toBe(true)
+    expect(argvHasFlag(['doctor'], '--verbose')).toBe(false)
+  })
+
+  it('ignores a token that is only another flag\'s value', () => {
+    expect(argvHasFlag(['--format', '--verbose'], '--verbose')).toBe(false)
   })
 })
 

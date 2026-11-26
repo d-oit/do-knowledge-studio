@@ -16,8 +16,8 @@
  */
 
 import type { LoadedBundle } from 'dks-core'
-import { parseInvocation, globalFlagsHint, type Invocation } from './args.js'
-import { BUNDLE_ENV_VAR, loadBundle, resolveBundlePath } from './bundle.js'
+import { argvHasFlag, parseInvocation, globalFlagsHint, type Invocation } from './args.js'
+import { loadBundle, resolveBundlePath } from './bundle.js'
 import { backupVerifyData } from './commands/backup.js'
 import { doctorReport } from './commands/doctor.js'
 import { COMMAND_DOCS, helpData } from './commands/help.js'
@@ -111,7 +111,7 @@ export interface CliResult {
  */
 const verboseDiagnostic = (invocation: Invocation, io: RunIo): string => {
   const { command, flags } = invocation
-  let bundle = flags.bundle ?? io.env.get(BUNDLE_ENV_VAR) ?? '(unset)'
+  let bundle: string
   try {
     bundle = resolveBundlePath(flags.bundle, io.env)
   } catch (err) {
@@ -246,9 +246,11 @@ export const runCli = async (argv: readonly string[], io: RunIo): Promise<CliRes
   const out: string[] = []
   const errLines: string[] = []
   let invocation: Invocation = { command: '', args: [], flags: { format: formatFromArgv(argv), quiet: false, verbose: false, noColor: false, limit: undefined, bundle: undefined } }
+  let verboseEmitted = false
   try {
     invocation = parseInvocation(argv)
     if (invocation.flags.verbose) errLines.push(verboseDiagnostic(invocation, io))
+    verboseEmitted = invocation.flags.verbose
     const data = await dispatch(invocation, io)
     const command = invocation.command === '' ? HELP_COMMAND : invocation.command
     if (invocation.flags.format === 'json') {
@@ -258,6 +260,12 @@ export const runCli = async (argv: readonly string[], io: RunIo): Promise<CliRes
     }
   } catch (err) {
     const label = invocation.command === '' ? NO_COMMAND : invocation.command
+    // A usage error can be thrown before the flag loop separates `--verbose`
+    // from the operand stream, so an unparsed request still reports that it
+    // asked for diagnostics.
+    if (!verboseEmitted && argvHasFlag(argv, '--verbose')) {
+      errLines.push(`${VERBOSE_PREFIX} format=${formatFromArgv(argv)} arguments could not be fully parsed`)
+    }
     if (err instanceof CliError) {
       if (invocation.flags.format === 'json') {
         out.push(JSON.stringify(failureEnvelope(label, err.code, err.message, err.hint)))

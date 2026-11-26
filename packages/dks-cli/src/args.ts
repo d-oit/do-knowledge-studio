@@ -59,6 +59,20 @@ export const parseLimit = (raw: string): number => {
   return value
 }
 
+/**
+ * True when `flag` appears in argv as a standalone boolean flag.
+ * Value-taking flags are skipped together with their value, so a token that
+ * only looks like the flag (`--format --verbose`) does not count.
+ */
+export const argvHasFlag = (argv: readonly string[], flag: string): boolean => {
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv.at(index)
+    if (token !== undefined && VALUE_FLAGS.has(token)) index += 1
+    else if (token === flag) return true
+  }
+  return false
+}
+
 /** Hint listing the global flags for any unrecognized option. */
 export const globalFlagsHint = (): string => `known global flags: ${GLOBAL_FLAG_NAMES.join(' · ')}`
 
