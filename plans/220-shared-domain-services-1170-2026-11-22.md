@@ -115,6 +115,12 @@ PR B merged as #1195; a docs-only #1196 corrected the MCP README's stale
 | `dks-cli` queries/graph/export/backup | Clean: `searchData` → `pwaSearch`; `pathData`/`neighborsData`/`statsData` → `graph-path` + `buildUndirectedAdjacency`; export → `okf-export`/`markdown-export`; backup → `verifyBackupArchive`; bundle loading → `loadBundleFromDisk`. |
 | `dks-cli` skills | Reference scanner deliberately mirrors `scripts/agent-surface.py` (canonical Python implementation, no second TS consumer); frontmatter goes through core's `splitFrontmatter`/`parseFrontmatter`. |
 | `dks-cli` args | **Drift found and fixed**: `MIN_LIMIT`/`MAX_RANGE_LIMIT`/`DEFAULT_LIMIT` existed but `parseLimit` compared literal `1`/`200` and the hint repeated "default 20 · allowed range 1–200". Both now derive from the constants. |
+| PWA OKF import (`src/lib/okf/import.ts`) | Clean facade: every rule (path guards, reserved files, `okf_version`, frontmatter, claims, trust) comes from `parseOkfImportBundle`; the file only maps neutral records onto studio `Entity`/`Claim` (UUIDs, `editHistory`). |
+
+Open follow-up from the PWA pass: the neutral import record has no `links`
+field, so `# Related` links in an imported bundle are still dropped
+(`links: []`). Pre-existing, out of plan 220's scope; it needs a core contract
+addition plus import-path tests, not a duplication fix.
 
 ## Ranking-change measurement (2026-11-25)
 
@@ -139,6 +145,30 @@ multi-word intent queries, where stop-word filtering and prefix matching change
 the winner — `why does search fail` moves from `triz-contradiction-matrix` to
 `semantic-search`. Caveat: the seed corpus is small, so this is a directional
 comparison, not a large-bundle benchmark.
+
+### Large-corpus run (298 files → 337 concepts, 52 edges)
+
+Same method, corpus = this repo's `agents-docs` + `.agents/skills` Markdown
+imported through `parseMarkdownBundle`, exported via `buildOkfBundle`, parsed
+back with `parseBundleFiles`. 40 queries (25 document names + 15 engineering
+themes), `limit 5`.
+
+| Metric | Seed corpus | Large corpus |
+|---|---|---|
+| Queries with any result | 18 / 20 | 40 / 40 |
+| Identical top-1 | 15 / 18 (83%) | 27 / 40 (68%) |
+| Identical result lists | 11 / 20 | 9 / 40 |
+| Mean containment | 0.967 | 0.815 |
+| Mean absolute rank shift | 0.29 | 0.69 |
+| Mean result count (old → new) | 3.00 → 3.10 | 4.85 → 4.47 |
+| New-only hits (queries) | 5 (4) | 37 (17) |
+
+**The seed-corpus stability does not hold at scale.** Top-1 changes for 13 of 40
+queries, and two intent queries share no top-5 result with the old index
+(`search engine`, `why is CI red`). This is the intended parity change (#1170
+row 6), not a regression fix, but ranking **quality** was not evaluated: the
+honest follow-up is to run plan 191's recall@k harness over both engines on this
+corpus before treating the shared ranking as an improvement.
 
 ## Acceptance mapping (issue #1170)
 
