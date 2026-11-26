@@ -65,10 +65,11 @@ export const parseLimit = (raw: string): number => {
  * only looks like the flag (`--format --verbose`) does not count.
  */
 export const argvHasFlag = (argv: readonly string[], flag: string): boolean => {
+  const wanted = new Set([flag])
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv.at(index)
     if (token !== undefined && VALUE_FLAGS.has(token)) index += 1
-    else if (token === flag) return true
+    else if (token !== undefined && wanted.has(token)) return true
   }
   return false
 }
