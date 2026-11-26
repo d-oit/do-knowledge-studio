@@ -23,6 +23,10 @@ Alpha body.
 - Alpha scales linearly[^src-1]
 
 [^src-1]: Alpha paper
+
+# Related
+
+* [Beta](/concepts/beta)
 `
 const BETA = `---\ntype: Concept\ntitle: Beta\n---\n\nBeta body.\n`
 
@@ -41,6 +45,8 @@ describe('parseOkfImportBundle (shared service)', () => {
     expect(alpha?.name).toBe('Alpha')
     expect(alpha?.tags).toEqual(['research'])
     expect(alpha?.content).toContain('Alpha body.')
+    // `# Related` ids survive the service; consumers map them to links.
+    expect(alpha?.relatedIds).toEqual(['concepts/beta'])
     expect(result.claims).toEqual([
       {
         entityId: 'concepts/alpha',

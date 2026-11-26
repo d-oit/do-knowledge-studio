@@ -49,6 +49,7 @@ Google Cloud Platform provides infrastructure as a service.
     expect(entity.type).toBe('concept')
     expect(entity.description).toBe('A suite of cloud computing services.')
     expect(entity.tags).toEqual(['cloud', 'google'])
+    expect(entity.links).toEqual([])
 
     /** The claim. */
     const claim = result.claims[0]
@@ -56,6 +57,34 @@ Google Cloud Platform provides infrastructure as a service.
     expect(claim.statement).toBe('OKF v0.2 was released in July 2026.')
     expect(claim.source).toBe('https://github.com/GoogleCloudPlatform/knowledge-catalog')
     expect(claim.evidence).toBe('Announcement blog post')
+  })
+
+  it('keeps `# Related` concepts as entity links instead of dropping them', () => {
+    /** The files map. */
+    const filesMap = new Map<string, string>()
+    filesMap.set(
+      'concepts/alpha.md',
+      `---
+type: Concept
+title: Alpha
+---
+
+Body text.
+
+# Related
+
+* [Beta](/concepts/beta.md)
+* [Ghost](/concepts/ghost.md)
+`,
+    )
+
+    /** The result. */
+    const result = parseOkfBundle(filesMap)
+    expect(result.errors.length).toBe(0)
+    expect(result.entities[0].links).toEqual([
+      { targetId: 'concepts/beta', relation: 'related' },
+      { targetId: 'concepts/ghost', relation: 'related' },
+    ])
   })
 
   it('tolerates unknown types, unknown frontmatter keys, and missing optional fields', () => {
