@@ -53,10 +53,10 @@ describe('parseInvocation', () => {
     expect(parseInvocation(['search', '--help']).command).toBe('help')
   })
 
-  it('does not turn operands into help topics when --help follows them', () => {
+  it('turns the preceding command, not its operands, into the help topic', () => {
     const invocation = parseInvocation(['search', 'graph', '--help', 'extra'])
     expect(invocation.command).toBe('help')
-    expect(invocation.args).toEqual([])
+    expect(invocation.args).toEqual(['search'])
   })
 
   it('lets bund flag value default through flags', () => {

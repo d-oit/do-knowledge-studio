@@ -4,7 +4,7 @@
  */
 
 import type { SearchResult } from 'dks-core'
-import { HELP_TEXT, type HelpData } from './commands/help.js'
+import { renderHelp, type HelpData } from './commands/help.js'
 import type { DoctorData } from './commands/doctor.js'
 import type { AliasesData, ClaimsData, EntityData, IndexData, RelationsData, SearchData } from './commands/queries.js'
 import type { GraphNeighborsData, GraphPathData, GraphStatsData } from './commands/graph.js'
@@ -141,7 +141,7 @@ const renderOwnData = (payload: CommandPayload, command: string): string[] => {
   switch (command) {
     case 'help':
       // Both modes derive from the single source in commands/help.ts.
-      return [HELP_TEXT]
+      return [renderHelp(payload as HelpData)]
     case 'version': {
       const version = payload as VersionData
       return [`${version.name} ${version.version} (node ${version.node})`]

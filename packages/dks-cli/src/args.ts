@@ -100,13 +100,16 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
     if (typeof token !== 'string') break
     switch (token) {
       case '--help':
-      case '-h':
+      case '-h': {
+        const requested = command
         command = 'help'
         commandSeen = true
         helpRequested = true
         // `dks search foo --help` asks for search help, not help for "foo".
         args.length = 0
+        if (requested !== '' && requested !== 'help') args.push(requested)
         continue
+      }
       default:
         break
     }

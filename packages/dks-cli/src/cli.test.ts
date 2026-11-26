@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { runCli } from './cli.js'
+import { COMMAND_DOCS } from './commands/help.js'
 import { CLI_VERSION } from './version.js'
 import { SEED_GRAPH_PERF_ID, seedBundle, withTempDir, writeBackupArchive, writeSkill } from './fixtures.test.helpers.js'
 
@@ -29,7 +30,7 @@ describe('runCli — envelope contract', () => {
   it('bare dks behaves like help', async () => {
     const result = await runCli([], { env: noEnv, stdin: noStdin })
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain('dks help [command]')
+    expect(result.stdout).toContain('dks help [COMMAND]')
   })
 
   it('-h is an alias of help', async () => {
@@ -91,11 +92,51 @@ describe('runCli — envelope contract', () => {
     expect(envelope.error.code).toBe('usage')
   })
 
-  it('shows help for cmd <operand> --help instead of rejecting the operand', async () => {
+  it('shows the preceding command\'s help for cmd <operand> --help', async () => {
     const result = await runCli(['search', 'graph', '--help'], { env: noEnv, stdin: noStdin })
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain('commands:')
+    expect(result.stdout).toContain('usage:\n  dks search QUERY...')
+    expect(result.stdout).toContain('examples:')
+    expect(result.stdout).toContain('dks search knowledge graph')
     expect(result.stderr).toBe('')
+  })
+
+  it('dks help <command> prints usage, access and examples for that command only', async () => {
+    const result = await runCli(['help', 'entity'], { env: noEnv, stdin: noStdin })
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('usage:\n  dks entity ID')
+    expect(result.stdout).toContain('access: read-only')
+    expect(result.stdout).toContain('dks entity <id> --format json')
+    expect(result.stdout).not.toContain('BM25 retrieval')
+    expect(result.stderr).toBe('')
+  })
+
+  it('help <command> --format json narrows the payload to one command', async () => {
+    const { code, envelope } = await runJson(['help', 'graph'])
+    expect(code).toBe(0)
+    const data = envelope.data as {
+      focused?: string
+      commands: { name: string; usage: string; access: string; examples: string[] }[]
+    }
+    expect(data.focused).toBe('graph')
+    expect(data.commands).toHaveLength(1)
+    expect(data.commands[0]).toMatchObject({ name: 'graph', access: 'read-only' })
+    expect(data.commands[0]?.examples.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('rejects an unknown help target with a nearest hint', async () => {
+    const { code, envelope } = await runJson(['help', 'serch'])
+    expect(code).toBe(2)
+    expect((envelope.error as { hint?: string }).hint).toContain('search')
+  })
+
+  it('documents usage, read-only access and examples for every command', () => {
+    for (const doc of COMMAND_DOCS) {
+      expect(doc.usage.length, doc.name).toBeGreaterThan(0)
+      expect(doc.access, doc.name).toBe('read-only')
+      expect(doc.examples.length, doc.name).toBeGreaterThanOrEqual(1)
+      for (const example of doc.examples) expect(example, doc.name).toContain(`dks ${doc.name}`)
+    }
   })
 
   it('does not resolve a malformed DKS_BUNDLE for commands that need none', async () => {

@@ -30,6 +30,24 @@ plain directory): `index.md` declaring `okf_version 0.2.x`, one `.md` file per
 concept, `log.md` ignored. Oversized, malformed, or version-incompatible input
 exits non-zero and serves nothing (fail-closed).
 
+## Supported clients and compatibility
+
+No external consumer has reported an MCP-only requirement; the register and the
+retention/deprecation decision are recorded in
+[ADR 057](../../plans/ADRs/057-mcp-optional-adapter.md).
+
+| Host | Configuration | Status |
+| --- | --- | --- |
+| MCP SDK client | `src/contract.test.ts` (official `Client`, in-memory transport) | Verified in CI — tools, results and error shapes |
+| Claude Code | `claude mcp add` entry below | Documented; not run against a live host here |
+| Claude Desktop | `claude_desktop_config.json` below | Documented; not run against a live host here |
+| Cursor | stdio server entry, same command/args | Documented; not verified against a live host |
+
+The verified compatibility evidence is the SDK contract test plus
+[`tests/mcp-cli-parity.test.ts`](../../tests/mcp-cli-parity.test.ts), which
+proves the tools return the same concepts, ranking and graph results as the
+shared `dks-core` services. A live-host smoke run is manual and not claimed.
+
 ## Client configuration
 
 Claude Code:

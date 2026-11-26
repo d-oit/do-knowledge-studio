@@ -61,8 +61,24 @@ A bundle is an OKF directory (or zip) with `index.md` declaring
 | `dks skills test` | Run every skill check and report per-skill findings |
 | `dks export [--format json]` | Print the bundle as Markdown (default) or OKF JSON |
 
+Every command has a focused page: `dks help <command>` (or `dks <command> --help`)
+prints its usage, access class and runnable examples.
+
 `-` in a path placeholder reads stdin, e.g.
 `cat backup.dksb | dks backup verify -`.
+
+## Read-only boundary
+
+Every command is non-mutating. `dks` has no write, import, restore, delete or
+migrate command, so there is nothing to guard with `--dry-run` and no prompt to
+confirm: it reads an OKF bundle and prints results. `backup verify` and the
+`skills` commands only read the archive or skill tree they are pointed at.
+
+The browser workspace is **not** reachable from Node. The studio's canonical
+corpus lives in browser-owned IndexedDB, so the CLI operates on an exported copy:
+make an OKF export in the studio app (or verify a `.dksb` archive) and point
+`--bundle` / `DKS_BUNDLE` at it. Live workspace access would need a separate
+local-bridge issue; the CLI does not pretend to have it.
 
 ## Output contract
 

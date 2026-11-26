@@ -144,12 +144,15 @@ const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPaylo
 
   switch (command) {
     case '':
+      return helpData()
     case HELP_COMMAND: {
       const target = args.at(0)
-      if (target !== undefined && !COMMAND_NAMES.includes(target)) {
-        throw unknownCommandError(target)
+      if (target === undefined) return helpData()
+      if (args.length > 1) {
+        throw new CliError('usage', 'help takes at most one command', 'dks help [COMMAND]')
       }
-      return helpData()
+      if (!COMMAND_NAMES.includes(target)) throw unknownCommandError(target)
+      return helpData(target)
     }
     case 'version': {
       rejectUnknownFlags(args, command)
