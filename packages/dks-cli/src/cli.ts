@@ -17,7 +17,7 @@
 
 import type { LoadedBundle } from 'dks-core'
 import { parseInvocation, globalFlagsHint, type Invocation } from './args.js'
-import { loadBundle, resolveBundlePath } from './bundle.js'
+import { BUNDLE_ENV_VAR, loadBundle, resolveBundlePath } from './bundle.js'
 import { backupVerifyData } from './commands/backup.js'
 import { doctorReport } from './commands/doctor.js'
 import { COMMAND_DOCS, helpData } from './commands/help.js'
@@ -44,6 +44,8 @@ const COMMAND_NAMES: readonly string[] = COMMAND_DOCS.map((doc) => doc.name)
 
 const HELP_COMMAND = 'help'
 const NO_COMMAND = '(none)'
+/** Prefix of the single `--verbose` diagnostic line written to stderr. */
+const VERBOSE_PREFIX = 'dks verbose:'
 
 /** Suggestion distance for "did you mean" hints on unknown commands. */
 const SUGGESTION_MAX_DISTANCE = 2
@@ -100,6 +102,23 @@ export interface CliResult {
   exitCode: number
   stdout: string
   stderr: string
+}
+
+/**
+ * One `--verbose` line: what ran, how output was shaped, and which bundle
+ * path would resolve. Bundle validation failures are reported inline so the
+ * diagnostic itself can never turn a readable error into a different one.
+ */
+const verboseDiagnostic = (invocation: Invocation, io: RunIo): string => {
+  const { command, flags } = invocation
+  let bundle = flags.bundle ?? io.env.get(BUNDLE_ENV_VAR) ?? '(unset)'
+  try {
+    bundle = resolveBundlePath(flags.bundle, io.env)
+  } catch (err) {
+    bundle = `<invalid: ${errorText(err)}>`
+  }
+  const label = command === '' ? HELP_COMMAND : command
+  return `${VERBOSE_PREFIX} command=${label} format=${flags.format} limit=${flags.limit ?? DEFAULT_LIMIT} bundle=${bundle}`
 }
 
 /** Commands take no local flags besides their own; rejects leftovers. */
@@ -226,9 +245,10 @@ const formatFromArgv = (argv: readonly string[]): OutputFormat => {
 export const runCli = async (argv: readonly string[], io: RunIo): Promise<CliResult> => {
   const out: string[] = []
   const errLines: string[] = []
-  let invocation: Invocation = { command: '', args: [], flags: { format: formatFromArgv(argv), quiet: false, noColor: false, limit: undefined, bundle: undefined } }
+  let invocation: Invocation = { command: '', args: [], flags: { format: formatFromArgv(argv), quiet: false, verbose: false, noColor: false, limit: undefined, bundle: undefined } }
   try {
     invocation = parseInvocation(argv)
+    if (invocation.flags.verbose) errLines.push(verboseDiagnostic(invocation, io))
     const data = await dispatch(invocation, io)
     const command = invocation.command === '' ? HELP_COMMAND : invocation.command
     if (invocation.flags.format === 'json') {

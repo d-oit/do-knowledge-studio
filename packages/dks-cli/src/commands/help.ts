@@ -39,6 +39,7 @@ export const COMMAND_DOCS: readonly CommandDoc[] = [
 export const FLAG_DOCS: readonly FlagDoc[] = [
   { flag: '--format JSON|TEXT', description: 'output envelope as JSON (every command honors it) or human text' },
   { flag: '--quiet', description: 'suppress stdout on success; failures still report' },
+  { flag: '--verbose', description: 'one diagnostic line on stderr; stdout and JSON data are unchanged' },
   { flag: '--no-color', description: 'accepted for pipeline parity; output is always plain' },
   { flag: '--limit N', description: 'result cap for search/index (default 20, allowed 1–200)' },
   { flag: '--bundle PATH', description: 'OKF bundle directory or .zip (default ./knowledge or $DKS_BUNDLE)' },

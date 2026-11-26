@@ -20,6 +20,7 @@ export const MAX_RANGE_LIMIT = 200
 export const GLOBAL_FLAG_NAMES = [
   '--format JSON|TEXT',
   '--quiet',
+  '--verbose',
   '--no-color',
   '--limit N',
   '--bundle PATH',
@@ -28,6 +29,7 @@ export const GLOBAL_FLAG_NAMES = [
 export interface GlobalFlags {
   format: OutputFormat
   quiet: boolean
+  verbose: boolean
   noColor: boolean
   limit: number | undefined
   bundle: string | undefined
@@ -40,7 +42,7 @@ export interface Invocation {
 }
 
 const VALUE_FLAGS = new Set(['--format', '--limit', '--bundle'])
-const BOOLEAN_FLAGS = new Set(['--quiet', '--no-color'])
+const BOOLEAN_FLAGS = new Set(['--quiet', '--verbose', '--no-color'])
 
 /** Hint shown for an unusable `--limit`, derived from the bounds above. */
 const limitHint = (): string =>
@@ -68,6 +70,7 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
   const flags: GlobalFlags = {
     format: FORMAT_TEXT,
     quiet: false,
+    verbose: false,
     noColor: false,
     limit: undefined,
     bundle: undefined,
@@ -120,6 +123,9 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
         switch (token) {
           case '--quiet':
             flags.quiet = true
+            break
+          case '--verbose':
+            flags.verbose = true
             break
           default:
             flags.noColor = true

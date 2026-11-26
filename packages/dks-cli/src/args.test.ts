@@ -38,6 +38,14 @@ describe('parseInvocation', () => {
     expect(invocation.flags.noColor).toBe(true)
   })
 
+  it('accepts --verbose as a global boolean without consuming a value', () => {
+    const invocation = parseInvocation(['--verbose', 'search', 'graph'])
+    expect(invocation.command).toBe('search')
+    expect(invocation.flags.verbose).toBe(true)
+    expect(invocation.args).toEqual(['graph'])
+    expect(parseInvocation(['search', 'graph']).flags.verbose).toBe(false)
+  })
+
   it('treats --help and -h as the help command anywhere', () => {
     expect(parseInvocation(['--help']).command).toBe('help')
     expect(parseInvocation(['-h']).command).toBe('help')
