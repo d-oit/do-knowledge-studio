@@ -166,9 +166,37 @@ themes), `limit 5`.
 **The seed-corpus stability does not hold at scale.** Top-1 changes for 13 of 40
 queries, and two intent queries share no top-5 result with the old index
 (`search engine`, `why is CI red`). This is the intended parity change (#1170
-row 6), not a regression fix, but ranking **quality** was not evaluated: the
-honest follow-up is to run plan 191's recall@k harness over both engines on this
-corpus before treating the shared ranking as an improvement.
+row 6), not a regression fix, and the follow-up below measured ranking
+**quality** with plan 191's harness before treating the shared ranking as an
+improvement.
+
+### Ranking quality at scale (plan 191 harness, real corpus)
+
+Same material, 17 labels. Each label names the document a reader would expect
+and was written from the document title alone before any ranking was run
+(recall@5 / MRR via `recallAtK` and `reciprocalRank`):
+
+| Arm | recall@5 | MRR |
+|---|---|---|
+| Direct import order (`parseMarkdownBundle` entities → `search`) | 0.824 | 0.570 |
+| OKF round trip (export → `parseBundleFiles` → `LibraryIndex.search`) | 0.588 | 0.480 |
+| OKF round trip after the de-duplication fix below | 0.824 | 0.570 |
+
+Cause of the gap: `LibraryIndex` composed each search document as body + every
+claim statement, while exported bundles keep those statements in the body too,
+so each claim was indexed twice. That inflated term frequency and BM25 length
+normalisation (`B = 0.75`) for claim-heavy concepts: `environment-variables`
+(41 claims, 5505 → 7300 indexed chars), `evaluating-skills` (10, 3948 → 4718),
+`owasp-guidelines` (55, 3077 → 5503) and `layout-composition` (4, 1268 → 1393)
+each lost their only top-5 hit, and `sync-queue` / `hooks` slipped a rank.
+`toEntityDoc` now appends only statements the body does not already contain,
+which returns the round trip to exact parity with the direct ranking.
+
+Limits: 17 labels over 336 concepts (297 Markdown files), authored by the agent
+that wrote this note, so the number is a regression signal rather than a
+benchmark. It is not committed as a test — the corpus is this repository and its
+ids move with every doc rename; the CI-enforced set stays
+`src/lib/search/eval/large-corpus.ts`.
 
 ## Acceptance mapping (issue #1170)
 

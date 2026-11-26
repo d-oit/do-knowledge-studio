@@ -26,6 +26,37 @@ const concepts = [
 const index = new LibraryIndex(concepts)
 
 describe('LibraryIndex', () => {
+  it('cannot outrank an identical concept when its body repeats the claim records', () => {
+    const body = 'Caching keeps rendering fast. Graph layout stays stable.'
+    // Same name and body, so the only difference is how many claim records the
+    // concept carries — all of them restate sentences the body already has.
+    const duplicated = concept({
+      id: 'claim-in-body',
+      name: 'Same name',
+      content: body,
+      claims: [
+        { statement: 'Caching keeps rendering fast.', verification: 'unverified' },
+        { statement: 'Graph layout stays stable.', verification: 'unverified' },
+        { statement: 'Caching keeps rendering fast.', verification: 'unverified' },
+      ],
+    })
+    const plain = concept({ id: 'no-claim-record', name: 'Same name', content: body })
+    const hits = new LibraryIndex([duplicated, plain]).search('rendering', 2)
+    expect(hits).toHaveLength(2)
+    expect(hits[0]?.concept.id).toBe('claim-in-body')
+    expect(hits[0]?.score).toBe(hits[1]?.score)
+  })
+
+  it('still indexes a claim the concept body does not contain', () => {
+    const withClaim = concept({
+      id: 'claim-only',
+      name: 'Notes',
+      content: 'Nothing here mentions it.',
+      claims: [{ statement: 'Flange torque is 12 Nm.', verification: 'unverified' }],
+    })
+    expect(new LibraryIndex([withClaim]).search('flange').map((hit) => hit.concept.id)).toEqual(['claim-only'])
+  })
+
   it('resolves ids, unique names, ambiguity, and absence', () => {
     const resolveId = (name: string): string | undefined => {
       const result = index.resolve(name)
