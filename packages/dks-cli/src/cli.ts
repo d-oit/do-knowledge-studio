@@ -144,6 +144,9 @@ const dispatch = async (invocation: Invocation, io: RunIo): Promise<CommandPaylo
 
   switch (command) {
     case '':
+      // `dks --bogus` reaches here with the token in args: an unknown option
+      // must fail rather than print help and exit 0.
+      rejectUnknownFlags(args, 'dks')
       return helpData()
     case HELP_COMMAND: {
       const target = args.at(0)

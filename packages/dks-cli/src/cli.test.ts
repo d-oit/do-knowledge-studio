@@ -124,6 +124,12 @@ describe('runCli — envelope contract', () => {
     expect(data.commands[0]?.examples.length).toBeGreaterThanOrEqual(2)
   })
 
+  it('rejects an unknown option even when no command was given', async () => {
+    const { code, envelope } = await runJson(['--bogus'])
+    expect(code).toBe(2)
+    expect((envelope.error as { message: string }).message).toContain('unknown option "--bogus"')
+  })
+
   it('rejects an unknown help target with a nearest hint', async () => {
     const { code, envelope } = await runJson(['help', 'serch'])
     expect(code).toBe(2)

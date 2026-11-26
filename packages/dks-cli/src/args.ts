@@ -107,7 +107,7 @@ export const parseInvocation = (argv: readonly string[]): Invocation => {
         helpRequested = true
         // `dks search foo --help` asks for search help, not help for "foo".
         args.length = 0
-        if (requested !== '' && requested !== 'help') args.push(requested)
+        if (requested !== '') args.push(requested)
         continue
       }
       default:
