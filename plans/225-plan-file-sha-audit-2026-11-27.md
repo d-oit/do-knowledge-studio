@@ -86,6 +86,23 @@ Each new failure path was injected and observed:
 3. deleted the `**Status**:` line from a copied record → `✗ ... has no "**Status**:"
    or "- Status:" line` (probe file removed afterwards).
 
+## Codacy finding on the first push
+
+Codacy reported one High issue against the status read:
+`ESLint8_security_detect-non-literal-fs-filename` on
+`readFileSync(path, 'utf8')`, where `path` came from a Markdown table. The rule is
+syntactic — it cannot see that the path was already matched against the directory
+listing — but the finding is right in substance: an index-derived path should be
+validated by shape and containment before any read, exactly as the lesson links
+are.
+
+The fix follows the file's own rule rather than suppressing the check: register
+paths must match `plans/ADRs/NNN-slug.md`, must resolve inside `plans/ADRs`, and
+are read through `readTextFile`, the reviewed reader that exists because a bare
+fs call cannot satisfy the rule. Directory enumeration now also refuses symlinked
+entries. A row whose path escapes the directory fails the check instead of being
+read.
+
 ## Checks run
 
 - `pnpm run docs:check` after each injection and after restore.

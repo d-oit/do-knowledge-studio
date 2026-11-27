@@ -68,6 +68,19 @@ const resolveDocPath = (repoRelative, allowPattern) => {
   return resolved
 }
 
+// ADR register rows are index-derived too, so they get the same treatment as
+// lesson links: shape first, then containment, then a read through the one
+// reviewed reader (`readTextFile` documents why a bare fs call cannot pass
+// security/detect-non-literal-fs-filename even after validation).
+const ADR_DIR_ROOT = resolve(REPO_ROOT, 'plans/ADRs')
+const ADR_INDEX_PATH_PATTERN = /^plans\/ADRs\/\d{3}-[A-Za-z0-9][A-Za-z0-9_.-]*\.md$/
+const resolveAdrPath = (repoRelative) => {
+  if (typeof repoRelative !== 'string' || repoRelative.includes('\0')) return null
+  if (!ADR_INDEX_PATH_PATTERN.test(repoRelative)) return null
+  const resolved = resolve(REPO_ROOT, repoRelative)
+  return isWithin(ADR_DIR_ROOT, resolved) ? resolved : null
+}
+
 /** Directory entries by name, so symlinked files can be refused before a read. */
 const entriesByName = (entries) => new Map(entries.map((entry) => [entry.name, entry]))
 const isRegularFile = (entries, name) => {
@@ -429,7 +442,10 @@ if (registerStart === -1) {
 } else {
   const registerEnd = planIndex.indexOf('\n## ', registerStart + ADR_REGISTER_HEADING.length)
   const register = planIndex.slice(registerStart, registerEnd === -1 ? undefined : registerEnd)
-  const adrFiles = readdirSync('plans/ADRs').filter((file) => /^\d+-[^/]+\.md$/.test(file))
+  const adrFiles = readdirSync('plans/ADRs', { withFileTypes: true })
+    .filter((entry) => entry.isFile() && !entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .filter((file) => /^\d+-[^/]+\.md$/.test(file))
   const byNumber = new Map(
     adrFiles.map((file) => [String(Number.parseInt(file, 10)).padStart(3, '0'), file]),
   )
@@ -449,8 +465,11 @@ if (registerStart === -1) {
       fail(`plans/INDEX.md registers ADR ${number} against a different-numbered file: ${path}`)
       continue
     }
-    const ownStatus = adrStatusLine(readFileSync(path, 'utf8'))
-    if (ownStatus === null) {
+    const resolvedAdr = resolveAdrPath(path)
+    const ownStatus = resolvedAdr === null ? null : adrStatusLine(await readTextFile(resolvedAdr))
+    if (resolvedAdr === null) {
+      fail(`plans/INDEX.md ADR register has a malformed or escaping path: ${path}`)
+    } else if (ownStatus === null) {
       fail(`plans/ADRs/${file} has no "**Status**:" or "- Status:" line`)
     } else if (statusWord(ownStatus) !== statusWord(status)) {
       fail(
