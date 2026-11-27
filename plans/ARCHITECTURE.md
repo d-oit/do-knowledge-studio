@@ -301,9 +301,7 @@ CI runs on push/PR via GitHub Actions.
 | 045 | Sync Threat Model and Room Membership | Implemented |
 | 046 | IndexedDB Canonical Persistence | Implemented |
 | 047 | Verifiable Backup Archive | Implemented |
-<<<<<<< HEAD
-| 056 | Shared Domain Services (PWA/CLI/MCP) | Accepted |
-=======
-| 048 | At-Rest Encryption of the Local Corpus | Proposed — prototype exists, not wired into persistence |
+| 048 | At-Rest Encryption of the Local Corpus | Implemented — browser-verified on Chromium; security review open |
 | 050 | Read-Only MCP Bridge via an Offline Bundle Server | Accepted — optional adapter |
->>>>>>> origin/main
+| 056 | Shared Domain Services (PWA/CLI/MCP) | Accepted |
+| 057 | MCP Remains an Optional Adapter | Accepted |

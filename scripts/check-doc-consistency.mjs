@@ -352,7 +352,13 @@ for (const file of citingFiles) {
 // package README, and both top-level docs must present the CLI.
 const cliReadme = readFileSync('packages/dks-cli/README.md', 'utf8')
 const cliHelp = readFileSync('packages/dks-cli/src/commands/help.ts', 'utf8')
-const cliCommands = [...cliHelp.matchAll(/\{ name: '([a-z]+)', summary:/g)].map((m) => m[1])
+// COMMAND_DOCS entries carry several fields each, so read the block and pull
+// every `name: 'x'` inside it instead of assuming a one-line object shape.
+const commandBlockStart = cliHelp.indexOf('COMMAND_DOCS')
+const commandBlockEnd = cliHelp.indexOf('FLAG_DOCS')
+const cliCommands = commandBlockStart === -1 || commandBlockEnd === -1
+  ? []
+  : [...cliHelp.slice(commandBlockStart, commandBlockEnd).matchAll(/name: '([a-z]+)'/g)].map((m) => m[1])
 if (cliCommands.length === 0) {
   fail('could not read COMMAND_DOCS from packages/dks-cli/src/commands/help.ts')
 }

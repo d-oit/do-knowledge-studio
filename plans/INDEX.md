@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-11-13
+**Updated**: 2026-11-26
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -9,6 +9,14 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 221 — CLI help pages, MCP decision record, docs reconciliation (2026-11-26)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | `dks help <command>` / `dks <command> --help` show one command's usage, access class and examples (#1169) | Done | `COMMAND_DOCS` gained `usage`/`access`/`examples`; focused text and JSON pages share one source; README documents the read-only and IndexedDB boundaries. See [Plan 221](221-cli-help-mcp-decision-2026-11-26.md) |
+| 2 | MCP consumer register, supported clients, upgrade trigger and deprecation path (#1160) | Done | [ADR 057](ADRs/057-mcp-optional-adapter.md) separates verified consumers (SDK client contract test, CLI parity) from documented-only hosts and dates the deprecation review |
+| 3 | Reconcile plan 214's field-check row and remove committed conflict markers from `plans/ARCHITECTURE.md` | Done | INDEX now cites the Chromium shadow/canary/durability specs while keeping wave 11 security review open; ADR table lists 048/050/056/057 without markers |
+
 ### Plan 214 — At-rest encryption for the complete local workspace (2026-11-24)
 
 | Wave | Goal | Status | Outcome |
@@ -16,7 +24,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Decide | Threat model, opt-in vs mandatory, plaintext-surface inventory | Done | [ADR 048](ADRs/048-at-rest-encryption.md) moved to **Accepted** with 12 surfaces each encrypted, excluded with a reason, or disclosed |
 | Implement | Encrypt canonical corpus + revision history; fail closed on wrong key, tampering and version mismatch; verify before deleting plaintext | Done | AES-256-GCM envelopes with AAD-bound headers, in-memory-only key, locked mode that refuses reads and writes, transactional revision migration with restore |
 | Lifecycle | Enable/disable/unlock/lock, settings panel and blocking lock screen | Done (unit) | Purges/suppresses the plaintext side surfaces (Yjs replica, drafts, recovery snapshots) and states the irreversible-loss warning before enabling |
-| Field-check | Real-browser shadow/canary, kill-tab and quota tests, e2e unlock/refusal/reload | **Open** | Unit-verified only; see [Plan 214](214-at-rest-encryption-1162-2026-11-24.md) |
+| Field-check | Real-browser shadow/canary, kill-tab and quota tests, e2e unlock/refusal/reload | Done (Chromium); security review open | `e2e/at-rest-encryption.spec.ts` and `-durability.spec.ts`: 16 specs green on `chromium` + `desktop-xl`; WebKit is environment-blocked (no root; missing `libjxl`/`libbacktrace`). Wave 11 independent security review remains **Open**, and no real-profile field run has happened; see [Plan 214](214-at-rest-encryption-1162-2026-11-24.md) |
 
 ### Plan 213 — Graph keyboard navigation (2026-11-13)
 
