@@ -21,6 +21,9 @@
  *   `packages/dks-mcp/README.md` (Issue #1161);
  * - every repository skill directory is listed in the generated skills catalog
  *   and `.agents/skills/README.md` (Issue #1161);
+ * - every decision record from the register floor onward has a row in the
+ *   `plans/INDEX.md` ADR register, and every row points at its own file (the
+ *   register went stale for months before Plan 222 backfilled it);
  * - the dks CLI commands documented in `packages/dks-cli/README.md` match
  *   `COMMAND_DOCS`, and `README.md`/`PRODUCT.md` present the CLI (Issue #1161);
  * - every MCP tool advertised in `tool-definitions.ts` is documented in
@@ -397,6 +400,47 @@ for (const skill of skillDirs) {
   }
   if (!skillsReadme.includes(`\`${skill}/\``)) {
     fail(`.agents/skills/README.md does not list skill: ${skill}`)
+  }
+}
+
+// --- ADR register consistency ---------------------------------------------------
+// A decision record nobody can find is not a decision record. The register is a
+// hand-maintained table, so it drifts the moment an ADR is written and the table
+// is not touched; Plan 222 found 041–057 missing. ADRs 001–057 either predate the
+// register or sit in its audited backfill, so 058 is the first number the register
+// has never had the chance to cover — anything at or above it must carry a row.
+const ADR_REGISTER_HEADING = '## ADRs recorded since the 2026-07-25 reconciliation'
+const ADR_REGISTER_FLOOR = 58
+const ADR_ROW_PATTERN = /^\|\s*(\d{3})\s*\|.*\|\s*(plans\/ADRs\/[^|\s]+\.md)\s*\|$/
+const planIndex = readFileSync('plans/INDEX.md', 'utf8')
+const registerStart = planIndex.indexOf(ADR_REGISTER_HEADING)
+if (registerStart === -1) {
+  fail(`plans/INDEX.md is missing the ADR register heading: ${ADR_REGISTER_HEADING}`)
+} else {
+  const registerEnd = planIndex.indexOf('\n## ', registerStart + ADR_REGISTER_HEADING.length)
+  const register = planIndex.slice(registerStart, registerEnd === -1 ? undefined : registerEnd)
+  const adrFiles = readdirSync('plans/ADRs').filter((file) => /^\d+-[^/]+\.md$/.test(file))
+  const byNumber = new Map(
+    adrFiles.map((file) => [String(Number.parseInt(file, 10)).padStart(3, '0'), file]),
+  )
+  const registered = new Set()
+  for (const line of register.split('\n')) {
+    const row = line.match(ADR_ROW_PATTERN)
+    if (row === null) continue
+    const [, number, path] = row
+    if (registered.has(number)) fail(`plans/INDEX.md registers ADR ${number} twice`)
+    registered.add(number)
+    const file = path.slice('plans/ADRs/'.length)
+    if (!adrFiles.includes(file)) {
+      fail(`plans/INDEX.md ADR register points at a missing file: ${path}`)
+    } else if (byNumber.get(number) !== file) {
+      fail(`plans/INDEX.md registers ADR ${number} against a different-numbered file: ${path}`)
+    }
+  }
+  for (const [number, file] of byNumber) {
+    if (Number(number) >= ADR_REGISTER_FLOOR && !registered.has(number)) {
+      fail(`plans/ADRs/${file} has no row in the plans/INDEX.md ADR register`)
+    }
   }
 }
 
