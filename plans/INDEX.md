@@ -12,6 +12,14 @@ carried no longer exist.
 
 ## Active work
 
+### Plan 226 — Branch-SHA map, register backfill 029–038, #1204 triage (2026-11-27)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Name the reachable commit each orphaned branch SHA became | Done | 45 of 48 mapped by subject against GitHub and the squash bodies (36 destination commits); `6142cfeb` and the 40-character `ff98106…` were never pushed, and `1af799d` was superseded before a squash carried it. See [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md) |
+| 2 | Register the decision records the index still omitted | Done | ADRs 029–033 and 035–038 added in numeric order (039 has no record); the status parser now reads the `## Status` section form, and the guard floor drops 58 → 29 so every record from 029 onward is enforced |
+| 3 | Triage #1204 instead of leaving it unassessed | Done | Ladybird alpha ships WebDriver and IndexedDB but its service-worker surface is incomplete; kept open as opt-in, labelled `testing` and `priority: low`, with a narrowed first-pass scope in the thread |
+
 ### Plan 225 — Plan-file SHA audit, ADR status and plan-file guards (2026-11-27)
 
 | Wave | Goal | Status | Outcome |
@@ -374,7 +382,16 @@ its file. Rows with a superseded or historical status keep that word.
 | ADR | Scope (date) | Status | ADR file |
 | --- | --- | --- | --- |
 | 028 | Validated and recoverable local data boundaries (2026-09-29) | Implemented (§4a added) | plans/ADRs/028-validated-recoverable-local-data-boundaries.md |
+| 029 | Manifest-driven agent harness and skill validation (2026-07-19) | Implemented | plans/ADRs/029-manifest-driven-agent-harness.md |
+| 030 | GitHub branch protection for `main` (2026-08-01) | Implemented | plans/ADRs/030-github-branch-protection.md |
+| 031 | Native OKF v0.2 bundle export and import (recorded 2026-08-08) | Implemented | plans/ADRs/031-okf-v02-export.md |
+| 032 | BM25 reference cache for local search (recorded 2026-08-12) | Implemented | plans/ADRs/032-bm25-reference-cache.md |
+| 033 | Markdown preview e2e verification (recorded 2026-08-15) | Implemented | plans/ADRs/033-markdown-preview-e2e-verification.md |
 | 034 | Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16) | Implemented — delivered via PRs #694 and #695 | plans/ADRs/034-nightly-dependabot-alert-check.md |
+| 035 | Global error handling and client-side logging (recorded 2026-08-22) | Implemented | plans/ADRs/035-global-error-handling-and-client-side-logging.md |
+| 036 | E2E responsive test matrix and pyramid integrity (recorded 2026-08-22) | Partially implemented | plans/ADRs/036-e2e-responsive-test-matrix.md |
+| 037 | URL-addressable view state (recorded 2026-08-22) | Implemented | plans/ADRs/037-url-addressable-view-state.md |
+| 038 | Cross-tab sync session tombstones (2026-09-08) | Implemented (session-scoped) | plans/ADRs/038-cross-tab-sync-session-tombstones.md |
 | 040 | CPU-first local AI inference (2026-09-26) | Implemented | plans/ADRs/040-cpu-first-local-ai.md |
 | 041 | Offline precache scope and upgrade identity (2026-09-30) | Production deployment verified (2026-10-14) | plans/ADRs/041-offline-precache-scope-and-upgrade-identity.md |
 | 042 | Documentation lint policy (2026-10-12) | Implemented | plans/ADRs/042-documentation-lint-policy.md |

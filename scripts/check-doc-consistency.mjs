@@ -423,17 +423,21 @@ for (const skill of skillDirs) {
 // --- ADR register consistency ---------------------------------------------------
 // A decision record nobody can find is not a decision record. The register is a
 // hand-maintained table, so it drifts the moment an ADR is written and the table
-// is not touched; Plan 222 found 041–057 missing. ADRs 001–057 either predate the
-// register or sit in its audited backfill, so 058 is the first number the register
-// has never had the chance to cover — anything at or above it must carry a row.
+// is not touched; Plan 222 found 041–057 missing and Plan 226 found 029–038. The
+// floor sits just above the pre-register era (001–028, whose rows live in the
+// older reconciliation section), so every ADR from 029 onward must carry a row.
 const ADR_REGISTER_HEADING = '## ADRs recorded since the 2026-07-25 reconciliation'
-const ADR_REGISTER_FLOOR = 58
+const ADR_REGISTER_FLOOR = 29
 const ADR_ROW_PATTERN = /^\|\s*(\d{3})\s*\|.*\|\s*([^|]+?)\s*\|\s*(plans\/ADRs\/[^|\s]+\.md)\s*\|$/
-// Records use two header styles (`**Status**: X` and `- Status: X`), so both are
-// read; only the leading word is compared, because the prose after it legitimately
-// differs between a one-line index row and the record.
+// Records use three header styles (`**Status**: X`, `- Status: X`, and a
+// `## Status` section), so all three are read; only the leading word is compared,
+// because the prose after it legitimately differs between a one-line index row
+// and the record.
 const adrStatusLine = (text) =>
-  text.match(/^\*\*Status\*\*:\s*(.+)$/m)?.[1] ?? text.match(/^-\s*Status:\s*(.+)$/m)?.[1] ?? null
+  text.match(/^\*\*Status\*\*:\s*(.+)$/m)?.[1] ??
+  text.match(/^-\s*Status:\s*(.+)$/m)?.[1] ??
+  text.match(/^## Status\s*\n+(.+)$/m)?.[1] ??
+  null
 const statusWord = (value) => value.replace(/[*`]/g, '').match(/^[A-Za-z]+/)?.[0].toLowerCase() ?? ''
 const planIndex = readFileSync('plans/INDEX.md', 'utf8')
 const registerStart = planIndex.indexOf(ADR_REGISTER_HEADING)
