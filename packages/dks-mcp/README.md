@@ -38,15 +38,19 @@ retention/deprecation decision are recorded in
 
 | Host | Configuration | Status |
 | --- | --- | --- |
-| MCP SDK client | `src/contract.test.ts` (official `Client`, in-memory transport) | Verified in CI — tools, results and error shapes |
+| MCP SDK client | `src/contract.test.ts` (official `Client`, in-memory transport) and `src/stdio-smoke.test.ts` (official `Client` over a spawned `dist/cli.js`) | Verified in CI — tools, results, error shapes, exit codes and the real stdio boundary |
 | Claude Code | `claude mcp add` entry below | Documented; not run against a live host here |
 | Claude Desktop | `claude_desktop_config.json` below | Documented; not run against a live host here |
 | Cursor | stdio server entry, same command/args | Documented; not verified against a live host |
 
-The verified compatibility evidence is the SDK contract test plus
-[`tests/mcp-cli-parity.test.ts`](../../tests/mcp-cli-parity.test.ts), which
-proves the tools return the same concepts, ranking and graph results as the
-shared `dks-core` services. A live-host smoke run is manual and not claimed.
+The verified compatibility evidence is the SDK contract test, the spawned-stdio
+smoke test, and [`tests/mcp-cli-parity.test.ts`](../../tests/mcp-cli-parity.test.ts),
+which proves the tools return the same concepts, ranking and graph results as the
+shared `dks-core` services. The smoke test builds the package, launches the
+published `dist/cli.js` binary as a child process, and asserts both the MCP
+handshake and the fail-closed exits (missing argument, unreadable bundle) — so a
+broken entrypoint cannot pass on the in-memory suite alone. A GUI host's own
+handshake is still not exercised here: that run stays manual and is not claimed.
 
 ## Client configuration
 

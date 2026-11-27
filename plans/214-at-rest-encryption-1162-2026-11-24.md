@@ -24,7 +24,7 @@ without a path that can silently overwrite or downgrade an unreadable library.
 | 7 — Lifecycle UX | Enable/disable/unlock/lock panel and blocking lock screen | Done | Irreversible-loss warning asserted in the browser; locked workspace shows the gate, not demo data | `e2e/at-rest-encryption.spec.ts` (warning + gate), `workspace-encryption-panel.tsx` |
 | 8 — Real-browser shadow | Same corpus readable as plaintext and ciphertext in a real browser, identical fingerprints | Done (Chromium) | Shadow spec: all 14 seed notes and their text survive the round trip; the enable path enforces fingerprint parity in code | `e2e/at-rest-encryption.spec.ts` |
 | 9 — Real-browser canary | 10k-record corpus round trip, interrupted migration, quota exhaustion, restore from backup | Done (Chromium) | Four specs on the real app; the two hostile cases were each shown failing with the behaviour inverted | `e2e/at-rest-encryption-durability.spec.ts` |
-| 10 — E2E | `pnpm run test:e2e` covers unlock, refusal, lock-through-reload | Done (Chromium) | 16 specs green across `chromium` and `desktop-xl`; WebKit projects environment-blocked, see below | See “E2E evidence” below |
+| 10 — E2E | `pnpm run test:e2e` covers unlock, refusal, lock-through-reload | Done (Chromium + WebKit in CI) | 16 specs green across `chromium` and `desktop-xl`; the nightly CI sweep runs both specs under its WebKit projects `mobile` and `tablet` (8 instances each, green on 2026-11-26), see below | See “E2E evidence” below |
 | 11 — Security review | Independent review of this design and implementation | **Open** | Sign-off linked here | — |
 
 ## Acceptance checklist (issue #1162)
@@ -147,12 +147,16 @@ environmental, not caused by this work: it reproduces byte-identically with
 `src/lib/sync/doc.ts` reverted to the pre-change version, and the container's
 WebRTC peers do not connect.
 
-**WebKit (mobile/tablet projects) could not run in this environment.** The
-container has no root, and Playwright's WebKit build needs system libraries
-Ubuntu 24.04 does not ship (`libjxl.so.0.8`, `libbacktrace.so.0`); Chromium was
-made runnable by extracting its dependency packages locally. The specs are
-viewport-agnostic and run under the repo's default project matrix in CI, but
-WebKit execution is unverified here.
+**WebKit ran in CI, not in this container.** The container has no root, and
+Playwright's WebKit build needs system libraries Ubuntu 24.04 does not ship
+(`libjxl.so.0.8`, `libbacktrace.so.0`); Chromium was made runnable by extracting
+its dependency packages locally. The nightly four-project sweep has no such
+limit and does not exclude these specs: on
+[run 45813183285](https://github.com/d-oit/do-knowledge-studio/actions/runs/45813183285)
+(2026-11-26) both at-rest specs ran under `mobile` (iPhone 13) and `tablet`
+(iPad Pro 11) — 8 instances each — and passed. The local block is therefore
+environmental, not a coverage gap; pull-request runs stay Chromium-only by design
+(plans/148 §6.2, plans/149).
 
 ## Known limits and disclosure
 
@@ -166,10 +170,10 @@ WebKit execution is unverified here.
 
 ## Next steps
 
-1. Run both at-rest specs under the WebKit projects (mobile/tablet) in CI, where
-   Playwright's WebKit dependencies are installed. **Environment-blocked here**:
-   the container has no root and Playwright's WebKit build needs
-   `libjxl.so.0.8` and `libbacktrace.so.0`, which Ubuntu 24.04 does not ship.
+1. **Done (2026-11-26 nightly).** Both at-rest specs run under the WebKit projects
+   (mobile/tablet) in the nightly CI sweep and passed there; see the E2E evidence
+   above. They stay environment-blocked in this container only (no root;
+   `libjxl.so.0.8` and `libbacktrace.so.0` are not shipped by Ubuntu 24.04).
 2. Security review (wave 11); address findings before moving ADR 048 from
    "implemented and browser-verified on Chromium" to "field-verified".
 3. A field run on a real profile with the user's own corpus, per the delivery
