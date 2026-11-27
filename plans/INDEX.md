@@ -1,6 +1,6 @@
 # Plans Index
 
-**Updated**: 2026-11-26
+**Updated**: 2026-11-27
 **Method**: GOAP (Goal-Oriented Action Planning) with ADRs
 
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
@@ -8,6 +8,14 @@ below; accepted decision records are in `plans/ADRs/NNN-slug.md`. Work still in
 flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
+
+### Plan 222 — MCP stdio smoke test, ADR register backfill, at-rest WebKit evidence (2026-11-27)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Prove the published `dks-mcp` entrypoint speaks MCP on a real child-process stdio | Done | `src/stdio-smoke.test.ts` compiles the package, spawns `dist/cli.js`, and asserts the handshake, `tools/list`, a served search hit, and both fail-closed exits. Reverting argv parsing to `slice(3)` failed 2 of 3 cases; restored green (22 tests). See [Plan 222](222-mcp-stdio-smoke-and-index-reconciliation-2026-11-27.md) |
+| 2 | Make `plans/INDEX.md` true again | Done | ADR register backfilled for 041–057 with the status each record states; plan 184 moved from "In review" to Done at [PR #1048](https://github.com/d-oit/do-knowledge-studio/pull/1048) (`5353cfce`), all six issues closed |
+| 3 | Replace the "WebKit is environment-blocked" note with CI evidence | Done | Nightly [run 45813183285](https://github.com/d-oit/do-knowledge-studio/actions/runs/45813183285) (2026-11-26) ran both at-rest specs under `mobile` and `tablet` (WebKit), 8 instances each, all green; no CI change was needed |
 
 ### Plan 221 — CLI help pages, MCP decision record, docs reconciliation (2026-11-26)
 
@@ -24,7 +32,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Decide | Threat model, opt-in vs mandatory, plaintext-surface inventory | Done | [ADR 048](ADRs/048-at-rest-encryption.md) moved to **Accepted** with 12 surfaces each encrypted, excluded with a reason, or disclosed |
 | Implement | Encrypt canonical corpus + revision history; fail closed on wrong key, tampering and version mismatch; verify before deleting plaintext | Done | AES-256-GCM envelopes with AAD-bound headers, in-memory-only key, locked mode that refuses reads and writes, transactional revision migration with restore |
 | Lifecycle | Enable/disable/unlock/lock, settings panel and blocking lock screen | Done (unit) | Purges/suppresses the plaintext side surfaces (Yjs replica, drafts, recovery snapshots) and states the irreversible-loss warning before enabling |
-| Field-check | Real-browser shadow/canary, kill-tab and quota tests, e2e unlock/refusal/reload | Done (Chromium); security review open | `e2e/at-rest-encryption.spec.ts` and `-durability.spec.ts`: 16 specs green on `chromium` + `desktop-xl`; WebKit is environment-blocked (no root; missing `libjxl`/`libbacktrace`). Wave 11 independent security review remains **Open**, and no real-profile field run has happened; see [Plan 214](214-at-rest-encryption-1162-2026-11-24.md) |
+| Field-check | Real-browser shadow/canary, kill-tab and quota tests, e2e unlock/refusal/reload | Done (Chromium + WebKit in CI); security review open | `e2e/at-rest-encryption.spec.ts` and `-durability.spec.ts`: 16 specs green locally on `chromium` + `desktop-xl`, and the nightly sweep runs both specs under its WebKit projects, `mobile` (iPhone 13) and `tablet` (iPad Pro 11) — 8 instances each, green on [run 45813183285](https://github.com/d-oit/do-knowledge-studio/actions/runs/45813183285) (2026-11-26). The local WebKit block is environmental only (no root; missing `libjxl`/`libbacktrace`). Wave 11 independent security review remains **Open**, and no real-profile field run has happened; see [Plan 214](214-at-rest-encryption-1162-2026-11-24.md) |
 
 ### Plan 213 — Graph keyboard navigation (2026-11-13)
 
@@ -108,12 +116,6 @@ See [Plan 193](193-metadata-reconciliation-2026-11-02.md).
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Triage | Check eight external architecture proposals against the shipped code before acting on any of them | Done | Six of the eight target subsystems this build does not have (SQLite, FTS5, an HTTP API, a Node plugin host) or are already shipped (Yjs collaboration, local semantic search). The two survivors landed: reciprocal rank fusion now merges BM25 and semantic results and labels each hit with the retrievers that matched it (`Keyword` / `Meaning` / `Keyword + meaning` as text, never colour), an evaluation harness scores recall@k and MRR for lexical, semantic and fused ranking on one fixture corpus and asserts hybrid beats the better single mode, and `bench.yml` runs the guard suite as an advisory PR job plus real `bench()` measurements now that `fusion.bench.ts` exists. At-rest encryption is recorded as Proposed in ADR 048. See [Plan 191](191-proposal-triage-2026-10-31.md). |
-
-### Plan 184 — Open issue remediation (2026-10-31)
-
-| Wave | Goal | Status | Outcome |
-| --- | --- | --- | --- |
-| 184 | Implement all open issues (#1035, #1036, #1037, #1040, #1041, #1042) in one PR | In review | Storage moves to IndexedDB with atomic legacy migration (186), semantic indexing becomes incremental and cache-backed (187), sync gets a threat model/fingerprint/invite contract (185), a verifiable `.dksb` backup and previewed restore lands (188), independent-origin peer acceptance is covered (189), and public docs are reconciled with a source-derived consistency check (190). ADRs 045–047. |
 
 ### Plan 183 — Split oversized automation scripts and scope Markdown fixes (2026-10-22)
 
@@ -293,6 +295,7 @@ its file. Rows with a superseded or historical status keep that word.
 
 | Plan | Title (date) | Outcome | Plan file |
 | --- | --- | --- | --- |
+| 184 | Open issue remediation (2026-10-31) | Done — merged in [PR #1048](https://github.com/d-oit/do-knowledge-studio/pull/1048) at `5353cfce`; all six issues closed. Storage moved to IndexedDB with atomic legacy migration (186), semantic indexing became incremental and cache-backed (187), sync got a threat model/fingerprint/invite contract (185), a verifiable `.dksb` backup and previewed restore landed (188), independent-origin peer acceptance is covered (189), and public docs are reconciled with a source-derived consistency check (190). ADRs 045–047. | plans/184-open-issue-remediation-2026-10-31.md |
 | 160 | Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30) | Done — removed the foreign `.mimocode/` tree and its inert config entries, and fixed all five live Codacy findings in code, not by suppression (2788 unit tests green). | plans/160-codacy-open-issues-and-mimocode-cleanup-2026-09-30.md |
 | 159 | Rejected-library recovery visibility and fail-closed persistence (2026-09-29) | Done — a refused hydration is now visible on Home and fails closed for the page session (`hydration-guard.ts`); quarantine occupancy is decided by key existence and dismissal is non-destructive; ADR 028 §4a. | plans/159-rejected-library-recovery-visibility-and-fail-closed.md |
 | 157 | Codebase gap remediation: dead features, undo integrity, PWA, live announcements (2026-09-28) | Done — mind-map density and graph snapshots made real, undo carries claims, PWA raster icons + manifest/SW re-checks, 9 announcing mutations. | plans/157-codebase-gap-and-feature-remediation.md |
@@ -349,8 +352,25 @@ its file. Rows with a superseded or historical status keep that word.
 | ADR | Scope (date) | Status | ADR file |
 | --- | --- | --- | --- |
 | 028 | Validated and recoverable local data boundaries (2026-09-29) | Implemented (§4a added) | plans/ADRs/028-validated-recoverable-local-data-boundaries.md |
-| 040 | CPU-first local AI inference (2026-09-26) | Implemented | plans/ADRs/040-cpu-first-local-ai.md |
 | 034 | Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16) | Done | plans/ADRs/034-nightly-dependabot-alert-check.md |
+| 040 | CPU-first local AI inference (2026-09-26) | Implemented | plans/ADRs/040-cpu-first-local-ai.md |
+| 041 | Offline precache scope and upgrade identity (2026-09-30) | Production deployment verified (2026-10-14) | plans/ADRs/041-offline-precache-scope-and-upgrade-identity.md |
+| 042 | Documentation lint policy (2026-10-12) | Implemented | plans/ADRs/042-documentation-lint-policy.md |
+| 043 | Canvas reference integrity (2026-10-13) | Implemented | plans/ADRs/043-canvas-reference-integrity.md |
+| 044 | Pull-request integrity guards (2026-10-13) | Implemented in Plan 165, Step 6 | plans/ADRs/044-pr-integrity-guards.md |
+| 045 | Sync threat model and room membership (2026-10-31) | Implemented (#1035; TURN section from #1052) | plans/ADRs/045-sync-threat-model.md |
+| 046 | IndexedDB canonical persistence (2026-10-31) | Implemented (#1036) | plans/ADRs/046-indexeddb-canonical-persistence.md |
+| 047 | Verifiable backup archive (2026-10-31) | Implemented (#1040) | plans/ADRs/047-verifiable-backup-archive.md |
+| 048 | At-rest encryption of the local corpus (2026-11-24) | Accepted — implemented (#1162, Plan 214) | plans/ADRs/048-at-rest-encryption.md |
+| 049 | Bounded property and mutation testing for sync (2026-11-03) | Accepted; tracked in Plan 194 / #1062 | plans/ADRs/049-property-mutation-testing.md |
+| 050 | Read-only MCP bridge via an offline bundle server (2026-11-05) | Accepted; tracked in Plan 196 / #1056 | plans/ADRs/050-mcp-bridge.md |
+| 051 | Graph queries and saved views (2026-11-05) | Accepted (#1058) | plans/ADRs/051-graph-queries-saved-views.md |
+| 052 | Graph rendering scalability path (2026-11-05) | Accepted (#1053) | plans/ADRs/052-graph-rendering-scalability.md |
+| 053 | Entity revision history storage (2026-11-05) | Accepted (#1060) | plans/ADRs/053-entity-revision-history.md |
+| 054 | AI extraction writes proposals, never the corpus (2026-11-08) | Accepted (#1057) | plans/ADRs/054-synthesis-proposal-inbox.md |
+| 055 | File-based sync bundle (2026-11-14) | Accepted | plans/ADRs/055-sync-file-bundle.md |
+| 056 | Shared domain services across PWA, CLI and optional MCP (2026-11-22) | Accepted | plans/ADRs/056-shared-domain-services.md |
+| 057 | MCP remains an optional adapter (2026-11-26) | Accepted | plans/ADRs/057-mcp-optional-adapter.md |
 
 ADR 028 §4a makes the decision operational: a refused hydration fails closed for the
 page session across the storage writer, the quarantine record, and cross-tab/Yjs
