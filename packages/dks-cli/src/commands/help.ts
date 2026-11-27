@@ -65,28 +65,28 @@ export const COMMAND_DOCS: readonly CommandDoc[] = [
     summary: 'one entity with claims and relations',
     usage: 'entity ID',
     access: READ_ONLY,
-    examples: ['dks entity <id>', 'dks entity <id> --format json'],
+    examples: ['dks entity ENTITY_ID', 'dks entity ENTITY_ID --format json'],
   },
   {
     name: 'claims',
     summary: 'the entity\'s claims',
     usage: 'claims ENTITY_ID',
     access: READ_ONLY,
-    examples: ['dks claims <id>', 'dks claims <id> --format json'],
+    examples: ['dks claims ENTITY_ID', 'dks claims ENTITY_ID --format json'],
   },
   {
     name: 'aliases',
     summary: 'the entity\'s aliases',
     usage: 'aliases ID',
     access: READ_ONLY,
-    examples: ['dks aliases <id>'],
+    examples: ['dks aliases ENTITY_ID'],
   },
   {
     name: 'relations',
     summary: 'related ids with resolved names',
     usage: 'relations ID',
     access: READ_ONLY,
-    examples: ['dks relations <id>', 'dks relations <id> --format json'],
+    examples: ['dks relations ENTITY_ID', 'dks relations ENTITY_ID --format json'],
   },
   {
     name: 'graph',
@@ -94,8 +94,8 @@ export const COMMAND_DOCS: readonly CommandDoc[] = [
     usage: 'graph neighbors ID [--depth N<=3] | path FROM TO | stats',
     access: READ_ONLY,
     examples: [
-      'dks graph neighbors <id> --depth 2',
-      'dks graph path <from> <to>',
+      'dks graph neighbors ENTITY_ID --depth 2',
+      'dks graph path FROM_ID TO_ID',
       'dks graph stats --format json',
     ],
   },
@@ -145,7 +145,7 @@ export const FLAG_DOCS: readonly FlagDoc[] = [
 const HELP_NOTES: readonly string[] = [
   'access: every command is read-only — no writes, imports, restores or other mutating operations',
   'the browser workspace (IndexedDB) is not reachable from Node — operate on an exported bundle',
-  'in examples, <id>, <from> and <to> are placeholders: list real ids with dks index',
+  'in examples, ENTITY_ID, FROM_ID and TO_ID are placeholders: list real ids with dks index',
   '"-" in a path placeholder reads stdin (e.g. backup verify -)',
   'exit codes: 0 ok · 2 usage · 3 not-found · 4 conflict · 5 io · 6 permission · 7 internal',
 ]

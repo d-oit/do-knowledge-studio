@@ -106,7 +106,7 @@ describe('runCli — envelope contract', () => {
     expect(result.exitCode).toBe(0)
     expect(result.stdout).toContain('usage:\n  dks entity ID')
     expect(result.stdout).toContain('access: read-only')
-    expect(result.stdout).toContain('dks entity <id> --format json')
+    expect(result.stdout).toContain('dks entity ENTITY_ID --format json')
     expect(result.stdout).not.toContain('BM25 retrieval')
     expect(result.stderr).toBe('')
   })
