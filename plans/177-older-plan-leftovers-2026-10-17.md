@@ -1,7 +1,7 @@
 # Plan 177 — Older-Plan Leftovers: Palette, Export, Panel, and Filter Records
 
 **Date:** 2026-10-17
-**Status:** Implementation integrated in the Plan 178 candidate; final verification and delivery are tracked there.
+**Status:** Done — delivered with Plan 178 in PR #992 (`887541c`, 2026-10-19); the per-item verification record stays in Plan 178.
 **Method:** GOAP — the Plan 176 recon reported these as genuinely unmet; each was
 re-verified against source before this plan was written.
 **Related:** [ADR 017](ADRs/017-chat-unification.md) (chat unification, palette

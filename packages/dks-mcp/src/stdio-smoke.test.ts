@@ -47,10 +47,18 @@ let bundleDir = ''
 
 beforeAll(() => {
   const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc')
-  execFileSync(process.execPath, [tsc, '-p', join(PACKAGE_DIR, 'tsconfig.json')], {
-    cwd: PACKAGE_DIR,
-    stdio: 'pipe',
-  })
+  try {
+    execFileSync(process.execPath, [tsc, '-p', join(PACKAGE_DIR, 'tsconfig.json')], {
+      cwd: PACKAGE_DIR,
+      stdio: 'pipe',
+    })
+  } catch (err) {
+    // `stdio: 'pipe'` hides tsc's own report; without this a type error in the
+    // package surfaces as a bare "Command failed" with no diagnostic at all.
+    const stderr = (err as { stderr?: string | Buffer }).stderr
+    const detail = stderr === undefined ? '' : String(stderr).trim()
+    throw new Error(`dks-mcp build failed before the smoke test could run:\n${detail}`)
+  }
   bundleDir = mkdtempSync(join(tmpdir(), 'dks-mcp-stdio-'))
   mkdirSync(join(bundleDir, 'concepts'))
   writeFileSync(join(bundleDir, 'index.md'), INDEX)
