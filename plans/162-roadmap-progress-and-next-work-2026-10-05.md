@@ -366,10 +366,10 @@ evidence:
 
 | Audit item | Reconciliation |
 |---|---|
-| Missing implementation #2 — deletion/export integrity | Implemented in Plan 165 Step 1 (`e2ee5a6`), with reference pruning at delete/import/hydration/recovery/remote-reconcile/export boundaries and canvas-aware undo history. See [ADR 043](ADRs/043-canvas-reference-integrity.md). |
-| Missing implementation #3 — sync join/rejoin | Implemented in Plan 165 Step 2 (`a2dcbea`): leaving a room tears down its WebRTC provider without destroying the shared Yjs document or its IndexedDB persistence; the app-shell bridge remains available for rejoin, and initial-join conflicts are surfaced. |
-| Missing implementation #4 — heavy-leaf deferral | Implemented in Plan 165 Step 4 (`cdbd0f3`): sync and document-export dependencies are deferred. The recorded production build reduced first-load JavaScript by 9,333 bytes (about 0.53%); the offline E2E suite passed. |
-| F2 — URL deep links | Implemented in Plan 165 Step 3 (`f7d970f`); [ADR 037](ADRs/037-url-addressable-view-state.md) is now Implemented. |
+| Missing implementation #2 — deletion/export integrity | Implemented in Plan 165 Step 1 (`1f1fc50`), with reference pruning at delete/import/hydration/recovery/remote-reconcile/export boundaries and canvas-aware undo history. See [ADR 043](ADRs/043-canvas-reference-integrity.md). |
+| Missing implementation #3 — sync join/rejoin | Implemented in Plan 165 Step 2 (`1f1fc50`): leaving a room tears down its WebRTC provider without destroying the shared Yjs document or its IndexedDB persistence; the app-shell bridge remains available for rejoin, and initial-join conflicts are surfaced. |
+| Missing implementation #4 — heavy-leaf deferral | Implemented in Plan 165 Step 4 (`1f1fc50`): sync and document-export dependencies are deferred. The recorded production build reduced first-load JavaScript by 9,333 bytes (about 0.53%); the offline E2E suite passed. |
+| F2 — URL deep links | Implemented in Plan 165 Step 3 (`1f1fc50`); [ADR 037](ADRs/037-url-addressable-view-state.md) is now Implemented. |
 | S1, S2, D1, D2 | Catalog generation and the agent-surface CLI, script catalog, and workflow command documentation were reconciled in Plan 165 Step 5. |
 | D3 — README claims | Corrected in Plan 165: core state and pre-import recovery use Zustand/localStorage; IndexedDB is identified as the separate Yjs sync replica, not a production tiered recovery backup. Node >=22, browser-local BM25, and the optional model's first-use asset download versus later cached offline inference are documented. |
 | S3 — Cursor/Windsurf strategy semantics | Remains unresolved and is not claimed as completed. |
