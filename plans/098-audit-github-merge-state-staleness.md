@@ -1,5 +1,8 @@
 # Plan 098 — Audit: GitHub Merge-State Staleness on PRs (2026-08-01)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Status**: DONE (investigation + remediation recorded)
 **Method**: Live GitHub API inspection (rulesets, branch protection, check runs, GraphQL merge state)
 

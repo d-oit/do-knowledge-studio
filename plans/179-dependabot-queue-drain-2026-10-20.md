@@ -1,5 +1,8 @@
 # Plan 179 — Dependabot queue drain (2026-10-20)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Date:** 2026-10-20
 **Status:** Done — all five PRs merged; queue drained
 **Owner:** integration owner for this sweep

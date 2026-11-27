@@ -21,9 +21,9 @@
  *   `packages/dks-mcp/README.md` (Issue #1161);
  * - every repository skill directory is listed in the generated skills catalog
  *   and `.agents/skills/README.md` (Issue #1161);
- * - every decision record from the register floor onward has a row in the
- *   `plans/INDEX.md` ADR register, and every row points at its own file (the
- *   register went stale for months before Plan 222 backfilled it);
+ * - every decision record has a row in one of the two `plans/INDEX.md` ADR
+ *   register tables, and every row points at its own file (the register went
+ *   stale for months before Plans 222 and 226 backfilled it);
  * - each register row's status agrees with the ADR's own status line, so the
  *   index cannot call a record "Proposed" after it was accepted;
  * - every plan file the INDEX names exists (a row pointing at a deleted plan
@@ -73,7 +73,7 @@ const resolveDocPath = (repoRelative, allowPattern) => {
 // reviewed reader (`readTextFile` documents why a bare fs call cannot pass
 // security/detect-non-literal-fs-filename even after validation).
 const ADR_DIR_ROOT = resolve(REPO_ROOT, 'plans/ADRs')
-const ADR_INDEX_PATH_PATTERN = /^plans\/ADRs\/\d{3}-[A-Za-z0-9][A-Za-z0-9_.-]*\.md$/
+const ADR_INDEX_PATH_PATTERN = /^plans\/ADRs\/\d{2,3}-[A-Za-z0-9][A-Za-z0-9_.-]*\.md$/
 const resolveAdrPath = (repoRelative) => {
   if (typeof repoRelative !== 'string' || repoRelative.includes('\0')) return null
   if (!ADR_INDEX_PATH_PATTERN.test(repoRelative)) return null
@@ -421,14 +421,18 @@ for (const skill of skillDirs) {
 }
 
 // --- ADR register consistency ---------------------------------------------------
-// A decision record nobody can find is not a decision record. The register is a
-// hand-maintained table, so it drifts the moment an ADR is written and the table
-// is not touched; Plan 222 found 041–057 missing and Plan 226 found 029–038. The
-// floor sits just above the pre-register era (001–028, whose rows live in the
-// older reconciliation section), so every ADR from 029 onward must carry a row.
-const ADR_REGISTER_HEADING = '## ADRs recorded since the 2026-07-25 reconciliation'
-const ADR_REGISTER_FLOOR = 29
-const ADR_ROW_PATTERN = /^\|\s*(\d{3})\s*\|.*\|\s*([^|]+?)\s*\|\s*(plans\/ADRs\/[^|\s]+\.md)\s*\|$/
+// A decision record nobody can find is not a decision record. The register is two
+// hand-maintained tables split at the 2026-07-25 reconciliation, and both drift the
+// moment an ADR is written and the table is not touched — Plan 222 found 041–057
+// missing and Plan 226 found 029–038 plus the whole pre-reconciliation era. Every
+// record on disk therefore needs a row; there is no floor to hide behind.
+const ADR_REGISTER_HEADINGS = [
+  '## ADRs before the 2026-07-25 reconciliation',
+  '## ADRs recorded since the 2026-07-25 reconciliation',
+]
+// Two-digit numbers are accepted because ADR 06 predates the three-digit scheme
+// and coexists with ADR 006; the row number is normalised before comparison.
+const ADR_ROW_PATTERN = /^\|\s*(\d{2,3})\s*\|.*\|\s*([^|]+?)\s*\|\s*(plans\/ADRs\/[^|\s]+\.md)\s*\|$/
 // Records use three header styles (`**Status**: X`, `- Status: X`, and a
 // `## Status` section), so all three are read; only the leading word is compared,
 // because the prose after it legitimately differs between a one-line index row
@@ -440,32 +444,33 @@ const adrStatusLine = (text) =>
   null
 const statusWord = (value) => value.replace(/[*`]/g, '').match(/^[A-Za-z]+/)?.[0].toLowerCase() ?? ''
 const planIndex = readFileSync('plans/INDEX.md', 'utf8')
-const registerStart = planIndex.indexOf(ADR_REGISTER_HEADING)
-if (registerStart === -1) {
-  fail(`plans/INDEX.md is missing the ADR register heading: ${ADR_REGISTER_HEADING}`)
-} else {
-  const registerEnd = planIndex.indexOf('\n## ', registerStart + ADR_REGISTER_HEADING.length)
+const adrFiles = readdirSync('plans/ADRs', { withFileTypes: true })
+  .filter((entry) => entry.isFile() && !entry.isSymbolicLink())
+  .map((entry) => entry.name)
+  .filter((file) => /^\d+-[^/]+\.md$/.test(file))
+const adrNumber = (file) => String(Number.parseInt(file, 10)).padStart(3, '0')
+const registered = new Set()
+for (const heading of ADR_REGISTER_HEADINGS) {
+  const registerStart = planIndex.indexOf(heading)
+  if (registerStart === -1) {
+    fail(`plans/INDEX.md is missing the ADR register heading: ${heading}`)
+    continue
+  }
+  const registerEnd = planIndex.indexOf('\n## ', registerStart + heading.length)
   const register = planIndex.slice(registerStart, registerEnd === -1 ? undefined : registerEnd)
-  const adrFiles = readdirSync('plans/ADRs', { withFileTypes: true })
-    .filter((entry) => entry.isFile() && !entry.isSymbolicLink())
-    .map((entry) => entry.name)
-    .filter((file) => /^\d+-[^/]+\.md$/.test(file))
-  const byNumber = new Map(
-    adrFiles.map((file) => [String(Number.parseInt(file, 10)).padStart(3, '0'), file]),
-  )
-  const registered = new Set()
   for (const line of register.split('\n')) {
     const row = line.match(ADR_ROW_PATTERN)
     if (row === null) continue
     const [, number, status, path] = row
-    if (registered.has(number)) fail(`plans/INDEX.md registers ADR ${number} twice`)
-    registered.add(number)
     const file = path.slice('plans/ADRs/'.length)
     if (!adrFiles.includes(file)) {
       fail(`plans/INDEX.md ADR register points at a missing file: ${path}`)
       continue
     }
-    if (byNumber.get(number) !== file) {
+    if (registered.has(file)) fail(`plans/INDEX.md registers ${path} twice`)
+    registered.add(file)
+    const normalised = String(Number(number)).padStart(3, '0')
+    if (normalised !== adrNumber(file)) {
       fail(`plans/INDEX.md registers ADR ${number} against a different-numbered file: ${path}`)
       continue
     }
@@ -481,11 +486,9 @@ if (registerStart === -1) {
       )
     }
   }
-  for (const [number, file] of byNumber) {
-    if (Number(number) >= ADR_REGISTER_FLOOR && !registered.has(number)) {
-      fail(`plans/ADRs/${file} has no row in the plans/INDEX.md ADR register`)
-    }
-  }
+}
+for (const file of adrFiles) {
+  if (!registered.has(file)) fail(`plans/ADRs/${file} has no row in the plans/INDEX.md ADR register`)
 }
 
 // --- Plan file references -------------------------------------------------------

@@ -1,5 +1,8 @@
 # Plan 144 — Remaining plans/137 §5 Findings: Mention Code Contexts + Type Filter Before Truncation (2026-09-18)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Type**: defect fixes (editor linking, library search) + benchmark
 **Scope**: `mention.ts`, `retrieval.ts`, `vector-store.ts`, `search-worker-client.ts`, `library-view.tsx` + 4 test files
 **Follows**: plans/137 §5, plans/142 §5.2

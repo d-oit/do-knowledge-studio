@@ -1,5 +1,8 @@
 # Plan 162 — Open Items Review & Roast (2026-10-02)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 Status: **complete and landed**. Method: GOAP-orchestrated parallel swarm — 4
 PR reviewers + 7 read-only issue verifiers — every verdict re-checked against
 a clean `origin/main` worktree (`2ab8db0`, spot-checked on `08fe322` after

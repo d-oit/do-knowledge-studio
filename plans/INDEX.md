@@ -12,11 +12,19 @@ carried no longer exist.
 
 ## Active work
 
+### Plan 227 — Archive pointers, complete register, phantom SHAs (2026-11-27)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Make the branch-SHA map findable from the records that cite those SHAs | Done | A blockquote under the title of all 18 affected records links [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md); the two corrected records already cite `1f1fc50` |
+| 2 | Register every decision record and drop the guard floor | Done | ADRs 001–027 plus the legacy `06` added in a new pre-reconciliation table; the register grows 29 → 57 rows, the guard keys on the file rather than the number so `06`/`006` coexist, and the floor disappears. See [Plan 227](227-register-completion-and-phantom-sha-resolution-2026-11-27.md) |
+| 3 | Resolve the two SHAs that exist nowhere | Done | `6142cfeb` is a DeepSource run id, not a commit; `ff98106…` was a wrong SHA for PR #643, which merged as `c01ab3a7` and is now cited in Plan 115 |
+
 ### Plan 226 — Branch-SHA map, register backfill 029–038, #1204 triage (2026-11-27)
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| 1 | Name the reachable commit each orphaned branch SHA became | Done | 45 of 48 mapped by subject against GitHub and the squash bodies (36 destination commits); `6142cfeb` and the 40-character `ff98106…` were never pushed, and `1af799d` was superseded before a squash carried it. See [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md) |
+| 1 | Name the reachable commit each orphaned branch SHA became | Done | 45 of 48 mapped by subject against GitHub and the squash bodies (36 destination commits); `1af799d` was superseded before a squash could carry it, `6142cfeb` is a DeepSource run id rather than a commit, and `ff98106…` cited the wrong SHA for PR #643 (merged as `c01ab3a7`). See [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md) |
 | 2 | Register the decision records the index still omitted | Done | ADRs 029–033 and 035–038 added in numeric order (039 has no record); the status parser now reads the `## Status` section form, and the guard floor drops 58 → 29 so every record from 029 onward is enforced |
 | 3 | Triage #1204 instead of leaving it unassessed | Done | Ladybird alpha ships WebDriver and IndexedDB but its service-worker surface is incomplete; kept open as opt-in, labelled `testing` and `priority: low`, with a narrowed first-pass scope in the thread |
 
@@ -376,6 +384,39 @@ its file. Rows with a superseded or historical status keep that word.
 | 074 | Sync Bridge, A11y, Data Layer, and Documentation (2026-07-25) | Done — claim timestamps, 13 ADR statuses, 44px targets plus export ARIA, and the bidirectional Yjs/Zustand sync bridge (PRs #502/#503). | plans/074-goap-sync-bridge-a11y-and-data-layer.md |
 | 073 | Closeout of Plan 072 Remaining Gaps (2026-07-24) | Done — import preview and rollback, product-honesty plus CI fixes, mind-map ARIA tree with roving tabindex, raised coverage thresholds and 44px touch targets. | (no plan file) |
 | 072 | GOAP Remediation (2026-07-24) | Done — accepted ADRs 027/028/029 and landed Zod hydration with import validation (P0), CI fail-closed changes (P1) and the honesty fixes (P1). | plans/072-goap-plan071-remediation.md |
+
+## ADRs before the 2026-07-25 reconciliation
+
+| ADR | Scope (date) | Status | ADR file |
+| --- | --- | --- | --- |
+| 001 | SQLite over Markdown as truth (recorded 2026-04-15) | Superseded by ADR 018 | plans/ADRs/001-sqlite-wasm.md |
+| 002 | XSS prevention in export paths (recorded 2026-05-26) | Implemented | plans/ADRs/002-security-export.md |
+| 003 | API key isolation from `VITE_` variables (recorded 2026-05-26) | Implemented | plans/ADRs/003-vite-env-security.md |
+| 004 | Database migration system for schema evolution (recorded 2026-05-26) | Superseded by ADR 028 | plans/ADRs/004-db-migration-system.md |
+| 005 | Error handling architecture (recorded 2026-05-26) | Superseded by ADR 028 | plans/ADRs/005-error-handling.md |
+| 006 | Shared export core for browser and CLI (recorded 2026-05-26) | Implemented (PR #220) | plans/ADRs/006-export-deduplication.md |
+| 007 | do-web-doc-resolver for external ingestion (recorded 2026-05-08) | Superseded | plans/ADRs/007-doc-resolver-integration.md |
+| 008 | Circular dependency resolution in Rolldown builds (recorded 2026-05-29) | Implemented | plans/ADRs/008-rolldown-circular-dep.md |
+| 009 | Staged ESLint rule enforcement (recorded 2026-05-29) | Implemented | plans/ADRs/009-eslint-staged-rules.md |
+| 010 | Knowledge Studio export schema v1.0 (recorded 2026-06-16) | Implemented | plans/ADRs/010-export-schema-v1.md |
+| 011 | CLI command module extraction (recorded 2026-06-16) | Superseded by ADR 018 | plans/ADRs/011-cli-command-extraction.md |
+| 012 | PDF export via jsPDF (recorded 2026-06-16) | Implemented (2026-07-26) | plans/ADRs/012-pdf-export-strategy.md |
+| 013 | Semantic design tokens and theme coverage (recorded 2026-06-19) | Implemented | plans/ADRs/013-semantic-design-tokens.md |
+| 014 | Shared overlay/modal accessibility primitive (recorded 2026-06-19) | Implemented (2026-07-26) | plans/ADRs/014-overlay-accessibility-primitive.md |
+| 015 | Mobile-first responsive strategy and visualization theming (recorded 2026-06-19) | Implemented | plans/ADRs/015-responsive-and-visualization-theming.md |
+| 016 | Feature-gap closure: import persistence, tags, history, search (recorded 2026-06-19) | Superseded by Plans 072/073 | plans/ADRs/016-feature-gap-closure.md |
+| 017 | Chat unification strategy (2026-06-22) | Implemented (PR #520) | plans/ADRs/017-chat-unification.md |
+| 018 | Next.js architecture baseline and backend decision (2026-07-09) | Implemented | plans/ADRs/018-nextjs-architecture-baseline.md |
+| 019 | AI harness provider integration (2026-07-09) | Superseded by ADR 025 | plans/ADRs/019-ai-provider-integration.md |
+| 020 | Markdown content and editor engine (2026-07-12) | Implemented | plans/ADRs/020-rich-text-editor-strategy.md |
+| 021 | Real encrypted export with WebCrypto AES-GCM (2026-07-09) | Implemented | plans/ADRs/021-encrypted-export-webcrypto.md |
+| 022 | Client-side retrieval engine for chat and search (2026-07-09) | Implemented | plans/ADRs/022-client-side-retrieval-engine.md |
+| 023 | Editor draft persistence and commit lifecycle (2026-07-12) | Implemented | plans/ADRs/023-editor-draft-persistence-and-commit-lifecycle.md |
+| 024 | Editor feedback and notification policy (2026-07-12) | Implemented | plans/ADRs/024-editor-feedback-and-notification-policy.md |
+| 025 | AI provider consolidation: OpenRouter + Ollama (2026-07-16) | Implemented | plans/ADRs/025-ai-provider-consolidation.md |
+| 026 | P2P sync architecture (2026-07-17) | Implemented | plans/ADRs/026-p2p-sync-architecture.md |
+| 027 | Canonical state and P2P synchronization bridge (2026-07-19) | Implemented | plans/ADRs/027-canonical-state-and-p2p-sync-bridge.md |
+| 06 | LLM provider plugin system (2026-04-23; legacy two-digit number) | Superseded by ADR 019, then ADR 025 | plans/ADRs/06-llm-provider-system.md |
 
 ## ADRs recorded since the 2026-07-25 reconciliation
 

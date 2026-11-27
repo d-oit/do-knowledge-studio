@@ -1,5 +1,8 @@
 # Plan 115 — Gitleaks License Failure (Pre-existing Infrastructure Issue)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 Date: 2026-08-11 — **RESOLVED**
 
 ## Issue
@@ -35,8 +38,8 @@ Root cause chain (from CI logs, run 31520667156):
 
 ## Applied Fix (maintainer decision: pin to v2)
 
-**PR #643** — pinned `gitleaks/gitleaks-action` to `v2.3.9` (commit
-`ff98106e4c7b2bc287b24eaf42907196329070c7`).
+**PR #643** — pinned `gitleaks/gitleaks-action` to `v2.3.9` (merged as
+`c01ab3a7`, 2026-08-11).
 
 - v2.x runs without a license: log confirms `[d-oit] is an individual
   user. No license key is required.`
