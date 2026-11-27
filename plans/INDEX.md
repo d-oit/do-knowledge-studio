@@ -6,8 +6,19 @@
 Plan records are filed as `plans/NNN-slug.md`, where `NNN` is the plan number used
 below; accepted decision records are in `plans/ADRs/NNN-slug.md`. Work still in
 flight or just landed is kept wave-by-wave below; every landed plan is one row.
+SHA citations name the commit that is reachable from `main`: a pull request that
+merged as a squash is cited by its squash commit, because the branch commits it
+carried no longer exist.
 
 ## Active work
+
+### Plan 225 — Plan-file SHA audit, ADR status and plan-file guards (2026-11-27)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Check every SHA cited in every plan record | Done | 178 citations: 115 resolve, 8 are not commits (Actions run ids, a fast-check seed), 55 are hex SHAs — 7 recorded as missing by Plan 224, 48 branch commits erased by squash merges in 18 records. Plans 162 and 166 corrected to `1f1fc50`; the rest stand as written. See [Plan 225](225-plan-file-sha-audit-2026-11-27.md) |
+| 2 | Make the register's status column agree with each record | Done | `docs:check` compares the leading status word, reading both `**Status**:` and `- Status:` forms; ADR 034's "Done" corrected to "Implemented" |
+| 3 | Fail when an index row names a plan file that does not exist | Done | All 113 references resolve; both forms (29 links, 84 `plans/` paths) are now guarded |
 
 ### Plan 224 — ADR register guard, pre-squash SHA audit (2026-11-27)
 
@@ -363,7 +374,7 @@ its file. Rows with a superseded or historical status keep that word.
 | ADR | Scope (date) | Status | ADR file |
 | --- | --- | --- | --- |
 | 028 | Validated and recoverable local data boundaries (2026-09-29) | Implemented (§4a added) | plans/ADRs/028-validated-recoverable-local-data-boundaries.md |
-| 034 | Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16) | Done | plans/ADRs/034-nightly-dependabot-alert-check.md |
+| 034 | Nightly Dependabot Alert Check + Resolve-Every-Thread Merge Gate (2026-08-16) | Implemented — delivered via PRs #694 and #695 | plans/ADRs/034-nightly-dependabot-alert-check.md |
 | 040 | CPU-first local AI inference (2026-09-26) | Implemented | plans/ADRs/040-cpu-first-local-ai.md |
 | 041 | Offline precache scope and upgrade identity (2026-09-30) | Production deployment verified (2026-10-14) | plans/ADRs/041-offline-precache-scope-and-upgrade-identity.md |
 | 042 | Documentation lint policy (2026-10-12) | Implemented | plans/ADRs/042-documentation-lint-policy.md |

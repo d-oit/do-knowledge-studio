@@ -24,6 +24,10 @@
  * - every decision record from the register floor onward has a row in the
  *   `plans/INDEX.md` ADR register, and every row points at its own file (the
  *   register went stale for months before Plan 222 backfilled it);
+ * - each register row's status agrees with the ADR's own status line, so the
+ *   index cannot call a record "Proposed" after it was accepted;
+ * - every plan file the INDEX names exists (a row pointing at a deleted plan
+ *   reads as delivered work);
  * - the dks CLI commands documented in `packages/dks-cli/README.md` match
  *   `COMMAND_DOCS`, and `README.md`/`PRODUCT.md` present the CLI (Issue #1161);
  * - every MCP tool advertised in `tool-definitions.ts` is documented in
@@ -411,7 +415,13 @@ for (const skill of skillDirs) {
 // has never had the chance to cover — anything at or above it must carry a row.
 const ADR_REGISTER_HEADING = '## ADRs recorded since the 2026-07-25 reconciliation'
 const ADR_REGISTER_FLOOR = 58
-const ADR_ROW_PATTERN = /^\|\s*(\d{3})\s*\|.*\|\s*(plans\/ADRs\/[^|\s]+\.md)\s*\|$/
+const ADR_ROW_PATTERN = /^\|\s*(\d{3})\s*\|.*\|\s*([^|]+?)\s*\|\s*(plans\/ADRs\/[^|\s]+\.md)\s*\|$/
+// Records use two header styles (`**Status**: X` and `- Status: X`), so both are
+// read; only the leading word is compared, because the prose after it legitimately
+// differs between a one-line index row and the record.
+const adrStatusLine = (text) =>
+  text.match(/^\*\*Status\*\*:\s*(.+)$/m)?.[1] ?? text.match(/^-\s*Status:\s*(.+)$/m)?.[1] ?? null
+const statusWord = (value) => value.replace(/[*`]/g, '').match(/^[A-Za-z]+/)?.[0].toLowerCase() ?? ''
 const planIndex = readFileSync('plans/INDEX.md', 'utf8')
 const registerStart = planIndex.indexOf(ADR_REGISTER_HEADING)
 if (registerStart === -1) {
@@ -427,20 +437,48 @@ if (registerStart === -1) {
   for (const line of register.split('\n')) {
     const row = line.match(ADR_ROW_PATTERN)
     if (row === null) continue
-    const [, number, path] = row
+    const [, number, status, path] = row
     if (registered.has(number)) fail(`plans/INDEX.md registers ADR ${number} twice`)
     registered.add(number)
     const file = path.slice('plans/ADRs/'.length)
     if (!adrFiles.includes(file)) {
       fail(`plans/INDEX.md ADR register points at a missing file: ${path}`)
-    } else if (byNumber.get(number) !== file) {
+      continue
+    }
+    if (byNumber.get(number) !== file) {
       fail(`plans/INDEX.md registers ADR ${number} against a different-numbered file: ${path}`)
+      continue
+    }
+    const ownStatus = adrStatusLine(readFileSync(path, 'utf8'))
+    if (ownStatus === null) {
+      fail(`plans/ADRs/${file} has no "**Status**:" or "- Status:" line`)
+    } else if (statusWord(ownStatus) !== statusWord(status)) {
+      fail(
+        `plans/INDEX.md calls ADR ${number} "${statusWord(status)}" but the record says "${statusWord(ownStatus)}"`,
+      )
     }
   }
   for (const [number, file] of byNumber) {
     if (Number(number) >= ADR_REGISTER_FLOOR && !registered.has(number)) {
       fail(`plans/ADRs/${file} has no row in the plans/INDEX.md ADR register`)
     }
+  }
+}
+
+// --- Plan file references -------------------------------------------------------
+// The index names a plan file for every landed row; a row pointing at a deleted
+// or renamed plan reads as delivered work nobody can inspect. Both forms count:
+// `plans/NNN-slug.md` in table cells and prose, and `NNN-slug.md` as a link
+// target written relative to `plans/`.
+const planFiles = new Set(readdirSync('plans').filter((file) => file.endsWith('.md')))
+for (const match of planIndex.matchAll(/plans\/(\d+-[A-Za-z0-9._-]+\.md)/g)) {
+  if (!planFiles.has(match[1])) {
+    fail(`plans/INDEX.md references a missing plan file: plans/${match[1]}`)
+  }
+}
+for (const match of planIndex.matchAll(/\]\((\d+-[A-Za-z0-9._-]+\.md)\)/g)) {
+  if (!planFiles.has(match[1])) {
+    fail(`plans/INDEX.md links to a missing plan file: ${match[1]}`)
   }
 }
 
