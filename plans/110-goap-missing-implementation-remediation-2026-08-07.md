@@ -1,5 +1,8 @@
 # Plan 110 — GOAP: Missing Implementation Remediation (2026-08-07)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Status**: COMPLETE (2026-08-07 — all gaps resolved, quality gate green, PR submitted)
 **Method**: GOAP orchestrator with parallel agent swarm
 **Goal**: Address all missing implementations found in plans/ gap analysis; create PR with green CI.

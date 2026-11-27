@@ -63,8 +63,8 @@ Three do not map, and each for a stated reason:
 
 | SHA | Finding |
 | --- | --- |
-| `6142cfeb` | GitHub answers "No commit found for SHA": it was never pushed, so the record cites a local commit |
-| `ff98106e4c7b2bc287b24eaf42907196329070c7` | same: no such object on the remote |
+| `6142cfeb` | not a commit at all: it is the **DeepSource run id** in Plan 111's evidence line ("run `6142cfeb` analyzing post-rename commit `0c4a81f`"), which the audit's hex-shaped extractor picked up. Corrected in Plan 227 |
+| `ff98106e4c7b2bc287b24eaf42907196329070c7` | no such object on the remote, and the claim was wrong: Plan 115 said it was PR #643's commit pinning gitleaks-action to v2.3.9, but PR #643 merged as `c01ab3a7`. Corrected in Plan 227 |
 | `1af799d` | exists remotely by message ("restore reviewed fixes … reverted by stale concurrent push"), but its work was superseded before a squash could carry it — there is nothing to point at |
 
 The mapping is recorded here rather than edited into the 16 archive records:

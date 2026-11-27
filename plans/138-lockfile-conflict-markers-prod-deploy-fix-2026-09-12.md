@@ -1,5 +1,8 @@
 # Plan 138 — Production Deploy Fix: Committed Lockfile Conflict Markers (2026-09-12)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Type**: incident record (production deployment)
 **Scope**: `pnpm-lock.yaml` on `main`
 **Follows**: plans/137 (open-PR sweep — PR #773 merge)

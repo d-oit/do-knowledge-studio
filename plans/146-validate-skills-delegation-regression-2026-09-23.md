@@ -1,5 +1,8 @@
 # Plan 146 — validate-skills.sh Delegation Regression (2026-09-23)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Type**: regression fix (shell tooling) + CI coverage gap follow-up
 **Scope**: `scripts/validate-skills.sh`
 **Follows**: plans/145 (PR #806), which introduced the regression

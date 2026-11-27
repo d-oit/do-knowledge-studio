@@ -1,5 +1,8 @@
 # Plan 113 — OKF PR #624 Sweep: E2E Remediation, Thread Resolution, Merge Re-arms (2026-08-11)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Status**: DONE (code, tests, threads, re-arms) — merges pending GitHub auto-merge completion
 **Scope**: Full quality-gate retry on `feat/okf-bundle-export-import`, e2e flake/failure fixes, real a11y contrast fix, OKF version validation, PR #624 thread resolution, re-arm auto-merge across 12 PRs.
 

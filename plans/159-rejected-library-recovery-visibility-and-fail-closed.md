@@ -1,5 +1,8 @@
 # 159 — Make Rejected-Library Recovery Visible and Fail-Closed
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 > Closes the data-loss paths Plan 158 marked done with a hydration item that was
 > not actually closed. Behavior decision: ADR 028 §4a.
 

@@ -1,5 +1,8 @@
 # Plan 105 — GOAP: Address Remaining Gaps, Stale Plan Checks, and ADR 010
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Date**: 2026-08-03
 **Status**: DONE (PR #598, `4df29fd`)
 **Method**: GOAP with parallel agent execution

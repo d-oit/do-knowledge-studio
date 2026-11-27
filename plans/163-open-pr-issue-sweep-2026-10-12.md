@@ -1,5 +1,8 @@
 # Plan 163 — Open-PR / open-issue sweep, roast, and land (2026-10-12)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 > Session record. Supersedes the open-work half of Plan 116 (whose W3 "merge
 > order" table is now historical). Every claim below was observed on a real
 > tree or a real API response during this session; nothing is projected.

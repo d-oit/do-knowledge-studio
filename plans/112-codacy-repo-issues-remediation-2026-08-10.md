@@ -1,5 +1,8 @@
 # Plan 112 — Codacy Repo-Level Issue Remediation (2026-08-10)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 ## Status
 **DONE** — implementation complete in PR #628 (`fix/codacy-repo-issues-2026-08-10`).
 

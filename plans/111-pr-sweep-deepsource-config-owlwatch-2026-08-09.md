@@ -1,5 +1,8 @@
 # Plan 111 — PR Sweep: DeepSource Config Root Cause + PR #624 Thread Remediation (2026-08-09)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Status**: DONE — all gates green; PRs awaiting GitHub merge-state refresh (Plan 098 staleness)
 **Scope**: Address all open PRs (#624, #625, #626), the failing DeepSource JS check on #624, stale bot threads, and a concurrent-agent conflict on the OKF branch.
 

@@ -1,5 +1,8 @@
 # Plan 136 — N1–N7 Execution Status & Integration Sweep (2026-09-09)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Type**: Execution record for the open-issues sprint (#751–#757)
 **Branch**: `feat/open-issues-n1-n7-swarm` (HEAD = main tip `19cc398`)
 

@@ -1,5 +1,8 @@
 # Plan 137 — Open-PR Sweep: Review, Roast, Remediation & Merge Order (2026-09-12)
 
+> Commit SHAs in this record that are not reachable from `main` are mapped to the
+> squash commit that carries their work in [Plan 226](226-branch-sha-map-and-register-backfill-2026-11-27.md).
+
 **Type**: PR sweep execution record (review + roast + remediation)
 **Scope**: every open PR at sweep start — **#773**, **#778**
 **Skills used**: `static-analysis-suppression` (Codacy/DeepSource triage),
