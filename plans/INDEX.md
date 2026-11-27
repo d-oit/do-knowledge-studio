@@ -9,6 +9,14 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 224 — ADR register guard, pre-squash SHA audit (2026-11-27)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Make a decision record that never reaches the INDEX register fail a check | Done | `scripts/check-doc-consistency.mjs` now reads the register table and fails on a missing row for any ADR numbered 058 or higher, a row pointing at a missing file, a row whose file number disagrees, and a duplicate row. Proven by adding an unregistered `058` record (fails) and a row pointing at a nonexistent path (fails). See [Plan 224](224-adr-register-guard-and-squash-sha-audit-2026-11-27.md) |
+| 2 | Check every SHA the INDEX cites against git history | Done | 44 citations: 40 resolve, four do not. `e2ee5a6`, `a2dcbea`, `f7d970f`, `cdbd0f3` (and `e2f908a` in Plan 165) were commits on the PR #950 branch, which landed as one squash commit `1f1fc50`; Plan 194's `a395626` is a later Dependabot tip, not the merge. Plan 165 and Plan 194 rows corrected |
+| 3 | Close #1171 once the contract it asks for exists | Done | Envelope, exit codes, `--format json`, stream split, `--quiet`/`--verbose`/`--no-color`, `--limit`, stdin and the compatibility policy are documented and pinned by `envelope.test.ts`, `exit-codes.test.ts`, `cli.test.ts` and `cli-e2e.test.ts`; issue closed with that evidence |
+
 ### Plan 223 — CLI binary end-to-end, index status audit, build diagnostics (2026-11-27)
 
 | Wave | Goal | Status | Outcome |
@@ -92,7 +100,7 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | Audit | Inspect all 16 open issues and map dependencies | Done | Plan 194 records current gaps, prerequisite order and per-PR merge gates. |
-| Delivery | Complete each issue and merge in dependency order | Done (2026-11-13) | All 16 issues #1050–#1065 are CLOSED; per-issue PRs #1084–#1101 merged into `main` at `a395626`. See [Plan 194](194-open-issues-1050-1065-ordered-implementation-2026-11-03.md). |
+| Delivery | Complete each issue and merge in dependency order | Done (2026-11-13) | All 16 issues #1050–#1065 are CLOSED; per-issue PRs #1084–#1101 all merged, the last (#1101) on 2026-11-09 at `b679116`. See [Plan 194](194-open-issues-1050-1065-ordered-implementation-2026-11-03.md). |
 
 ### Plan 193 — Reconcile license, version and repo-description metadata (2026-11-02)
 
@@ -232,7 +240,7 @@ See [Plan 193](193-metadata-reconciliation-2026-11-02.md).
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| W1–W4 | Close selected Plan 162 gaps | Done | Commits `e2ee5a6`, `a2dcbea`, `f7d970f`, `cdbd0f3` implement canvas integrity, sync rejoin, URL hashes, and deferred heavy dependencies; see `plans/165-backlog-remediation-2026-10-13.md`. |
+| W1–W4 | Close selected Plan 162 gaps | Done | Squash merge `1f1fc50` ([PR #950](https://github.com/d-oit/do-knowledge-studio/pull/950), 2026-10-13) carries canvas integrity, sync rejoin, URL hashes, and deferred heavy dependencies; the per-wave commits were on the pre-squash branch and no longer exist. See `plans/165-backlog-remediation-2026-10-13.md`. |
 | W5 | Reconcile tooling and README claims | Done | Skills catalogs, agent-surface CLI, script/quality docs, and README storage/search/model-loading claims corrected. Plan 162 S3 remains open. |
 | W6 | Add PR integrity guards | Done | Dependency-range and stale-base deletion CI guards with eight focused BATS cases; ADR 044; no ruleset change. |
 | W7 | Reconcile records and complete delivery | PR #950 | Plan 162/163, the index, and ADRs reconciled; final local gate, browser suites, baseline shadow, and browser canary recorded in Plan 165. Five valid PR review findings fixed; remote checks, thread resolution, and merge status tracked on PR #950. |
@@ -280,7 +288,7 @@ See [Plan 193](193-metadata-reconciliation-2026-11-02.md).
 | --- | --- | --- | --- |
 | W1 | G7 gate honesty + G1 persistence contract | Done | `plans/131-goap-swarm-improvement-audit-2026-08-22.md`. `mergeHydratedState` validates on every load (not just version mismatches), rebase-on-hydrate, `HydrationRejectedError` preserves the payload on disk, honest coverage thresholds (75/78/84/85) with test files excluded, `.githooks/` committed + `core.hooksPath` wired via `prepare`. |
 | W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial — closed, nothing left to prune | Undo integrity landed in Plan 157 W3; #838 removed five dead shared primitives (`src/components/studio/ui/shared-primitives.tsx` 317 → 131 lines). The ~26-dependency prune was estimated, not measured — of 63 deps only 4 have no import in `src/`, `e2e/`, or `scripts/`, and all four are required. |
-| W3 | G4 bundle/startup + G5 view consolidation | Closed | Six lazy view boundaries in `app-shell.tsx` plus on-use dynamic imports for sync/export dependencies (Plan 165 `cdbd0f3`); the "zero `next/dynamic` call sites" note is historical — the repo uses `React.lazy` and `await import`. The shared `ToolbarBtn` dead-export problem is closed (#838); `chat-view.tsx` fell to 126 LOC on its own while `graph-view.tsx` (494) and `mindmap-view.tsx` (490) stay just under the ceiling. |
+| W3 | G4 bundle/startup + G5 view consolidation | Closed | Six lazy view boundaries in `app-shell.tsx` plus on-use dynamic imports for sync/export dependencies (Plan 165, `1f1fc50`); the "zero `next/dynamic` call sites" note is historical — the repo uses `React.lazy` and `await import`. The shared `ToolbarBtn` dead-export problem is closed (#838); `chat-view.tsx` fell to 126 LOC on its own while `graph-view.tsx` (494) and `mindmap-view.tsx` (490) stay just under the ceiling. |
 | W4 | G6 sync bridge completion | Done | `startBidirectionalSync` is called from `app-shell.tsx:130` and returns the unsubscribe; tombstone registry extracted to `cross-tab-tombstones.ts`. |
 | W5 | G8 library hardening + G9 hygiene | Closed | DOMPurify wired in `src/lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. Source-error gating is active: `vitest.config.ts` sets `ignoreSourceErrors: false` after Plan 159 F7 cleared the legacy `*.test.ts` errors (Plan 166). |
 

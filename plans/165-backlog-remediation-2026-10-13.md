@@ -11,15 +11,19 @@ historical; this plan records the later implementation and its evidence.
 
 ## Step outcomes
 
-| Step | Commit | Outcome and evidence |
+Every step below landed in one squash commit, `1f1fc50` ([PR #950](https://github.com/d-oit/do-knowledge-studio/pull/950));
+the per-step SHAs originally recorded here were commits on the pull request's
+branch and are not reachable from `main`.
+
+| Step | Landed in | Outcome and evidence |
 |---|---|---|
-| 1 — Canvas reference integrity | `e2ee5a6` | Delete, import, hydration, recovery restore, remote reconciliation, and JSON export prune dangling graph/mind-map edges and links. Undo/recovery history carries canvas state. Added unit, integration, and browser coverage. See [ADR 043](ADRs/043-canvas-reference-integrity.md). |
-| 2 — Sync leave/rejoin lifecycle | `a2dcbea` | Leaving destroys the WebRTC provider without destroying the shared Yjs document or IndexedDB persistence; the app-shell bridge stays active for rejoin. Initial join now surfaces canonical-merge conflicts. Covered by `doc-rejoin.test.ts` and `sync-view-coverage.test.tsx`; [ADR 027](ADRs/027-canonical-state-and-p2p-sync-bridge.md) records the lifecycle correction. |
-| 3 — URL-addressable views | `f7d970f` | View state synchronizes with recognized `#/view` hashes, reload, and browser Back/Forward; unknown hashes resolve to Home. `e2e/view-url.spec.ts` covers precedence, reload, invalid hashes, and history traversal. [ADR 037](ADRs/037-url-addressable-view-state.md) is Implemented. |
-| 4 — Heavy-leaf deferral | `cdbd0f3` | Sync and document-export dependencies are deferred behind their usage boundaries. The measured first-load JavaScript decreased by 9,333 bytes (about 0.53%); the production build regenerated the precache manifest. |
-| 5 — Documentation reconciliation | `786250d` plus the Step 7 README correction | Reconciled the skills catalogs, agent-surface CLI, script catalog, quality-gate workflow, and stale README claims. The final README distinguishes core Zustand/localStorage state and recovery snapshots from the separate Yjs IndexedDB replica; it also documents browser-local BM25 and first-use model downloads versus later offline inference while cached assets remain. Cursor/Windsurf `directory` strategy semantics remain open (Plan 162 S3); resolved 2026-10-16 — the manifest now declares `relative` for every tool (see the Plan 162 addendum). |
-| 6 — PR integrity guards | `1848da9` | Added dependency-range and stale-base deletion checks to PR CI, focused BATS suites, workflow documentation, and [ADR 044](ADRs/044-pr-integrity-guards.md). The repository ruleset was not changed. |
-| 7 — Records, verification, and delivery | `e2f908a` | Reconciles Plan 162/163, INDEX, and ADR 027; records Plan 165 and ADR 044; fixes ChatView focusability; pins Vitest and coverage at 4.1.11. The PR #950 review follow-up fixes five valid P2 findings; local and remote delivery evidence is tracked below and in the PR. |
+| 1 — Canvas reference integrity | `1f1fc50` | Delete, import, hydration, recovery restore, remote reconciliation, and JSON export prune dangling graph/mind-map edges and links. Undo/recovery history carries canvas state. Added unit, integration, and browser coverage. See [ADR 043](ADRs/043-canvas-reference-integrity.md). |
+| 2 — Sync leave/rejoin lifecycle | `1f1fc50` | Leaving destroys the WebRTC provider without destroying the shared Yjs document or IndexedDB persistence; the app-shell bridge stays active for rejoin. Initial join now surfaces canonical-merge conflicts. Covered by `doc-rejoin.test.ts` and `sync-view-coverage.test.tsx`; [ADR 027](ADRs/027-canonical-state-and-p2p-sync-bridge.md) records the lifecycle correction. |
+| 3 — URL-addressable views | `1f1fc50` | View state synchronizes with recognized `#/view` hashes, reload, and browser Back/Forward; unknown hashes resolve to Home. `e2e/view-url.spec.ts` covers precedence, reload, invalid hashes, and history traversal. [ADR 037](ADRs/037-url-addressable-view-state.md) is Implemented. |
+| 4 — Heavy-leaf deferral | `1f1fc50` | Sync and document-export dependencies are deferred behind their usage boundaries. The measured first-load JavaScript decreased by 9,333 bytes (about 0.53%); the production build regenerated the precache manifest. |
+| 5 — Documentation reconciliation | `1f1fc50` | Reconciled the skills catalogs, agent-surface CLI, script catalog, quality-gate workflow, and stale README claims. The final README distinguishes core Zustand/localStorage state and recovery snapshots from the separate Yjs IndexedDB replica; it also documents browser-local BM25 and first-use model downloads versus later offline inference while cached assets remain. Cursor/Windsurf `directory` strategy semantics remain open (Plan 162 S3); resolved 2026-10-16 — the manifest now declares `relative` for every tool (see the Plan 162 addendum). |
+| 6 — PR integrity guards | `1f1fc50` | Added dependency-range and stale-base deletion checks to PR CI, focused BATS suites, workflow documentation, and [ADR 044](ADRs/044-pr-integrity-guards.md). The repository ruleset was not changed. |
+| 7 — Records, verification, and delivery | `1f1fc50` | Reconciles Plan 162/163, INDEX, and ADR 027; records Plan 165 and ADR 044; fixes ChatView focusability; pins Vitest and coverage at 4.1.11. The PR #950 review follow-up fixes five valid P2 findings; local and remote delivery evidence is tracked below and in the PR. |
 
 ## Verification evidence
 
