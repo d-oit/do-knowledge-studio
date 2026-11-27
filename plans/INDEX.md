@@ -9,11 +9,19 @@ flight or just landed is kept wave-by-wave below; every landed plan is one row.
 
 ## Active work
 
+### Plan 223 — CLI binary end-to-end, index status audit, build diagnostics (2026-11-27)
+
+| Wave | Goal | Status | Outcome |
+| --- | --- | --- | --- |
+| 1 | Prove the published `dks` binary behaves as the shell sees it | Done | `packages/dks-cli/src/cli-e2e.test.ts` builds `dist/bin.js`, exports a bundle through `buildOkfBundle` (the PWA's own exporter), and spawns the binary: index, search, entity-by-printed-id with claim and relation round trip, exit 3 for an unknown id, exit 5 for an unreadable bundle. See [Plan 223](223-cli-binary-e2e-and-index-status-audit-2026-11-27.md) |
+| 2 | Re-verify INDEX rows against code, git history and GitHub | Done | Plan 178's "PR #1000 held unmerged" was wrong (#1000 merged 2026-10-20 at `e5d6571`), Plan 177 was delivered by #992 and moved to the completed table, Plan 191 still called ADR 048 "Proposed", and three package-relative paths were qualified. Statuses that were still true were left alone |
+| 3 | Report the compiler's own error when the MCP smoke test cannot build | Done | The `beforeAll` build is wrapped so tsc's stderr reaches the failure instead of a bare "Command failed" |
+
 ### Plan 222 — MCP stdio smoke test, ADR register backfill, at-rest WebKit evidence (2026-11-27)
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| 1 | Prove the published `dks-mcp` entrypoint speaks MCP on a real child-process stdio | Done | `src/stdio-smoke.test.ts` compiles the package, spawns `dist/cli.js`, and asserts the handshake, `tools/list`, a served search hit, and both fail-closed exits. Reverting argv parsing to `slice(3)` failed 2 of 3 cases; restored green (22 tests). See [Plan 222](222-mcp-stdio-smoke-and-index-reconciliation-2026-11-27.md) |
+| 1 | Prove the published `dks-mcp` entrypoint speaks MCP on a real child-process stdio | Done | `packages/dks-mcp/src/stdio-smoke.test.ts` compiles the package, spawns `packages/dks-mcp/dist/cli.js`, and asserts the handshake, `tools/list`, a served search hit, and both fail-closed exits. Reverting argv parsing to `slice(3)` failed 2 of 3 cases; restored green (22 tests). See [Plan 222](222-mcp-stdio-smoke-and-index-reconciliation-2026-11-27.md) |
 | 2 | Make `plans/INDEX.md` true again | Done | ADR register backfilled for 041–057 with the status each record states; plan 184 moved from "In review" to Done at [PR #1048](https://github.com/d-oit/do-knowledge-studio/pull/1048) (`5353cfce`), all six issues closed |
 | 3 | Replace the "WebKit is environment-blocked" note with CI evidence | Done | Nightly [run 45813183285](https://github.com/d-oit/do-knowledge-studio/actions/runs/45813183285) (2026-11-26) ran both at-rest specs under `mobile` and `tablet` (WebKit), 8 instances each, all green; no CI change was needed |
 
@@ -115,7 +123,7 @@ See [Plan 193](193-metadata-reconciliation-2026-11-02.md).
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| Triage | Check eight external architecture proposals against the shipped code before acting on any of them | Done | Six of the eight target subsystems this build does not have (SQLite, FTS5, an HTTP API, a Node plugin host) or are already shipped (Yjs collaboration, local semantic search). The two survivors landed: reciprocal rank fusion now merges BM25 and semantic results and labels each hit with the retrievers that matched it (`Keyword` / `Meaning` / `Keyword + meaning` as text, never colour), an evaluation harness scores recall@k and MRR for lexical, semantic and fused ranking on one fixture corpus and asserts hybrid beats the better single mode, and `bench.yml` runs the guard suite as an advisory PR job plus real `bench()` measurements now that `fusion.bench.ts` exists. At-rest encryption is recorded as Proposed in ADR 048. See [Plan 191](191-proposal-triage-2026-10-31.md). |
+| Triage | Check eight external architecture proposals against the shipped code before acting on any of them | Done | Six of the eight target subsystems this build does not have (SQLite, FTS5, an HTTP API, a Node plugin host) or are already shipped (Yjs collaboration, local semantic search). The two survivors landed: reciprocal rank fusion now merges BM25 and semantic results and labels each hit with the retrievers that matched it (`Keyword` / `Meaning` / `Keyword + meaning` as text, never colour), an evaluation harness scores recall@k and MRR for lexical, semantic and fused ranking on one fixture corpus and asserts hybrid beats the better single mode, and `bench.yml` runs the guard suite as an advisory PR job plus real `bench()` measurements now that `fusion.bench.ts` exists. At-rest encryption was recorded as Proposed in ADR 048 and has since been accepted and implemented (Plan 214, #1162). See [Plan 191](191-proposal-triage-2026-10-31.md). |
 
 ### Plan 183 — Split oversized automation scripts and scope Markdown fixes (2026-10-22)
 
@@ -151,13 +159,7 @@ See [Plan 193](193-metadata-reconciliation-2026-11-02.md).
 
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
-| W0–W5 | PR #992 merged; follow-up signaling/status PR #1000 opened and held unmerged; independent-peer canary remains open | GOAP + swarm audit/implementation. The previous provider `connected` event did not prove signaling or peers; the stale app default was corrected to installed y-webrtc 10.3.0's endpoint, and the status distinguishes room activity from reported peers. Independent-origin canary, real-corpus persistence, and NVDA/VoiceOver checks remain open. See [Plan 178](178-open-plan-backlog-remediation-2026-10-17.md) and PR #1000. |
-
-### Plan 177 — Older-plan leftovers (2026-10-17)
-
-| Wave | Goal | Status | Outcome |
-| --- | --- | --- | --- |
-| W1–W2 | Close older-plan items still open in the whole-folder sweep: palette query pre-fill, theme/direct-export commands, export busy state, 1920×1080 graph PNG, inbound backlinks, persisted library filters, deferred ranked search, and command filtering | Implementation integrated; verification and PR delivery tracked in Plan 178 | Per-item source evidence and current verification record in [Plan 177](177-older-plan-leftovers-2026-10-17.md). |
+| W0–W5 | PR #992 and the signaling/status correction in PR #1000 both merged; independent-peer canary remains open | GOAP + swarm audit/implementation. The previous provider `connected` event did not prove signaling or peers; the stale app default was corrected to installed y-webrtc 10.3.0's endpoint, and the status distinguishes room activity from reported peers. Independent-origin canary, real-corpus persistence, and NVDA/VoiceOver checks remain open. See [Plan 178](178-open-plan-backlog-remediation-2026-10-17.md), PR #992 (`887541c`) and PR #1000 (`e5d6571`). |
 
 ### Plan 176 — plans/ backlog drain (2026-10-17)
 
@@ -277,10 +279,10 @@ See [Plan 193](193-metadata-reconciliation-2026-11-02.md).
 | Wave | Goal | Status | Outcome |
 | --- | --- | --- | --- |
 | W1 | G7 gate honesty + G1 persistence contract | Done | `plans/131-goap-swarm-improvement-audit-2026-08-22.md`. `mergeHydratedState` validates on every load (not just version mismatches), rebase-on-hydrate, `HydrationRejectedError` preserves the payload on disk, honest coverage thresholds (75/78/84/85) with test files excluded, `.githooks/` committed + `core.hooksPath` wired via `prepare`. |
-| W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial — closed, nothing left to prune | Undo integrity landed in Plan 157 W3; #838 removed five dead shared primitives (`ui/shared-primitives.tsx` 317 → 131 lines). The ~26-dependency prune was estimated, not measured — of 63 deps only 4 have no import in `src/`, `e2e/`, or `scripts/`, and all four are required. |
+| W2 | G2 undo integrity + G3 dead-code/dep pruning | Partial — closed, nothing left to prune | Undo integrity landed in Plan 157 W3; #838 removed five dead shared primitives (`src/components/studio/ui/shared-primitives.tsx` 317 → 131 lines). The ~26-dependency prune was estimated, not measured — of 63 deps only 4 have no import in `src/`, `e2e/`, or `scripts/`, and all four are required. |
 | W3 | G4 bundle/startup + G5 view consolidation | Closed | Six lazy view boundaries in `app-shell.tsx` plus on-use dynamic imports for sync/export dependencies (Plan 165 `cdbd0f3`); the "zero `next/dynamic` call sites" note is historical — the repo uses `React.lazy` and `await import`. The shared `ToolbarBtn` dead-export problem is closed (#838); `chat-view.tsx` fell to 126 LOC on its own while `graph-view.tsx` (494) and `mindmap-view.tsx` (490) stay just under the ceiling. |
 | W4 | G6 sync bridge completion | Done | `startBidirectionalSync` is called from `app-shell.tsx:130` and returns the unsubscribe; tombstone registry extracted to `cross-tab-tombstones.ts`. |
-| W5 | G8 library hardening + G9 hygiene | Closed | DOMPurify wired in `lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. Source-error gating is active: `vitest.config.ts` sets `ignoreSourceErrors: false` after Plan 159 F7 cleared the legacy `*.test.ts` errors (Plan 166). |
+| W5 | G8 library hardening + G9 hygiene | Closed | DOMPurify wired in `src/lib/security.ts`, `verify-deps.sh` runs in CI on lockfile changes, markdown link sanitization + `noopener noreferrer`. Source-error gating is active: `vitest.config.ts` sets `ignoreSourceErrors: false` after Plan 159 F7 cleared the legacy `*.test.ts` errors (Plan 166). |
 
 ### Plan 123 — Codacy Merge Gate Playbook (2026-08-14)
 
@@ -296,6 +298,7 @@ its file. Rows with a superseded or historical status keep that word.
 | Plan | Title (date) | Outcome | Plan file |
 | --- | --- | --- | --- |
 | 184 | Open issue remediation (2026-10-31) | Done — merged in [PR #1048](https://github.com/d-oit/do-knowledge-studio/pull/1048) at `5353cfce`; all six issues closed. Storage moved to IndexedDB with atomic legacy migration (186), semantic indexing became incremental and cache-backed (187), sync got a threat model/fingerprint/invite contract (185), a verifiable `.dksb` backup and previewed restore landed (188), independent-origin peer acceptance is covered (189), and public docs are reconciled with a source-derived consistency check (190). ADRs 045–047. | plans/184-open-issue-remediation-2026-10-31.md |
+| 177 | Older-plan leftovers (2026-10-17) | Done — delivered with Plan 178 in [PR #992](https://github.com/d-oit/do-knowledge-studio/pull/992) at `887541c`; palette query pre-fill, theme and direct-export commands, export busy state, 1920×1080 graph PNG, inbound backlinks, persisted library filters, deferred ranked search, and command filtering. | plans/177-older-plan-leftovers-2026-10-17.md |
 | 160 | Fix every open Codacy issue in code; delete `.mimocode/` (2026-09-30) | Done — removed the foreign `.mimocode/` tree and its inert config entries, and fixed all five live Codacy findings in code, not by suppression (2788 unit tests green). | plans/160-codacy-open-issues-and-mimocode-cleanup-2026-09-30.md |
 | 159 | Rejected-library recovery visibility and fail-closed persistence (2026-09-29) | Done — a refused hydration is now visible on Home and fails closed for the page session (`hydration-guard.ts`); quarantine occupancy is decided by key existence and dismissal is non-destructive; ADR 028 §4a. | plans/159-rejected-library-recovery-visibility-and-fail-closed.md |
 | 157 | Codebase gap remediation: dead features, undo integrity, PWA, live announcements (2026-09-28) | Done — mind-map density and graph snapshots made real, undo carries claims, PWA raster icons + manifest/SW re-checks, 9 announcing mutations. | plans/157-codebase-gap-and-feature-remediation.md |

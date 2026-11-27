@@ -1,8 +1,9 @@
 # Plan 178 — Remaining Active Plan Tasks: Reconcile, Implement, and Verify
 
 **Date:** 2026-10-18
-**Status:** PR #992 merged on 2026-10-19; follow-up signaling/status correction in progress;
-independent-peer, real-corpus, and human NVDA/VoiceOver validation remain unverified.
+**Status:** PR #992 merged on 2026-10-19 and the signaling/status correction followed in
+PR #1000 (`e5d6571`, 2026-10-20); independent-peer, real-corpus, and human
+NVDA/VoiceOver validation remain unverified.
 **Method:** GOAP with parallel audit and implementation waves  
 **Related:** Plans [131](131-goap-swarm-improvement-audit-2026-08-22.md), [162](162-roadmap-progress-and-next-work-2026-10-05.md), [165](165-backlog-remediation-2026-10-13.md), [169](169-touch-gesture-specification-2026-10-15.md), [176](176-plans-backlog-drain-2026-10-17.md), [177](177-older-plan-leftovers-2026-10-17.md), and [ADR 027](ADRs/027-canonical-state-and-p2p-sync-bridge.md).
 
